@@ -213,7 +213,7 @@ bool Application::Init(int w, int h)
 	// ゲーム固有の初期化
 	//===================================================================
 	// 例えばカーソルを消したい場合
-	//ShowCursor(false);
+	ShowCursor(false);
 
 	return true;
 }
@@ -318,7 +318,7 @@ void Application::Execute()
 
 		m_fpsController.Update();
 
-		std::string titleBar = "黒崎授業 FPS:" + std::to_string(m_fpsController.m_nowfps);
+		std::string titleBar = "Cube(仮) FPS:" + std::to_string(m_fpsController.m_nowfps);
 		SetWindowTextA(m_window.GetWndHandle(),titleBar.c_str());
 	}
 

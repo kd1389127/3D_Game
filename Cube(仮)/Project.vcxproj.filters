@@ -88,6 +88,30 @@
     <Filter Include="Src\Application\GameObject\Camera\FPSCamera">
       <UniqueIdentifier>{cd662ee1-c913-4e31-addc-42ef89e2668c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\GameObject\Map">
+      <UniqueIdentifier>{7a3a75bf-302b-4873-8a26-c541272e7c49}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\GameObject\Map\Ground">
+      <UniqueIdentifier>{6a4634ba-eae9-4e33-961a-6186b07069dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\GameObject\Weapon">
+      <UniqueIdentifier>{770369aa-6629-4cd5-ac75-0ff34eddac52}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\GameObject\Weapon\Magicwand">
+      <UniqueIdentifier>{ea375910-0b9f-4f00-8f6e-fc3cb148f0a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\GameObject\Character">
+      <UniqueIdentifier>{45c04fae-c7cb-4aab-b8d0-4f01504cf224}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\GameObject\Character\Player">
+      <UniqueIdentifier>{9430108e-61b8-47e2-adf4-7b7be32308aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\GameObject\Block">
+      <UniqueIdentifier>{79c25eaa-b5c5-4f77-9850-d19d0a2f727d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\GameObject\Block\NormalBlock">
+      <UniqueIdentifier>{73262d85-7b7d-4982-8566-eb360774eb61}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -273,6 +297,21 @@
     <ClInclude Include="Src\Application\GameObject\Camera\FPSCamera\FPSCamera.h">
       <Filter>Src\Application\GameObject\Camera\FPSCamera</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Map\Ground\Ground.h">
+      <Filter>Src\Application\GameObject\Map\Ground</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Weapon\WeaponBase.h">
+      <Filter>Src\Application\GameObject\Weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Weapon\Magicwand\Magicwand.h">
+      <Filter>Src\Application\GameObject\Weapon\Magicwand</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Character\Player\Player.h">
+      <Filter>Src\Application\GameObject\Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Block\NormalBlock\NormalBlock.h">
+      <Filter>Src\Application\GameObject\Block\NormalBlock</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -427,6 +466,21 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\Camera\FPSCamera\FPSCamera.cpp">
       <Filter>Src\Application\GameObject\Camera\FPSCamera</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Map\Ground\Ground.cpp">
+      <Filter>Src\Application\GameObject\Map\Ground</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Weapon\WeaponBase.cpp">
+      <Filter>Src\Application\GameObject\Weapon</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Weapon\Magicwand\Magicwand.cpp">
+      <Filter>Src\Application\GameObject\Weapon\Magicwand</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Character\Player\Player.cpp">
+      <Filter>Src\Application\GameObject\Character\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Block\NormalBlock\NormalBlock.cpp">
+      <Filter>Src\Application\GameObject\Block\NormalBlock</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
