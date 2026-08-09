@@ -112,6 +112,9 @@
     <Filter Include="Src\Application\GameObject\Block\NormalBlock">
       <UniqueIdentifier>{73262d85-7b7d-4982-8566-eb360774eb61}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\GameObject\Bullet">
+      <UniqueIdentifier>{9af7bc39-8189-4880-988c-baa64274f009}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -312,6 +315,9 @@
     <ClInclude Include="Src\Application\GameObject\Block\NormalBlock\NormalBlock.h">
       <Filter>Src\Application\GameObject\Block\NormalBlock</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Bullet\Bullet.h">
+      <Filter>Src\Application\GameObject\Bullet</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -481,6 +487,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\Block\NormalBlock\NormalBlock.cpp">
       <Filter>Src\Application\GameObject\Block\NormalBlock</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Bullet\Bullet.cpp">
+      <Filter>Src\Application\GameObject\Bullet</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

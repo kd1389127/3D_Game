@@ -6,7 +6,7 @@ public:
 	NormalBlock() {}
 	~NormalBlock()		override {}
 
-	void Init()		override;
+	void Init(const Math::Vector3& pos);
 	void DrawLit()	override;
 
 private:

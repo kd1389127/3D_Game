@@ -1,6 +1,7 @@
 ﻿#include "Magicwand.h"
 
 #include "../../../Scene/SceneManager.h"
+#include "../../Bullet/Bullet.h"
 
 void Magicwand::Init()
 {
@@ -27,6 +28,19 @@ void Magicwand::Init()
 
 void Magicwand::Update()
 {
+	if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)
+	{
+		if (!m_mouseDownFlg)
+		{
+			m_mouseDownFlg = true;
+			ShotBullet();
+		}
+	}
+	else
+	{
+		m_mouseDownFlg = false;
+	}
+
 	// 親(プレイヤー)の行列を取得
 	Math::Matrix parentMat = Math::Matrix::Identity;
 	const std::shared_ptr<const KdGameObject> spParent = m_wpParent.lock();
@@ -51,7 +65,7 @@ void Magicwand::Update()
 		rayInfo.m_pos = spParent->GetPos();
 		rayInfo.m_dir = parentMat.Backward();
 		rayInfo.m_range = 1000.0f;
-		rayInfo.m_type = KdCollider::TypeDamage;
+		rayInfo.m_type = KdCollider::TypeGround;
 
 		// 衝突情報リスト
 		std::list <KdCollider::CollisionResult> resultList;
@@ -81,19 +95,10 @@ void Magicwand::Update()
 		// レイHit時
 		if (isHit)
 		{
-			// レイを弾として扱う場合
-			if (m_rayBulletFlg)
-			{
-				
-			}
-			// 実弾を飛ばす場合
-			else
-			{
-				// レイの着弾点を利用して弾を飛ばすベクトルを算出
-				Math::Vector3 shotDir = hitPos - muzzlePos;
+			auto bullet = std::make_shared<Bullet>();
+			bullet->Init(muzzlePos, hitPos);
 
-
-			}
+			SceneManager::Instance().AddObject(bullet);
 		}
 
 		// 弾の発射が終わったらフラグを未発射に戻す

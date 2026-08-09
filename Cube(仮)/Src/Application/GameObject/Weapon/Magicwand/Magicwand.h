@@ -15,7 +15,6 @@ public:
 	void ShotBullet(const bool _rayFlg = false) override;
 
 private:
-
-
+	bool m_mouseDownFlg = false;
 
 };
