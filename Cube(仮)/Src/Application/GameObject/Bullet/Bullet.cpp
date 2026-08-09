@@ -1,6 +1,7 @@
 ﻿#include "Bullet.h"
 #include "../Block/NormalBlock/NormalBlock.h"
 #include "../../Scene/SceneManager.h"
+#include "../Block/BlockGridManager.h"
 
 void Bullet::Init(const Math::Vector3& startPos, const Math::Vector3& targetPos)
 {
@@ -29,9 +30,17 @@ void Bullet::Update()
 	{
 		SetPos(m_targetPos);
 
-		auto newBlock = std::make_shared<NormalBlock>();
-		newBlock->Init(m_targetPos);
-		SceneManager::Instance().AddObject(newBlock);
+		Math::Vector3 snappedPos = BlockGridManager::SnapToGrid(m_targetPos);
+
+		// 既にそのマスにブロックがあれば生成しない
+		if (!BlockGridManager::Instance().IsOccupied(snappedPos))
+		{
+			auto newBlock = std::make_shared<NormalBlock>();
+			newBlock->Init(m_targetPos);
+			SceneManager::Instance().AddObject(newBlock);
+			
+			BlockGridManager::Instance().Register(snappedPos);
+		}
 
 		m_isExpired = true;
 		return;

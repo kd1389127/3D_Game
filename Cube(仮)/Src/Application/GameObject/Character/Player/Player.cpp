@@ -46,13 +46,46 @@ void Player::Update()
 	// 確定した向き情報を正規化
 	m_moveDir.Normalize();
 
-	// 座標更新
-	// 座標 += ベクトルの方向(長さ1.0f固定) * ベクトルの大きさ(移動速度)
+	// 座標更新(横方向)
 	m_pos += m_moveDir * m_moveSpeed;
 
-	// 重力をキャラに反映
-	m_pos.y -= m_gravity;
+	// 今フレームの縦方向の移動量を先に計算(まだm_posには反映しない)
+	float verticalMove = -m_gravity; // 上昇中は正の値になる
 	m_gravity += m_gravityPow;
+
+	// 上昇中(ジャンプ中)は、頭上への当たり判定でクランプする
+	if (verticalMove > 0.0f)
+	{
+		KdCollider::RayInfo ceilRay;
+		ceilRay.m_pos = m_pos; // 頭くらいの高さに合わせて調整してください(必要ならY方向にオフセット追加)
+		ceilRay.m_dir = Math::Vector3::Up;
+		ceilRay.m_range = verticalMove;
+		ceilRay.m_type = KdCollider::TypeGround | KdCollider::TypeBump;
+
+		std::list<KdCollider::CollisionResult> ceilResults;
+		for (auto& obj : SceneManager::Instance().GetObjList())
+		{
+			if (obj.get() == this) continue;
+			obj->Intersects(ceilRay, &ceilResults);
+		}
+
+		if (!ceilResults.empty())
+		{
+			float minDist = verticalMove;
+			for (auto& ret : ceilResults)
+			{
+				float dist = (ret.m_hitPos - ceilRay.m_pos).Length();
+				if (dist < minDist) minDist = dist;
+			}
+
+			verticalMove = std::max(0.0f, minDist - 0.05f); // 天井の少し手前で止める
+			m_gravity = 0.0f; // 頭をぶつけたら上昇を打ち切って落下に転じる
+		}
+	}
+
+	// ここでまとめて縦移動を適用
+	m_pos.y += verticalMove;
+
 
 	// ワールド行列確定
 	Math::Matrix transMat;
@@ -111,6 +144,46 @@ void Player::PostUpdate()
 		m_gravity = 0;
 	}
 
+	ResolveWallCollsion();
+
+}
+
+void Player::ResolveWallCollsion()
+{
+	KdCollider::SphereInfo sphereInfo(KdCollider::TypeBump, m_pos, 3.0f); // 3.0fはプレイヤーの太さに合わせて調整
+
+	std::list<KdCollider::CollisionResult> resultList;
+
+	for (auto& obj : SceneManager::Instance().GetObjList())
+	{
+		if (obj.get() == this) continue; // 自分自身は除外
+		obj->Intersects(sphereInfo, &resultList);
+	}
+
+	for (auto& ret : resultList)
+	{
+		Math::Vector3 normal = ret.m_hitNDir;
+		if (normal.LengthSquared() < 0.0001f) continue;
+		normal.Normalize();
+
+		// 面が上向き(床・ブロック上面) → その面に沿って上に押し出す(乗る)
+		if (normal.y > 3.0f)
+		{
+			m_pos += normal * ret.m_overlapDistance;
+			m_gravity = 0.0f;
+		}
+		// 面が横向き(壁・ブロック側面) → 横方向だけ押し出す(縦はそのまま)
+		else
+		{
+			Math::Vector3 pushDir = normal;
+			pushDir.y = 0;
+			if (pushDir.LengthSquared() > 0.0001f)
+			{
+				pushDir.Normalize();
+				m_pos += pushDir * ret.m_overlapDistance;
+			}
+		}
+	}
 }
 
 void Player::UpdateRotateByMouse()

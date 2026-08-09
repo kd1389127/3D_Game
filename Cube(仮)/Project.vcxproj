@@ -273,6 +273,7 @@
     <ClInclude Include="..\Library\tinygltf\stb_image.h" />
     <ClInclude Include="..\Library\tinygltf\stb_image_write.h" />
     <ClInclude Include="..\Library\tinygltf\tiny_gltf.h" />
+    <ClInclude Include="Src\Application\GameObject\Block\BlockGridManager.h" />
     <ClInclude Include="Src\Application\GameObject\Block\NormalBlock\NormalBlock.h" />
     <ClInclude Include="Src\Application\GameObject\Bullet\Bullet.h" />
     <ClInclude Include="Src\Application\GameObject\Camera\CameraBase.h" />

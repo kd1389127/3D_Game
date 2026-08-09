@@ -8,7 +8,7 @@ void NormalBlock::Init(const Math::Vector3& pos)
 		m_spModel->SetModelData("Asset/Models/Block/WoodenBox/Wooden_Box.gltf");
 
 		m_pCollider = std::make_unique<KdCollider>();
-		m_pCollider->RegisterCollisionShape("NormalBlock", m_spModel, KdCollider::TypeGround);
+		m_pCollider->RegisterCollisionShape("NormalBlock", m_spModel, KdCollider::TypeGround | KdCollider::TypeBump);
 	}
 
 	SetPos(pos);

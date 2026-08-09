@@ -65,7 +65,7 @@ void Magicwand::Update()
 		rayInfo.m_pos = spParent->GetPos();
 		rayInfo.m_dir = parentMat.Backward();
 		rayInfo.m_range = 1000.0f;
-		rayInfo.m_type = KdCollider::TypeGround;
+		rayInfo.m_type = KdCollider::TypeGround | KdCollider::TypeBump;
 
 		// 衝突情報リスト
 		std::list <KdCollider::CollisionResult> resultList;

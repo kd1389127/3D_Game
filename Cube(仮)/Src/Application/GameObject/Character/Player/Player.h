@@ -14,6 +14,9 @@ public:
 
 private:
 
+	// 当たり判定
+	void ResolveWallCollsion();
+
 	// カメラ情報
 	void UpdateRotateByMouse();
 

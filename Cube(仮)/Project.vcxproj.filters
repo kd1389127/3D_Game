@@ -318,6 +318,9 @@
     <ClInclude Include="Src\Application\GameObject\Bullet\Bullet.h">
       <Filter>Src\Application\GameObject\Bullet</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Block\BlockGridManager.h">
+      <Filter>Src\Application\GameObject\Block</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
