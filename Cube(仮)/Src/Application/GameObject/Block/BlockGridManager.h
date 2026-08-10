@@ -33,6 +33,15 @@ public:
 		m_occupied.insert(ToKey(snappedPos));
 	}
 
+	static Math::Vector3 SnapNormalToAxis(const Math::Vector3& normal)
+	{
+		float ax = fabsf(normal.x), ay = fabsf(normal.y), az = fabsf(normal.z);
+
+		if (ax >= ay && ax >= az) return Math::Vector3(normal.x > 0 ? 1.f : -1.f, 0, 0);
+		if (ay >= ax && ay >= az) return Math::Vector3(0, normal.y > 0 ? 1.f : -1.f, 0);
+		return Math::Vector3(0, 0, normal.z > 0 ? 1.f : -1.f);
+	}
+
 private:
 	static std::tuple<int, int, int> ToKey(const Math::Vector3& pos)
 	{

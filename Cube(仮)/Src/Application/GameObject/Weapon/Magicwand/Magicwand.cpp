@@ -80,6 +80,7 @@ void Magicwand::Update()
 		bool isHit = false;
 		float maxOverLap = 0.0f;
 		Math::Vector3 hitPos = Math::Vector3::Zero;
+		Math::Vector3 hitNormal = Math::Vector3::Up;
 
 		for (auto& ret : resultList)
 		{
@@ -88,6 +89,7 @@ void Magicwand::Update()
 			{
 				maxOverLap = ret.m_overlapDistance;
 				hitPos = ret.m_hitPos;
+				hitNormal = ret.m_hitNDir;
 				isHit = true;
 			}
 		}
@@ -96,7 +98,7 @@ void Magicwand::Update()
 		if (isHit)
 		{
 			auto bullet = std::make_shared<Bullet>();
-			bullet->Init(muzzlePos, hitPos);
+			bullet->Init(muzzlePos, hitPos,hitNormal);
 
 			SceneManager::Instance().AddObject(bullet);
 		}

@@ -6,9 +6,22 @@ void NormalBlock::Init(const Math::Vector3& pos)
 	{
 		m_spModel = std::make_shared<KdModelWork>();
 		m_spModel->SetModelData("Asset/Models/Block/WoodenBox/Wooden_Box.gltf");
+	}
 
+	if (!m_pCollider)
+	{
 		m_pCollider = std::make_unique<KdCollider>();
-		m_pCollider->RegisterCollisionShape("NormalBlock", m_spModel, KdCollider::TypeGround | KdCollider::TypeBump);
+
+		// ★重要: TypeGround（床）と TypeBump（壁・衝突）の両方を指定する
+		UINT collisionType = KdCollider::TypeGround | KdCollider::TypeBump;
+
+		// モデルのメッシュ形状からコリジョンを作成・登録
+		m_pCollider->RegisterCollisionShape
+		(
+			"BlockCollision",   // 登録名（任意の識別子）
+			m_spModel,          // 対象のモデル
+			collisionType       // 当たり判定のタイプ
+		);
 	}
 
 	SetPos(pos);

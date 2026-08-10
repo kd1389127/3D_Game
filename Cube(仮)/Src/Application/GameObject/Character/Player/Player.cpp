@@ -99,6 +99,8 @@ void Player::Update()
 
 void Player::PostUpdate()
 {
+	ResolveWallCollsion();
+
 	// レイ判定用のパラメーター
 	KdCollider::RayInfo ray;
 
@@ -144,8 +146,6 @@ void Player::PostUpdate()
 		m_gravity = 0;
 	}
 
-	ResolveWallCollsion();
-
 }
 
 void Player::ResolveWallCollsion()
@@ -166,22 +166,18 @@ void Player::ResolveWallCollsion()
 		if (normal.LengthSquared() < 0.0001f) continue;
 		normal.Normalize();
 
-		// 面が上向き(床・ブロック上面) → その面に沿って上に押し出す(乗る)
-		if (normal.y > 3.0f)
+		// 法線方向にそのまま押し出す(上面・側面・天井すべて共通)
+		m_pos += normal * ret.m_overlapDistance;
+
+		if (normal.y > 0.5f)
 		{
-			m_pos += normal * ret.m_overlapDistance;
+			// 上面に着地 → 接地扱い
 			m_gravity = 0.0f;
 		}
-		// 面が横向き(壁・ブロック側面) → 横方向だけ押し出す(縦はそのまま)
-		else
+		else if (normal.y < -0.5f)
 		{
-			Math::Vector3 pushDir = normal;
-			pushDir.y = 0;
-			if (pushDir.LengthSquared() > 0.0001f)
-			{
-				pushDir.Normalize();
-				m_pos += pushDir * ret.m_overlapDistance;
-			}
+			// 天井に頭をぶつけた → 上昇を打ち切り、落下に転じる
+			m_gravity = 0.0f;
 		}
 	}
 }
