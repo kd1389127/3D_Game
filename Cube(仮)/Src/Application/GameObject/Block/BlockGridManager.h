@@ -33,6 +33,11 @@ public:
 		m_occupied.insert(ToKey(snappedPos));
 	}
 
+	void Unregister(const Math::Vector3& snappedPos)
+	{
+		m_occupied.erase(ToKey(snappedPos));
+	}
+
 	static Math::Vector3 SnapNormalToAxis(const Math::Vector3& normal)
 	{
 		float ax = fabsf(normal.x), ay = fabsf(normal.y), az = fabsf(normal.z);

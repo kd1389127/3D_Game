@@ -62,7 +62,7 @@ void Magicwand::Update()
 		KdCollider::RayInfo rayInfo;
 
 		// レイの各パラメーターを設定
-		rayInfo.m_pos = spParent->GetPos();
+		rayInfo.m_pos = muzzlePos;
 		rayInfo.m_dir = parentMat.Backward();
 		rayInfo.m_range = 1000.0f;
 		rayInfo.m_type = KdCollider::TypeGround | KdCollider::TypeBump;

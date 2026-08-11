@@ -115,6 +115,9 @@
     <Filter Include="Src\Application\GameObject\Bullet">
       <UniqueIdentifier>{9af7bc39-8189-4880-988c-baa64274f009}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\GameObject\Character\Player\Component">
+      <UniqueIdentifier>{4f55789c-69b5-4a77-bcda-4c4288a1d89a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -321,6 +324,9 @@
     <ClInclude Include="Src\Application\GameObject\Block\BlockGridManager.h">
       <Filter>Src\Application\GameObject\Block</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Character\Player\Component\BlockGrabber.h">
+      <Filter>Src\Application\GameObject\Character\Player\Component</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -493,6 +499,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\Bullet\Bullet.cpp">
       <Filter>Src\Application\GameObject\Bullet</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Character\Player\Component\BlockGrabber.cpp">
+      <Filter>Src\Application\GameObject\Character\Player\Component</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

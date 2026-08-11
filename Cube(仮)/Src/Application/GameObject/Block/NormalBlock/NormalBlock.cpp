@@ -22,6 +22,7 @@ void NormalBlock::Init(const Math::Vector3& pos)
 			m_spModel,          // 対象のモデル
 			collisionType       // 当たり判定のタイプ
 		);
+
 	}
 
 	SetPos(pos);
@@ -33,4 +34,15 @@ void NormalBlock::DrawLit()
 	if (!m_spModel) return;
 
 	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
+}
+
+void NormalBlock::SetCarried(bool isCarried)
+{
+	m_isCarried = isCarried;
+
+	if (m_pCollider)
+	{
+		// 持ち上げ中はコライダーを無効化、置いたら有効化
+		m_pCollider->SetEnableAll(!isCarried);
+	}
 }

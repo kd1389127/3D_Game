@@ -1,12 +1,20 @@
 ﻿#include "Player.h"
 
 #include "../../../Scene/SceneManager.h"
+#include "Component/BlockGrabber.h"
+
+Player::Player() = default;
+
+Player::~Player() = default;
+
 void Player::Init()
 {
 	// 地面から補正分上げる
 	m_pos.y += m_adjustHeight;
 
 	m_pDebugWire = std::make_unique<KdDebugWireFrame>();
+
+	m_upBlockGrabber = std::make_unique<BlockGrabber>();
 }
 
 void Player::Update()
@@ -32,6 +40,12 @@ void Player::Update()
 	else
 	{
 		m_jumpKeyFlg = false;
+	}
+
+	// ★ ブロック操作処理をコンポーネントへ委譲
+	if (m_upBlockGrabber)
+	{
+		m_upBlockGrabber->Update(m_pos, GetRotationMatrix());
 	}
 
 	// キャラ制御 (回転角度の情報を更新)
