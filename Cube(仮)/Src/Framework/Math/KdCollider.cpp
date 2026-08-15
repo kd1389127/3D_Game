@@ -508,7 +508,7 @@ bool KdBoxCollision::Intersects(const DirectX::BoundingSphere& target, const Mat
 // 判定回数は 1 回　計算自体も軽く最も軽量な当たり判定　計算回数も固定なので処理効率は安定
 // 片方の球の判定を0にすれば単純な距離判定も作れる
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-bool KdBoxCollision::Intersects(const DirectX::BoundingBox& target, const Math::Matrix& world, KdCollider::CollisionResult* /*pRes*/)
+bool KdBoxCollision::Intersects(const DirectX::BoundingBox& target, const Math::Matrix& world, KdCollider::CollisionResult* pRes)
 {
 	if (!m_enable) { return false; }
 
@@ -520,7 +520,50 @@ bool KdBoxCollision::Intersects(const DirectX::BoundingBox& target, const Math::
 
 	bool isHit = (!m_IsOriented) ? myAABBShape.Intersects(target) : myOBBShape.Intersects(target);
 
-	// 即結果を返す(HITしたかどうかだけが知れる)
+	// 詳細リザルトが不要、またはOBB側は今回未対応のためHITしたかどうかだけ返す
+	if (!pRes || m_IsOriented) { return isHit; }
+
+	// 当たった時のみ計算
+	if (isHit)
+	{
+		// ★AABB vs AABB: 各軸ごとの重なり量を求めて、一番浅い軸を押し出し方向とする(SAT)
+		Math::Vector3 myCenter = myAABBShape.Center;
+		Math::Vector3 myExtents = myAABBShape.Extents;
+		Math::Vector3 targetCenter = target.Center;
+		Math::Vector3 targetExtents = target.Extents;
+
+		Math::Vector3 delta = targetCenter - myCenter; // target→myの方向
+
+		float overlapX = (myExtents.x + targetExtents.x) - fabsf(delta.x);
+		float overlapY = (myExtents.y + targetExtents.y) - fabsf(delta.y);
+		float overlapZ = (myExtents.z + targetExtents.z) - fabsf(delta.z);
+
+		Math::Vector3 normal = Math::Vector3::Zero;
+		float overlap = 0.0f;
+
+		// 一番重なりが浅い軸を押し出し方向として採用
+		if (overlapX <= overlapY && overlapX <= overlapZ)
+		{
+			overlap = overlapX;
+			normal.x = (delta.x >= 0.0f) ? 1.0f : -1.0f;
+		}
+		else if (overlapY <= overlapX && overlapY <= overlapZ)
+		{
+			overlap = overlapY;
+			normal.y = (delta.y >= 0.0f) ? 1.0f : -1.0f;
+		}
+		else
+		{
+			overlap = overlapZ;
+			normal.z = (delta.z >= 0.0f) ? 1.0f : -1.0f;
+		}
+
+		pRes->m_hitNDir = normal;
+		pRes->m_hitDir = normal;
+		pRes->m_overlapDistance = overlap;
+		pRes->m_hitPos = myCenter + normal * (myExtents.Dot(normal) - overlap * 0.5f); // 目安の接触点(符号をnormal基準に修正)
+	}
+
 	return isHit;
 }
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -543,24 +586,40 @@ bool KdBoxCollision::Intersects(const DirectX::BoundingOrientedBox& target, cons
 	// 即結果を返す(HITしたかどうかだけが知れる)
 	return isHit;
 }
-bool KdBoxCollision::Intersects(const KdCollider::RayInfo& target, const Math::Matrix& world, KdCollider::CollisionResult* /*pRes*/)
+bool KdBoxCollision::Intersects(const KdCollider::RayInfo& target, const Math::Matrix& world, KdCollider::CollisionResult* pRes)
 {
 	if (!m_enable) { return false; }
 
 	// AABB vs レイ
 	float AABBdist = FLT_MAX;
 
-	// BOXvsBOX(OBB)の当たり判定
 	DirectX::BoundingBox			myAABBShape;
 	DirectX::BoundingOrientedBox	myOBBShape;
 	m_Abox.Transform(myAABBShape, world);
 	m_Obox.Transform(myOBBShape, world);
+
 	bool isHit = (!m_IsOriented) ? myAABBShape.Intersects(target.m_pos, target.m_dir, AABBdist) : myOBBShape.Intersects(target.m_pos, target.m_dir, AABBdist);
 
-	// 即結果を返す(HITしたかどうかだけが知れる)
+	// 判定限界距離を加味(球版のレイ判定と同じ考え方)
+	isHit &= (target.m_range >= AABBdist);
+
+	// 詳細リザルトが必要無ければ即結果を返す
+	if (!pRes) { return isHit; }
+
+	// 当たった時のみ計算
+	if (isHit)
+	{
+		// レイ発射位置 + レイの当たった位置までのベクトル
+		pRes->m_hitPos = target.m_pos + target.m_dir * AABBdist;
+
+		pRes->m_hitDir = target.m_dir * (-1);
+		pRes->m_hitNDir = target.m_dir * (-1);
+
+		pRes->m_overlapDistance = target.m_range - AABBdist;
+	}
+
 	return isHit;
 }
-
 // ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### #####
 // ModelCollision
 // 3Dメッシュの形状

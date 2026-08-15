@@ -12,17 +12,18 @@ void NormalBlock::Init(const Math::Vector3& pos)
 	{
 		m_pCollider = std::make_unique<KdCollider>();
 
-		// ★重要: TypeGround（床）と TypeBump（壁・衝突）の両方を指定する
-		UINT collisionType = KdCollider::TypeGround | KdCollider::TypeBump;
+		// ★壁用(横の押し出し)：これまで通り体に合わせて少し狭め
+		DirectX::BoundingBox wallBox;
+		wallBox.Center = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+		wallBox.Extents = DirectX::XMFLOAT3(0.5f, 1.0f, 0.5f);
+		m_pCollider->RegisterCollisionShape("BlockWall", wallBox, KdCollider::TypeBump);
 
-		// モデルのメッシュ形状からコリジョンを作成・登録
-		m_pCollider->RegisterCollisionShape
-		(
-			"BlockCollision",   // 登録名（任意の識別子）
-			m_spModel,          // 対象のモデル
-			collisionType       // 当たり判定のタイプ
-		);
-
+		// ★地面用(上に乗る判定)：見た目の端(0.5=グリッド半分)まで、
+		//   境目の隙間対策で気持ち広め(0.51)にしてブロック同士を確実に繋げる
+		DirectX::BoundingBox groundBox;
+		groundBox.Center = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+		groundBox.Extents = DirectX::XMFLOAT3(0.51f, 1.0f, 0.51f);
+		m_pCollider->RegisterCollisionShape("BlockGround", groundBox, KdCollider::TypeGround);
 	}
 
 	SetPos(pos);

@@ -164,35 +164,70 @@ void Player::PostUpdate()
 
 void Player::ResolveWallCollsion()
 {
-	KdCollider::SphereInfo sphereInfo(KdCollider::TypeBump, m_pos, 3.0f); // 3.0fはプレイヤーの太さに合わせて調整
+	// プレイヤーの体を表すBOXサイズ
+	static const float bodyRadius = 3.0f;   // 横幅(半分)
+	static const float bodyHeight = 8.0f;   // 身長
 
-	std::list<KdCollider::CollisionResult> resultList;
+	static const float wallNormalYThreshold = 0.5f; // これ以上Y成分があれば床/天井とみなす
+	static const float maxPushPerHit = bodyRadius;   // 異常値によるすっ飛び防止の上限
 
-	for (auto& obj : SceneManager::Instance().GetObjList())
+	const int resolveIteration = 4;
+
+	for (int iteration = 0; iteration < resolveIteration; ++iteration)
 	{
-		if (obj.get() == this) continue; // 自分自身は除外
-		obj->Intersects(sphereInfo, &resultList);
-	}
+		Math::Vector3 totalPush = Math::Vector3::Zero;
+		bool anyHit = false;
 
-	for (auto& ret : resultList)
-	{
-		Math::Vector3 normal = ret.m_hitNDir;
-		if (normal.LengthSquared() < 0.0001f) continue;
-		normal.Normalize();
+		// プレイヤー中心のBOXを作成(縦方向は足元〜頭の中間に合わせてオフセット)
+		Math::Matrix boxMat = Math::Matrix::CreateTranslation(m_pos);
+		Math::Vector3 boxOffset(0.0f, -m_adjustHeight + bodyHeight * 0.5f, 0.0f);
+		Math::Vector3 boxHalfExtents(bodyRadius, bodyHeight * 0.5f, bodyRadius);
 
-		// 法線方向にそのまま押し出す(上面・側面・天井すべて共通)
-		m_pos += normal * ret.m_overlapDistance;
+		// isOriented = false → 回転無視のAABBとして扱う(体の当たり判定はシンプルな方が安定)
+		KdCollider::BoxInfo boxInfo(KdCollider::TypeBump, boxMat, boxOffset, boxHalfExtents, false);
 
-		if (normal.y > 0.5f)
+		std::list<KdCollider::CollisionResult> resultList;
+		for (auto& obj : SceneManager::Instance().GetObjList())
 		{
-			// 上面に着地 → 接地扱い
-			m_gravity = 0.0f;
+			if (obj.get() == this) continue;
+			obj->Intersects(boxInfo, &resultList);
 		}
-		else if (normal.y < -0.5f)
+
+		// 同じ方向への重複pushを避けるため、方向ごとに「最大の押し出し量」だけ採用する
+		std::unordered_map<int, Math::Vector3> bestPushByDir; // key: 押し出し方向の大まかな分類
+
+		for (auto& ret : resultList)
 		{
-			// 天井に頭をぶつけた → 上昇を打ち切り、落下に転じる
-			m_gravity = 0.0f;
+			Math::Vector3 normal = ret.m_hitNDir;
+			if (normal.LengthSquared() < 0.0001f) continue;
+			normal.Normalize();
+
+			if (fabsf(normal.y) > wallNormalYThreshold) continue; // 床/天井は無視、壁のみ処理
+
+			float overlap = std::min(ret.m_overlapDistance, maxPushPerHit);
+
+			Math::Vector3 push = normal * overlap;
+			push.y = 0.0f;
+
+			// 法線を8方向くらいに丸めてキー化し、同方向の重複は大きい方だけ残す
+			int dirKey = (int)(atan2f(normal.z, normal.x) * (4.0f / DirectX::XM_PI));
+			auto it = bestPushByDir.find(dirKey);
+			if (it == bestPushByDir.end() || it->second.LengthSquared() < push.LengthSquared())
+			{
+				bestPushByDir[dirKey] = push;
+			}
+
+			anyHit = true;
 		}
+
+		for (auto& kv : bestPushByDir)
+		{
+			totalPush += kv.second;
+		}
+
+		if (!anyHit) break;
+
+		m_pos += totalPush;
 	}
 }
 
@@ -213,5 +248,5 @@ void Player::UpdateRotateByMouse()
 	m_degAng.y += _mouseMove.x * 0.15f;
 
 	// 回転制御
-	m_degAng.x = std::clamp(m_degAng.x, -45.f, 45.f);
+	m_degAng.x = std::clamp(m_degAng.x, -75.f, 75.f);
 }
