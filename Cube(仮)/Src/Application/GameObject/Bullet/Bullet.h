@@ -10,7 +10,8 @@ public:
 	void Init(const Math::Vector3& startPos, const Math::Vector3& targetPos, const Math::Vector3& hitNormal);
 
 	void Update()	override;
-	void DrawLit()	override;
+	void DrawUnLit()	override;
+	void DrawBright()	override;
 
 private:
 	std::shared_ptr<KdModelWork> m_spModel = nullptr;

@@ -3,6 +3,9 @@
 		"generator":"Khronos glTF Blender I/O v5.1.19",
 		"version":"2.0"
 	},
+	"extensionsUsed":[
+		"KHR_materials_emissive_strength"
+	],
 	"scene":0,
 	"scenes":[
 		{
@@ -15,26 +18,34 @@
 	"nodes":[
 		{
 			"mesh":0,
-			"name":"staff",
+			"name":"\u7403",
 			"scale":[
-				0.020299017429351807,
-				0.01123986765742302,
-				0.020299017429351807
-			],
-			"translation":[
-				-0.0032907724380493164,
-				0.006452104076743126,
-				-0.02097644843161106
+				0.21411973237991333,
+				0.21411973237991333,
+				0.21411973237991333
 			]
 		}
 	],
 	"materials":[
 		{
 			"doubleSided":true,
-			"name":"staff01",
+			"emissiveFactor":[
+				1,
+				1,
+				1
+			],
+			"emissiveTexture":{
+				"index":0
+			},
+			"extensions":{
+				"KHR_materials_emissive_strength":{
+					"emissiveStrength":4.499999523162842
+				}
+			},
+			"name":"\u30de\u30c6\u30ea\u30a2\u30eb.001",
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
-					"index":0
+					"index":1
 				},
 				"metallicFactor":0,
 				"roughnessFactor":0.5
@@ -43,7 +54,7 @@
 	],
 	"meshes":[
 		{
-			"name":"Circle.001",
+			"name":"\u7403",
 			"primitives":[
 				{
 					"attributes":{
@@ -61,74 +72,78 @@
 		{
 			"sampler":0,
 			"source":0
+		},
+		{
+			"sampler":0,
+			"source":0
 		}
 	],
 	"images":[
 		{
 			"mimeType":"image/png",
-			"name":"StaffGemRedD",
-			"uri":"StaffGemRedD.png"
+			"name":"CreateBullet",
+			"uri":"CreateBullet.png"
 		}
 	],
 	"accessors":[
 		{
 			"bufferView":0,
 			"componentType":5126,
-			"count":460,
+			"count":596,
 			"max":[
-				2.880913496017456,
-				61.63121032714844,
-				1.2709943056106567
+				0.9999997019767761,
+				1,
+				0.9999993443489075
 			],
 			"min":[
-				-1.2709943056106567,
-				-0.4230574369430542,
-				-4.840997695922852
+				-0.9999990463256836,
+				-1,
+				-1
 			],
 			"type":"VEC3"
 		},
 		{
 			"bufferView":1,
 			"componentType":5126,
-			"count":460,
+			"count":596,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":2,
 			"componentType":5126,
-			"count":460,
+			"count":596,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":3,
 			"componentType":5123,
-			"count":636,
+			"count":2880,
 			"type":"SCALAR"
 		}
 	],
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":5520,
+			"byteLength":7152,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":5520,
-			"byteOffset":5520,
+			"byteLength":7152,
+			"byteOffset":7152,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":3680,
-			"byteOffset":11040,
+			"byteLength":4768,
+			"byteOffset":14304,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":1272,
-			"byteOffset":14720,
+			"byteLength":5760,
+			"byteOffset":19072,
 			"target":34963
 		}
 	],
@@ -140,8 +155,8 @@
 	],
 	"buffers":[
 		{
-			"byteLength":15992,
-			"uri":"MagicwandRed.bin"
+			"byteLength":24832,
+			"uri":"CreateBullet.bin"
 		}
 	]
 }

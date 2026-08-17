@@ -8,7 +8,7 @@ void Magicwand::Init()
 	if (!m_spModel)
 	{
 		m_spModel = std::make_shared<KdModelWork>();
-		m_spModel->SetModelData("Asset/Models/Weapon/Magicwand/MagicwandRed.gltf");
+		m_spModel->SetModelData("Asset/Models/Weapon/Magicwand/MagicwandBlue.gltf");
 
 		if (!m_pDebugWire)
 		{

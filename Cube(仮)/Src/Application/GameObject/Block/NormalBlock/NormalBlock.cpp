@@ -1,11 +1,18 @@
 ﻿#include "NormalBlock.h"
 
+#include "../../../Scene/SceneManager.h"
+
 void NormalBlock::Init(const Math::Vector3& pos)
 {
 	if (!m_spModel)
 	{
 		m_spModel = std::make_shared<KdModelWork>();
 		m_spModel->SetModelData("Asset/Models/Block/WoodenBox/Wooden_Box.gltf");
+	}
+
+	if (!m_pDebugWire)
+	{
+		m_pDebugWire = std::make_unique<KdDebugWireFrame>();
 	}
 
 	if (!m_pCollider)
@@ -17,6 +24,7 @@ void NormalBlock::Init(const Math::Vector3& pos)
 		wallBox.Center = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 		wallBox.Extents = DirectX::XMFLOAT3(0.5f, 1.0f, 0.5f);
 		m_pCollider->RegisterCollisionShape("BlockWall", wallBox, KdCollider::TypeBump);
+		
 
 		// ★地面用(上に乗る判定)：見た目の端(0.5=グリッド半分)まで、
 		//   境目の隙間対策で気持ち広め(0.51)にしてブロック同士を確実に繋げる
@@ -30,11 +38,34 @@ void NormalBlock::Init(const Math::Vector3& pos)
 	SetScale(8.0f);
 }
 
+void NormalBlock::PostUpdate()
+{
+	
+}
+
 void NormalBlock::DrawLit()
 {
 	if (!m_spModel) return;
 
 	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
+
+	// 2. デバッグワイヤーフレームの追加と描画
+	if (m_pDebugWire)
+	{
+		// 壁用コライダーのデバッグ表示（赤色など）
+		// Extents は半径(ハーフサイズ)なので、AddDebugBoxのsizeには2倍（またはそのまま Extents）を指定します
+		// ※KdDebugWireFrame::AddDebugBox の設計に合わせて調整してください
+
+		// BlockWall の可視化 (サイズ: 0.5f, 1.0f, 0.5f の 2倍 ＝ 1.0f, 2.0f, 1.0f)
+		m_pDebugWire->AddDebugBox(m_mWorld, Math::Vector3(0.5f, 1.0f, 0.5f), Math::Vector3::Zero, false, kRedColor);
+
+		// BlockGround の可視化 (サイズ: 0.51f, 1.0f, 0.51f)
+		//m_pDebugWire->AddDebugBox(m_mWorld, Math::Vector3(0.51f, 1.0f, 0.51f), Math::Vector3::Zero, false, kGreenColor);
+
+		// 3. ワイヤーフレームを描画して頂点データをクリア
+		m_pDebugWire->Draw();
+	}
+
 }
 
 void NormalBlock::SetCarried(bool isCarried)

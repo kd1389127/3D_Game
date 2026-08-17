@@ -7,6 +7,7 @@ public:
 	~NormalBlock()		override {}
 
 	void Init(const Math::Vector3& pos);
+	void PostUpdate() override;
 	void DrawLit()	override;
 
 	void SetCarried(bool isCarried);

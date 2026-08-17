@@ -17,10 +17,10 @@ void Bullet::Init(const Math::Vector3& startPos, const Math::Vector3& targetPos,
 	if (!m_spModel)
 	{
 		m_spModel = std::make_shared<KdModelWork>();
-		m_spModel->SetModelData("Asset/Models/Bullet/Arrow.gltf");
+		m_spModel->SetModelData("Asset/Models/Bullet/CreateBullet/CreateBullet.gltf");
 	}
 
-	SetScale(10.0f);
+	SetScale(5.0f);
 }
 
 void Bullet::Update()
@@ -61,8 +61,16 @@ void Bullet::Update()
 	SetPos(GetPos() + m_dir * m_speed);
 }
 
-void Bullet::DrawLit()
+void Bullet::DrawUnLit()
 {
 	if (!m_spModel) return;
+
+	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
+}
+
+void Bullet::DrawBright()
+{
+	if (!m_spModel) return;
+
 	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
 }
