@@ -166,7 +166,7 @@ void Player::ResolveWallCollsion()
 {
 	// プレイヤーの体を表すBOXサイズ
 	static const float bodyRadius = 3.0f;   // 横幅(半分)
-	static const float bodyHeight = 8.0f;   // 身長
+	static const float bodyHeight = 10.0f;   // 身長
 
 	static const float wallNormalYThreshold = 0.5f; // これ以上Y成分があれば床/天井とみなす
 	static const float maxPushPerHit = bodyRadius;   // 異常値によるすっ飛び防止の上限
