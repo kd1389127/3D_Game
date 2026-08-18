@@ -15,10 +15,12 @@ public:
 
 	static Math::Vector3 SnapToGrid(const Math::Vector3& pos)
 	{
+		constexpr float halfGrid = GridSize * 0.5f;
+
 		return Math::Vector3
 		(
 			std::round(pos.x / GridSize) * GridSize,
-			std::round(pos.y / GridSize) * GridSize,
+			std::round((pos.y - halfGrid) / GridSize) * GridSize + halfGrid, // Yだけ半マスオフセット
 			std::round(pos.z / GridSize) * GridSize
 		);
 	}
@@ -50,10 +52,12 @@ public:
 private:
 	static std::tuple<int, int, int> ToKey(const Math::Vector3& pos)
 	{
+		constexpr float halfGrid = GridSize * 0.5f;
+
 		return
 		{
 			(int)std::round(pos.x / GridSize),
-			(int)std::round(pos.y / GridSize),
+			(int)std::round((pos.y - halfGrid) / GridSize), // Yだけオフセット
 			(int)std::round(pos.z / GridSize)
 		};
 	}

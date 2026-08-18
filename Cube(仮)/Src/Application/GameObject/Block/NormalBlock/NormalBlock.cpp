@@ -22,7 +22,7 @@ void NormalBlock::Init(const Math::Vector3& pos)
 		// ★壁用(横の押し出し)：これまで通り体に合わせて少し狭め
 		DirectX::BoundingBox wallBox;
 		wallBox.Center = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
-		wallBox.Extents = DirectX::XMFLOAT3(0.5f, 1.0f, 0.5f);
+		wallBox.Extents = DirectX::XMFLOAT3(0.5f, 0.5f, 0.5f);
 		m_pCollider->RegisterCollisionShape("BlockWall", wallBox, KdCollider::TypeBump);
 		
 
@@ -30,7 +30,7 @@ void NormalBlock::Init(const Math::Vector3& pos)
 		//   境目の隙間対策で気持ち広め(0.51)にしてブロック同士を確実に繋げる
 		DirectX::BoundingBox groundBox;
 		groundBox.Center = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
-		groundBox.Extents = DirectX::XMFLOAT3(0.51f, 1.0f, 0.51f);
+		groundBox.Extents = DirectX::XMFLOAT3(0.51f, 0.51f, 0.51f);
 		m_pCollider->RegisterCollisionShape("BlockGround", groundBox, KdCollider::TypeGround);
 	}
 
@@ -40,7 +40,14 @@ void NormalBlock::Init(const Math::Vector3& pos)
 
 void NormalBlock::PostUpdate()
 {
+	if (m_pDebugWire)
+	{
+		// BlockWall の可視化
+		m_pDebugWire->AddDebugBox(m_mWorld, Math::Vector3(0.5f, 0.5f, 0.5f), Math::Vector3::Zero, false, kRedColor);
 	
+		// BlockGround の可視化 (サイズ: 0.51f, 1.0f, 0.51f)
+		//m_pDebugWire->AddDebugBox(m_mWorld, Math::Vector3(0.51f, 0.51f, 0.51f), Math::Vector3::Zero, false, kGreenColor);
+	}
 }
 
 void NormalBlock::DrawLit()
@@ -48,24 +55,6 @@ void NormalBlock::DrawLit()
 	if (!m_spModel) return;
 
 	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
-
-	// 2. デバッグワイヤーフレームの追加と描画
-	if (m_pDebugWire)
-	{
-		// 壁用コライダーのデバッグ表示（赤色など）
-		// Extents は半径(ハーフサイズ)なので、AddDebugBoxのsizeには2倍（またはそのまま Extents）を指定します
-		// ※KdDebugWireFrame::AddDebugBox の設計に合わせて調整してください
-
-		// BlockWall の可視化 (サイズ: 0.5f, 1.0f, 0.5f の 2倍 ＝ 1.0f, 2.0f, 1.0f)
-		m_pDebugWire->AddDebugBox(m_mWorld, Math::Vector3(0.5f, 1.0f, 0.5f), Math::Vector3::Zero, false, kRedColor);
-
-		// BlockGround の可視化 (サイズ: 0.51f, 1.0f, 0.51f)
-		//m_pDebugWire->AddDebugBox(m_mWorld, Math::Vector3(0.51f, 1.0f, 0.51f), Math::Vector3::Zero, false, kGreenColor);
-
-		// 3. ワイヤーフレームを描画して頂点データをクリア
-		m_pDebugWire->Draw();
-	}
-
 }
 
 void NormalBlock::SetCarried(bool isCarried)

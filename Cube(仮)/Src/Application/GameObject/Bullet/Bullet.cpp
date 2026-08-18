@@ -38,8 +38,8 @@ void Bullet::Update()
 
 		// 2. 着弾点から法線方向に「ほんの少し（半マス未満）」だけ進めた点を取る
 		//    （＝当たった面の「外側」のマスを直接狙う）
-		Math::Vector3 targetCellPos = m_targetPos + axisNormal * (BlockGridManager::GridSize * 0.4f);
-
+		Math::Vector3 targetCellPos = m_targetPos + axisNormal * (BlockGridManager::GridSize * 0.5f + 0.01f);
+		
 		// 3. その位置をそのまま最寄りのグリッドの中心にスナップさせる
 		Math::Vector3 newCell = BlockGridManager::SnapToGrid(targetCellPos);
 

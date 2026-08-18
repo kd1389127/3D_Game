@@ -22,10 +22,10 @@ void BlockGrabber::HandleGrabAndDrop(const Math::Vector3& playerPos, const Math:
 			{
 				Math::Vector3 lookDir = playerRotMat.Backward();
 				Math::Vector3 targetPos = playerPos + lookDir * m_holdDistance;
-				if (targetPos.y < 0.0f) targetPos.y = 0.0f;
-
+				constexpr float minY = BlockGridManager::GridSize * 0.5f;
+				if (targetPos.y < minY) targetPos.y = minY;
 				Math::Vector3 snappedPos = BlockGridManager::SnapToGrid(targetPos);
-				if (snappedPos.y < 0.0f) snappedPos.y = 0.0f;
+				if (snappedPos.y < minY) snappedPos.y = minY;
 
 				if (!BlockGridManager::Instance().IsOccupied(snappedPos))
 				{
@@ -39,7 +39,7 @@ void BlockGrabber::HandleGrabAndDrop(const Math::Vector3& playerPos, const Math:
 			else
 			{
 				KdCollider::RayInfo rayInfo;
-				rayInfo.m_pos = playerPos + Math::Vector3(0, 1.5f, 0);
+				rayInfo.m_pos = playerPos;
 				rayInfo.m_dir = playerRotMat.Backward();
 				rayInfo.m_range = 30.0f;
 				rayInfo.m_type = KdCollider::TypeBump | KdCollider::TypeGround;
@@ -89,12 +89,13 @@ void BlockGrabber::UpdateCarriedPos(const Math::Vector3& playerPos, const Math::
 {
 	if (!m_spCarriedBlock) return;
 
-	Math::Vector3 eyePos = playerPos + Math::Vector3(0, 1.5f, 0);
+	Math::Vector3 eyePos = playerPos;
 	Math::Vector3 holdOffset = Math::Vector3(0.0f, 0.0f, m_holdDistance);
 	holdOffset = Math::Vector3::Transform(holdOffset, playerRotMat);
 
 	Math::Vector3 targetPos = eyePos + holdOffset;
-	if (targetPos.y < 0.0f) targetPos.y = 0.0f;
+	constexpr float minY = BlockGridManager::GridSize * 0.5f; // 4.0：ブロック中心の最低地上高さ
+	if (targetPos.y < minY) targetPos.y = minY;
 
 	m_spCarriedBlock->SetPos(targetPos);
 }

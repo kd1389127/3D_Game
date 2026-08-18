@@ -78,16 +78,17 @@ void Magicwand::Update()
 		
 		// 衝突情報リストから一番近いオブジェクトを検出
 		bool isHit = false;
-		float maxOverLap = 0.0f;
+		float minDistSqr = FLT_MAX;
 		Math::Vector3 hitPos = Math::Vector3::Zero;
 		Math::Vector3 hitNormal = Math::Vector3::Up;
 
 		for (auto& ret : resultList)
 		{
-			// レイが当たった場合の貫通した長さが一番長いものを探す
-			if (maxOverLap < ret.m_overlapDistance)
+			float distSqr = (ret.m_hitPos - muzzlePos).LengthSquared();
+
+			if (distSqr < minDistSqr)
 			{
-				maxOverLap = ret.m_overlapDistance;
+				minDistSqr = distSqr;
 				hitPos = ret.m_hitPos;
 				hitNormal = ret.m_hitNDir;
 				isHit = true;
