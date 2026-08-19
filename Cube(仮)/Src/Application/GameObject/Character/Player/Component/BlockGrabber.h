@@ -1,4 +1,5 @@
 ﻿#pragma once
+
 class NormalBlock;
 
 class BlockGrabber
@@ -16,6 +17,7 @@ public:
 private:
 	void HandleGrabAndDrop(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
 	void UpdateCarriedPos(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
+	void HandleDistanceControl(); // ★ ホイール入力で距離を変更する処理
 
 	std::shared_ptr<NormalBlock> m_spCarriedBlock = nullptr;
 	bool m_eKeyFlg = false;

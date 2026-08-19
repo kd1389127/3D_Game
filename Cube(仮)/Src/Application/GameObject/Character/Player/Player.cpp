@@ -162,6 +162,15 @@ void Player::PostUpdate()
 
 }
 
+bool Player::IsCarryingBlock() const
+{
+	if (m_upBlockGrabber)
+	{
+		return m_upBlockGrabber->IsCarrying();
+	}
+	return false;
+}
+
 void Player::ResolveWallCollsion()
 {
 	// プレイヤーの体を表すBOXサイズ

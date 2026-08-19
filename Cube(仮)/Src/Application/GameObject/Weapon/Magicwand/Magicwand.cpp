@@ -2,6 +2,7 @@
 
 #include "../../../Scene/SceneManager.h"
 #include "../../Bullet/Bullet.h"
+#include "../../Character/Player/Player.h"
 
 void Magicwand::Init()
 {
@@ -28,12 +29,33 @@ void Magicwand::Init()
 
 void Magicwand::Update()
 {
+	// 親オブジェクトを取得
+	const std::shared_ptr<const KdGameObject> spParent = m_wpParent.lock();
+	
+	// ブロックを保持しているかチェック
+	bool isCarrying = false;
+	if (spParent)
+	{
+		// 親をPlayerにキャストして状態確認（親がPlayerなら一番高速）
+		auto player = std::dynamic_pointer_cast<const Player>(spParent);
+		if (player && player->IsCarryingBlock())
+		{
+			isCarrying = true;
+		}
+	}
+
+	// 左クリック発射判定(ブロックを持ち上げてなければ発射可能)
 	if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)
 	{
 		if (!m_mouseDownFlg)
 		{
 			m_mouseDownFlg = true;
-			ShotBullet();
+
+			// ブロックを保持していない場合のみ発射
+			if (!isCarrying)
+			{
+				ShotBullet();
+			}
 		}
 	}
 	else
@@ -43,7 +65,6 @@ void Magicwand::Update()
 
 	// 親(プレイヤー)の行列を取得
 	Math::Matrix parentMat = Math::Matrix::Identity;
-	const std::shared_ptr<const KdGameObject> spParent = m_wpParent.lock();
 	if (spParent)
 	{
 		// 親の行列を取得

@@ -25,31 +25,31 @@ using Microsoft::WRL::ComPtr;
 // Win32 + GameInput implementation
 //======================================================================================
 
-//
-// Call this static function from your Window Message Procedure
-//
-// LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-// {
-//     switch (message)
-//     {
-//     case WM_ACTIVATE:
-//     case WM_ACTIVATEAPP:
-//     case WM_MOUSEMOVE:
-//     case WM_LBUTTONDOWN:
-//     case WM_LBUTTONUP:
-//     case WM_RBUTTONDOWN:
-//     case WM_RBUTTONUP:
-//     case WM_MBUTTONDOWN:
-//     case WM_MBUTTONUP:
-//     case WM_MOUSEWHEEL:
-//     case WM_XBUTTONDOWN:
-//     case WM_XBUTTONUP:
-//         Mouse::ProcessMessage(message, wParam, lParam);
-//         break;
-//
-//     }
-// }
-//
+
+ Call this static function from your Window Message Procedure
+
+ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+ {
+     switch (message)
+     {
+     case WM_ACTIVATE:
+     case WM_ACTIVATEAPP:
+     case WM_MOUSEMOVE:
+     case WM_LBUTTONDOWN:
+     case WM_LBUTTONUP:
+     case WM_RBUTTONDOWN:
+     case WM_RBUTTONUP:
+     case WM_MBUTTONDOWN:
+     case WM_MBUTTONUP:
+     case WM_MOUSEWHEEL:
+     case WM_XBUTTONDOWN:
+     case WM_XBUTTONUP:
+         Mouse::ProcessMessage(message, wParam, lParam);
+         break;
+
+     }
+ }
+
 
 class Mouse::Impl
 {

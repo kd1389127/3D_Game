@@ -13,6 +13,9 @@ public:
 	void Update()	  override;
 	void PostUpdate() override;
 
+	// ブロックを保持しているかチェックする関数
+	bool IsCarryingBlock() const;
+
 private:
 
 	// 当たり判定
