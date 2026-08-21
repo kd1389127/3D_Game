@@ -2,6 +2,7 @@
 
 #include "../../../Scene/SceneManager.h"
 #include "Component/BlockGrabber.h"
+#include "../../Block/BlockGridManager.h"
 
 Player::Player() = default;
 
@@ -42,12 +43,6 @@ void Player::Update()
 		m_jumpKeyFlg = false;
 	}
 
-	// ★ ブロック操作処理をコンポーネントへ委譲
-	if (m_upBlockGrabber)
-	{
-		m_upBlockGrabber->Update(m_pos, GetRotationMatrix());
-	}
-
 	// キャラ制御 (回転角度の情報を更新)
 	if (!(GetAsyncKeyState(VK_LSHIFT) & 0x8000))
 	{
@@ -62,6 +57,15 @@ void Player::Update()
 
 	// 座標更新(横方向)
 	m_pos += m_moveDir * m_moveSpeed;
+
+	// ★ ブロック操作処理をコンポーネントへ委譲
+	if (m_upBlockGrabber)
+	{
+		m_upBlockGrabber->Update(m_pos, GetRotationMatrix());
+	}
+
+	// 直前のフレームで決まっているブロック位置と重なっていないかチェック
+	ResolvePushOutFromCarriedBlock();
 
 	// 今フレームの縦方向の移動量を先に計算(まだm_posには反映しない)
 	float verticalMove = -m_gravity; // 上昇中は正の値になる
@@ -237,6 +241,41 @@ void Player::ResolveWallCollsion()
 		if (!anyHit) break;
 
 		m_pos += totalPush;
+	}
+}
+
+void Player::ResolvePushOutFromCarriedBlock()
+{
+	if (!m_upBlockGrabber || !m_upBlockGrabber->IsCarrying()) return;
+
+	Math::Vector3 blockPos = m_upBlockGrabber->GetCarriedBlockPos();
+
+	constexpr float blockHalfSize = BlockGridManager::GridSize * 0.5f; // 4.0f
+	const float playerRadius = 3.0f;  // ResolveWallCollsionのbodyRadiusと同じ値
+	const float playerHalfHeight = 5.0f; // ResolveWallCollsionのbodyHeight(10.0f)の半分
+
+	// プレイヤーの当たり判定の中心(足元基準の m_pos に、体の中心分だけYオフセット)
+	Math::Vector3 playerCenter = m_pos;
+	playerCenter.y += (-m_adjustHeight + playerHalfHeight);
+
+	Math::Vector3 diff = playerCenter - blockPos;
+
+	float overlapX = (blockHalfSize + playerRadius) - fabsf(diff.x);
+	float overlapY = (blockHalfSize + playerHalfHeight) - fabsf(diff.y);
+	float overlapZ = (blockHalfSize + playerRadius) - fabsf(diff.z);
+
+	// 3軸すべて重なっていて初めて実際に重なっている
+	if (overlapX > 0.0f && overlapY > 0.0f && overlapZ > 0.0f)
+	{
+		// 水平方向(X/Z)のうち浅い方だけ押し出す(Yは押し出さない=浮いたり沈んだりしない)
+		if (overlapX <= overlapZ)
+		{
+			m_pos.x += (diff.x >= 0.0f ? overlapX : -overlapX);
+		}
+		else
+		{
+			m_pos.z += (diff.z >= 0.0f ? overlapZ : -overlapZ);
+		}
 	}
 }
 

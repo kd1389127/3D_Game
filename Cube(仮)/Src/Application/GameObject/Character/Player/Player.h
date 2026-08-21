@@ -21,6 +21,9 @@ private:
 	// 当たり判定
 	void ResolveWallCollsion();
 
+	// 持っているブロックの中に入り込んでいたら押し出す
+	void ResolvePushOutFromCarriedBlock();
+
 	// カメラ情報
 	void UpdateRotateByMouse();
 

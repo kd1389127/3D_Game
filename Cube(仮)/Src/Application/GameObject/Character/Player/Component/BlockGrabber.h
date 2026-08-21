@@ -14,6 +14,9 @@ public:
 	// 現在ブロックを持っているか？
 	bool IsCarrying() const { return m_spCarriedBlock != nullptr; }
 
+	// 現在持っているブロックの座標を取得（持っていなければ判定不要なので呼び出し側でIsCarrying()チェック）
+	Math::Vector3 GetCarriedBlockPos() const;
+	
 private:
 	void HandleGrabAndDrop(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
 	void UpdateCarriedPos(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
