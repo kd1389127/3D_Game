@@ -6,10 +6,9 @@
 
 namespace
 {
-	// 他の設置済みブロックとの重なりを、最小移動量で解消する
-	void ResolveOverlapWithBlocks(Math::Vector3& pos, const std::shared_ptr<NormalBlock>& ignoreBlock)
+	bool OverlapsAnyBlock(const Math::Vector3& pos, const std::shared_ptr<NormalBlock>& ignoreBlock)
 	{
-		constexpr float blockSize = BlockGridManager::GridSize; // 8.0f (ブロック1辺の長さ)
+		constexpr float blockSize = BlockGridManager::GridSize; // 8.0f
 
 		for (auto& obj : SceneManager::Instance().GetObjList())
 		{
@@ -17,31 +16,30 @@ namespace
 			if (!block || block == ignoreBlock || block->IsCarried()) continue;
 
 			Math::Vector3 diff = pos - block->GetPos();
-
-			float overlapX = blockSize - fabsf(diff.x);
-			float overlapY = blockSize - fabsf(diff.y);
-			float overlapZ = blockSize - fabsf(diff.z);
-
-			// 3軸すべてで重なっている時だけ、実際に3Dとして重なっている
-			if (overlapX > 0.0f && overlapY > 0.0f && overlapZ > 0.0f)
-			{
-				// 最も浅く重なっている軸を選び、その軸だけ押し出す
-				if (overlapX <= overlapY && overlapX <= overlapZ)
-				{
-					pos.x += (diff.x >= 0.0f ? overlapX : -overlapX);
-				}
-				else if (overlapY <= overlapX && overlapY <= overlapZ)
-				{
-					pos.y += (diff.y >= 0.0f ? overlapY : -overlapY);
-				}
-				else
-				{
-					pos.z += (diff.z >= 0.0f ? overlapZ : -overlapZ);
-				}
-			}
+			if (fabsf(diff.x) < blockSize && fabsf(diff.y) < blockSize && fabsf(diff.z) < blockSize)
+				return true;
 		}
+		return false;
 	}
-	// ★ 追加：プレイヤー自身との最小距離を水平方向で保証する
+
+	// oldPos(重なっていない安全な位置)から desiredPos へ、軸ごとに「動けるところまで」動かす
+	Math::Vector3 SlideMove(const Math::Vector3& oldPos, const Math::Vector3& desiredPos,
+		const std::shared_ptr<NormalBlock>& ignoreBlock)
+	{
+		Math::Vector3 result = oldPos;
+
+		Math::Vector3 tryX = result; tryX.x = desiredPos.x;
+		if (!OverlapsAnyBlock(tryX, ignoreBlock)) result.x = desiredPos.x;
+
+		Math::Vector3 tryZ = result; tryZ.z = desiredPos.z;
+		if (!OverlapsAnyBlock(tryZ, ignoreBlock)) result.z = desiredPos.z;
+
+		Math::Vector3 tryY = result; tryY.y = desiredPos.y;
+		if (!OverlapsAnyBlock(tryY, ignoreBlock)) result.y = desiredPos.y;
+
+		return result;
+	}
+	// プレイヤー自身との最小距離を水平方向で保証する
 	void ClampMinDistanceFromPlayer(Math::Vector3& pos, const Math::Vector3& playerPos, const Math::Vector3& fallbackDir)
 	{
 		constexpr float minPlayerDist = BlockGridManager::GridSize; // 8.0f (必要ならプレイヤーの当たり判定サイズに合わせて調整)
@@ -69,6 +67,23 @@ namespace
 	}
 }
 
+void BlockGrabber::Init()
+{
+	m_spPreviewModel = std::make_shared<KdModelWork>();
+	m_spPreviewModel->SetModelData("Asset/Models/Block/WoodenBox/Wooden_Box.gltf"); // NormalBlockと同じパス
+
+	D3D11_BLEND_DESC blendDesc = {};
+	blendDesc.RenderTarget[0].BlendEnable = TRUE;
+	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+	KdDirect3D::Instance().WorkDev()->CreateBlendState(&blendDesc, m_alphaBlendState.GetAddressOf());
+}
 
 void BlockGrabber::Update(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat)
 {
@@ -82,6 +97,35 @@ Math::Vector3 BlockGrabber::GetCarriedBlockPos() const
 	return m_spCarriedBlock ? m_spCarriedBlock->GetPos() : Math::Vector3::Zero;
 }
 
+void BlockGrabber::DrawPreview()
+{
+	if (!m_spCarriedBlock || !m_spPreviewModel) return;
+
+	auto context = KdDirect3D::Instance().WorkDevContext();
+
+	// 現在のブレンドステートを退避
+	Microsoft::WRL::ComPtr<ID3D11BlendState> prevBlendState;
+	float prevBlendFactor[4];
+	UINT prevSampleMask;
+	context->OMGetBlendState(prevBlendState.GetAddressOf(), prevBlendFactor, &prevSampleMask);
+
+	// 半透明用に切り替え
+	float blendFactor[4] = { 1,1,1,1 };
+	context->OMSetBlendState(m_alphaBlendState.Get(), blendFactor, 0xFFFFFFFF);
+
+	Math::Matrix mat = Math::Matrix::CreateScale(8.0f) * Math::Matrix::CreateTranslation(m_previewPos);
+
+	// ★ 置けるかどうかで色を変える
+	Math::Color previewColor = m_previewValid
+		? Math::Color(0.5f, 1.0f, 0.5f, 0.6f)  // 緑・半透明
+		: Math::Color(1.0f, 0.3f, 0.3f, 0.6f); // 赤・半透明
+
+	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spPreviewModel, mat, previewColor);
+
+	// 元のブレンドステートに戻す
+	context->OMSetBlendState(prevBlendState.Get(), prevBlendFactor, prevSampleMask);
+}
+
 void BlockGrabber::HandleGrabAndDrop(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat)
 {
 	if (GetAsyncKeyState('E') & 0x8000)
@@ -93,28 +137,9 @@ void BlockGrabber::HandleGrabAndDrop(const Math::Vector3& playerPos, const Math:
 			// 置く処理
 			if (m_spCarriedBlock)
 			{
-				Math::Vector3 rawForward = playerRotMat.Backward(); // ピッチ込みの向き
-
-				// 水平方向(ヨーのみ)
-				Math::Vector3 lookDir = rawForward;
-				lookDir.y = 0.0f;
-				lookDir.Normalize();
-
-				Math::Vector3 targetPos = playerPos + lookDir * m_holdDistance;
-
-				// UpdateCarriedPos と同じ pitchOffset の計算をここにも適用
-				float pitchFactor = rawForward.y;
-				constexpr float verticalRange = 30.0f; // UpdateCarriedPos と必ず同じ値にする
-				float pitchOffset = pitchFactor * verticalRange;
-
-				constexpr float baseHeightOffset = 0.0f; // UpdateCarriedPos と必ず同じ値にする
-				targetPos.y = playerPos.y + baseHeightOffset + pitchOffset;
-
-				// 重なり解消
-				ResolveOverlapWithBlocks(targetPos, m_spCarriedBlock);
+				Math::Vector3 targetPos = CalcTargetPos(playerPos, playerRotMat); // ★ 同じ関数を使う
 
 				constexpr float minY = BlockGridManager::GridSize * 0.5f;
-				if (targetPos.y < minY) targetPos.y = minY;
 				Math::Vector3 snappedPos = BlockGridManager::SnapToGrid(targetPos);
 				if (snappedPos.y < minY) snappedPos.y = minY;
 
@@ -180,24 +205,56 @@ void BlockGrabber::UpdateCarriedPos(const Math::Vector3& playerPos, const Math::
 {
 	if (!m_spCarriedBlock) return;
 
+	Math::Vector3 targetPos = CalcTargetPos(playerPos, playerRotMat);
+
+	constexpr float minY = BlockGridManager::GridSize * 0.5f;
+
+	Math::Vector3 snappedPreview = BlockGridManager::SnapToGrid(targetPos);
+	if (snappedPreview.y < minY) snappedPreview.y = minY;
+
+	m_previewPos = snappedPreview;
+	m_previewValid = !BlockGridManager::Instance().IsOccupied(snappedPreview);
+
+	m_spCarriedBlock->SetPos(targetPos);
+	//m_spCarriedBlock->SetPos(snappedPreview);
+}
+
+void BlockGrabber::HandleDistanceControl()
+{
+	if (!m_spCarriedBlock) return;
+
+	// Application からホイールの回転量を取得
+	int wheelValue = Application::Instance().GetMouseWheelValue();
+
+	if (wheelValue != 0)
+	{
+		// ホイール値を 120 (WHEEL_DELTA) で割って正規化
+		float scrollDelta = static_cast<float>(wheelValue) / 120.0f;
+
+		// 上回しで遠く(奥)、下回しで近く(手前)へ移動
+		m_holdDistance += scrollDelta * 2.5f; // 2.5f は移動スピードの設定
+
+		// 距離の制限（例: 10.0f ～ 60.0f の範囲に収める）
+		m_holdDistance = std::clamp(m_holdDistance, 10.0f, 60.0f);
+	}
+}
+
+Math::Vector3 BlockGrabber::CalcTargetPos(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat) const
+{
 	Math::Vector3 eyePos = playerPos;
 
-	Math::Vector3 rawForward = playerRotMat.Backward(); // ピッチ込みの向き
+	Math::Vector3 rawForward = playerRotMat.Backward();
 
-	// 水平方向(ヨーのみ)：前後・左右の位置決めに使う
 	Math::Vector3 lookDirFlat = rawForward;
 	lookDirFlat.y = 0.0f;
 	lookDirFlat.Normalize();
 
 	Math::Vector3 targetPos = eyePos + lookDirFlat * m_holdDistance;
 
-	// ピッチ成分(-1〜1程度)を高さの追加オフセットとして使う
-	//  rawForward.y は見上げると+方向、見下げると-方向に近い値になる
-	float pitchFactor = rawForward.y; // 正規化済みなのでおおよそ-1〜1
-	constexpr float verticalRange = 30.0f; // 上下に動かせる最大幅(お好みで調整)
+	float pitchFactor = rawForward.y;
+	constexpr float verticalRange = 30.0f;
 	float pitchOffset = pitchFactor * verticalRange;
 
-	// レイ判定は水平方向のまま(前後の壁チェック用)
 	KdCollider::RayInfo rayInfo;
 	rayInfo.m_pos = eyePos;
 	rayInfo.m_dir = lookDirFlat;
@@ -234,42 +291,16 @@ void BlockGrabber::UpdateCarriedPos(const Math::Vector3& playerPos, const Math::
 		targetPos = eyePos + lookDirFlat * adjustedDist;
 	}
 
-	// 高さ = 基準の高さ + ピッチによる可変オフセット
-	constexpr float baseHeightOffset = 0.0f; // 基準の高さ(目線あたり)
+	constexpr float baseHeightOffset = 0.0f;
 	targetPos.y = eyePos.y + baseHeightOffset + pitchOffset;
 
-	// 他の設置済みブロックとの重なりを解消(ピタッと張り付く)
-	ResolveOverlapWithBlocks(targetPos, m_spCarriedBlock);
+	Math::Vector3 oldPos = m_spCarriedBlock->GetPos();
+	targetPos = SlideMove(oldPos, targetPos, m_spCarriedBlock);
 
-	// プレイヤーとの最小距離を保証
 	ClampMinDistanceFromPlayer(targetPos, eyePos, lookDirFlat);
 
-	// 最低高度の制限（ここは今まで通り重要）
 	constexpr float minY = BlockGridManager::GridSize * 0.5f;
-	if (targetPos.y < minY)
-	{
-		targetPos.y = minY;
-	}
+	if (targetPos.y < minY) targetPos.y = minY;
 
-	m_spCarriedBlock->SetPos(targetPos);
-}
-
-void BlockGrabber::HandleDistanceControl()
-{
-	if (!m_spCarriedBlock) return;
-
-	// Application からホイールの回転量を取得
-	int wheelValue = Application::Instance().GetMouseWheelValue();
-
-	if (wheelValue != 0)
-	{
-		// ホイール値を 120 (WHEEL_DELTA) で割って正規化
-		float scrollDelta = static_cast<float>(wheelValue) / 120.0f;
-
-		// 上回しで遠く(奥)、下回しで近く(手前)へ移動
-		m_holdDistance += scrollDelta * 2.5f; // 2.5f は移動スピードの設定
-
-		// 距離の制限（例: 10.0f ～ 60.0f の範囲に収める）
-		m_holdDistance = std::clamp(m_holdDistance, 10.0f, 60.0f);
-	}
+	return targetPos;
 }

@@ -73,7 +73,7 @@ void Magicwand::Update()
 
 	// 銃口位置をデバック表示
 	Math::Vector3 muzzlePos = (m_localMuzzleMat * parentMat).Translation();
-	m_pDebugWire->AddDebugSphere(muzzlePos, 0.05f,kRedColor);
+	//m_pDebugWire->AddDebugSphere(muzzlePos, 0.05f,kRedColor);
 
 	// 弾発射
 	if (m_shotFlg)

@@ -13,9 +13,8 @@ void Player::Init()
 	// 地面から補正分上げる
 	m_pos.y += m_adjustHeight;
 
-	m_pDebugWire = std::make_unique<KdDebugWireFrame>();
-
 	m_upBlockGrabber = std::make_unique<BlockGrabber>();
+	m_upBlockGrabber->Init();
 }
 
 void Player::Update()
@@ -163,7 +162,14 @@ void Player::PostUpdate()
 		m_pos.y += m_adjustHeight;
 		m_gravity = 0;
 	}
+}
 
+void Player::DrawLit()
+{
+	if (m_upBlockGrabber)
+	{
+		m_upBlockGrabber->DrawPreview();
+	}
 }
 
 bool Player::IsCarryingBlock() const

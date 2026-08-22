@@ -12,6 +12,7 @@ public:
 	void Init()		  override;
 	void Update()	  override;
 	void PostUpdate() override;
+	void DrawLit()	  override;
 
 	// ブロックを保持しているかチェックする関数
 	bool IsCarryingBlock() const;

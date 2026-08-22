@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <wrl/client.h>
 
 class NormalBlock;
 
@@ -7,6 +8,8 @@ class BlockGrabber
 public:
 	BlockGrabber() = default;
 	~BlockGrabber() = default;
+
+	void Init();
 
 	// PlayerのUpdateから呼ばれる
 	void Update(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
@@ -17,12 +20,23 @@ public:
 	// 現在持っているブロックの座標を取得（持っていなければ判定不要なので呼び出し側でIsCarrying()チェック）
 	Math::Vector3 GetCarriedBlockPos() const;
 	
+	void DrawPreview();
+
 private:
 	void HandleGrabAndDrop(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
 	void UpdateCarriedPos(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
 	void HandleDistanceControl(); // ★ ホイール入力で距離を変更する処理
 
+	Math::Vector3 CalcTargetPos(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat) const;
+
+	// 設置プレビュー用
+	Math::Vector3 m_previewPos = Math::Vector3::Zero;
+	bool m_previewValid = false; // その位置に置けるか(占有されていないか)
+	std::shared_ptr<KdModelWork> m_spPreviewModel; // プレビュー表示用
+	Microsoft::WRL::ComPtr<ID3D11BlendState> m_alphaBlendState;
+
 	std::shared_ptr<NormalBlock> m_spCarriedBlock = nullptr;
+	
 	bool m_eKeyFlg = false;
 
 	// ブロックとの保持距離（初期値 30.0f）
