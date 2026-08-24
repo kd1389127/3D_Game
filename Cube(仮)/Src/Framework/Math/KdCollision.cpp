@@ -429,6 +429,152 @@ bool MeshIntersect(const KdMesh& mesh, const DirectX::BoundingSphere& sphere,
 	return isHit;
 }
 
+// ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### #####
+// BOX(AABB)の当たり判定
+// ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### #####
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// AABBの中心から指定方向(正規化済み)への「張り出し量」を求める(サポート関数)
+// 例：真横方向ならExtents.x、斜め方向なら3軸の加重和になる
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+static float BoxReachAlongDir(const DirectX::XMVECTOR& halfExtents, const DirectX::XMVECTOR& dirN)
+{
+	DirectX::XMVECTOR absDir = DirectX::XMVectorAbs(dirN);
+	return DirectX::XMVector3Dot(absDir, halfExtents).m128_f32[0];
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// BOXの情報を逆行列化する(Sphere版のInvertSphereInfoと同じ考え方)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+static void InvertBoxInfo(DirectX::XMVECTOR& boxPosInv, DirectX::XMVECTOR& objScale,
+	const DirectX::XMMATRIX& matrix, const DirectX::BoundingBox& box)
+{
+	DirectX::XMMATRIX invMat = XMMatrixInverse(0, matrix);
+	boxPosInv = XMVector3TransformCoord(XMLoadFloat3(&box.Center), invMat);
+
+	objScale.m128_f32[0] = DirectX::XMVector3Length(matrix.r[0]).m128_f32[0];
+	objScale.m128_f32[1] = DirectX::XMVector3Length(matrix.r[1]).m128_f32[0];
+	objScale.m128_f32[2] = DirectX::XMVector3Length(matrix.r[2]).m128_f32[0];
+	objScale.m128_f32[3] = 0;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// BOXとポリゴンの最近接点を元に接触しているかどうかを判定・押し出し(Sphere版のHitCheckAndPosUpdate相当)
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+static bool BoxHitCheckAndPosUpdate(DirectX::XMVECTOR& finalPos, DirectX::XMVECTOR& finalHitPos, std::vector<Math::Vector3>& finalFace,
+	const std::vector<Math::Vector3>& nearFace, const DirectX::XMVECTOR& nearPoint,
+	const DirectX::XMVECTOR& objScale, const DirectX::XMVECTOR& worldHalfExtents)
+{
+	// 最近接点→BOX中心 のベクトル(ローカル空間)
+	DirectX::XMVECTOR vToCenter = finalPos - nearPoint;
+
+	// ワールドスケールを反映した空間へ変換(Sphere版と同じ理由)
+	vToCenter *= objScale;
+
+	float dist = DirectX::XMVector3Length(vToCenter).m128_f32[0];
+
+	// ほぼ同一点(特異点)は今回のスコープ外として無視
+	if (dist < 1e-6f) { return false; }
+
+	DirectX::XMVECTOR dirN = vToCenter / dist;
+
+	// この方向にBOXがどれだけ張り出しているか
+	float boxReach = BoxReachAlongDir(worldHalfExtents, dirN);
+
+	// 届いていなければ当たっていない
+	if (dist > boxReach) { return false; }
+
+	// 押し戻しベクトル
+	DirectX::XMVECTOR vPush = dirN * (boxReach - dist);
+
+	// 拡縮を考慮した座標系へ戻す
+	vPush /= objScale;
+
+	finalPos += vPush;
+	finalHitPos = nearPoint;
+	finalFace = nearFace;
+
+	return true;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// BOXとの当たり判定結果をリザルトにセットする
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+static void SetBoxResult(CollisionMeshResult& result, bool isHit, const DirectX::XMVECTOR& hitPos,
+	const DirectX::XMVECTOR& finalPos, std::vector<Math::Vector3>& finalFace, const DirectX::XMVECTOR& beginPos)
+{
+	result.m_hit = isHit;
+	result.m_hitPos = hitPos;
+	result.m_hitDir = DirectX::XMVectorSubtract(finalPos, beginPos);
+	result.m_overlapDistance = DirectX::XMVector3Length(result.m_hitDir).m128_f32[0];
+	result.m_hitDir = DirectX::XMVector3Normalize(result.m_hitDir);
+
+	Math::Vector3 _normalV1 = finalFace[1] - finalFace[0];
+	Math::Vector3 _normalV2 = finalFace[2] - finalFace[0];
+	result.m_hitNDir = _normalV1.Cross(_normalV2);
+	result.m_hitNDir = DirectX::XMVector3Normalize(result.m_hitNDir);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// BOX(AABB)対メッシュの当たり判定本体
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+bool MeshIntersect(const KdMesh& mesh, const DirectX::BoundingBox& box,
+	const DirectX::XMMATRIX& matrix, CollisionMeshResult* pResult)
+{
+	//------------------------------------------
+	// ブロードフェイズ
+	//------------------------------------------
+	{
+		DirectX::BoundingBox aabb;
+		mesh.GetBoundingBox().Transform(aabb, matrix);
+
+		if (aabb.Intersects(box) == false) { return false; }
+	}
+
+	//------------------------------------------
+	// ナローフェイズ：BOXとメッシュとの詳細判定
+	//------------------------------------------
+	bool isHit = false;
+
+	const auto* pFaces = &mesh.GetFaces()[0];
+	size_t faceNum = mesh.GetFaces().size();
+	auto& vertices = mesh.GetVertexPositions();
+
+	DirectX::XMVECTOR			finalHitPos = {};
+	DirectX::XMVECTOR			finalPos = {};	// 各面に押されて最終的に到達するBOXの中心(ローカル空間)
+	std::vector<Math::Vector3>	finalFace = {};
+	DirectX::XMVECTOR			objScale = {};
+
+	InvertBoxInfo(finalPos, objScale, matrix, box);
+
+	// BOXの半径(ワールド空間の半サイズ)。※isOriented=falseの回転無しBOX前提
+	DirectX::XMVECTOR worldHalfExtents = XMLoadFloat3(&box.Extents);
+
+	for (UINT faceIdx = 0; faceIdx < faceNum; faceIdx++)
+	{
+		DirectX::XMVECTOR nearPoint;
+		const UINT* idx = pFaces[faceIdx].Idx;
+
+		KdPointToTriangle(finalPos, vertices[idx[0]], vertices[idx[1]], vertices[idx[2]], nearPoint);
+
+		isHit |= BoxHitCheckAndPosUpdate(finalPos, finalHitPos, finalFace,
+			{ vertices[idx[0]], vertices[idx[1]], vertices[idx[2]] }, nearPoint, objScale, worldHalfExtents);
+
+		if (!pResult && isHit) { return isHit; }
+	}
+
+	if (pResult && isHit)
+	{
+		SetBoxResult(*pResult, isHit, XMVector3TransformCoord(finalHitPos, matrix),
+			XMVector3TransformCoord(finalPos, matrix), finalFace, XMLoadFloat3(&box.Center));
+	}
+
+	return isHit;
+}
+
+
+
+
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 点 vs 面を形成する三角形との最近接点を求める
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

@@ -9,7 +9,7 @@ public:
 	Player();
 	~Player() override;
 
-	void Init()		  override;
+	void Init(const Math::Vector3& startPos);
 	void Update()	  override;
 	void PostUpdate() override;
 	void DrawLit()	  override;
@@ -21,6 +21,7 @@ private:
 
 	// 当たり判定
 	void ResolveWallCollsion();
+	void CheckGoal();
 
 	// 持っているブロックの中に入り込んでいたら押し出す
 	void ResolvePushOutFromCarriedBlock();

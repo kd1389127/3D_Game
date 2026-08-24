@@ -7,7 +7,8 @@ void NormalBlock::Init(const Math::Vector3& pos)
 	if (!m_spModel)
 	{
 		m_spModel = std::make_shared<KdModelWork>();
-		m_spModel->SetModelData("Asset/Models/Block/WoodenBox/Wooden_Box.gltf");
+		//m_spModel->SetModelData("Asset/Models/Block/WoodenBox/Wooden_Box.gltf");
+		m_spModel->SetModelData("Asset/Models/Block/RockBlock/RockBlock.gltf");
 	}
 
 	if (!m_pDebugWire)

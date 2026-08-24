@@ -118,6 +118,21 @@
     <Filter Include="Src\Application\GameObject\Character\Player\Component">
       <UniqueIdentifier>{4f55789c-69b5-4a77-bcda-4c4288a1d89a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\GameObject\UI">
+      <UniqueIdentifier>{fae94387-8702-434f-a89b-07ef286572d9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\GameObject\UI\Reticle">
+      <UniqueIdentifier>{201a60ed-546f-4213-9fa9-283057794949}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Scene\ResultScene">
+      <UniqueIdentifier>{8c0f58d1-09a5-47b1-b744-e82f7b0d0ea8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\GameObject\Map\Gimmick">
+      <UniqueIdentifier>{5eaf4621-e511-458a-80b9-24faa6c1f5ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\GameObject\Map\Gimmick\Goal">
+      <UniqueIdentifier>{bb50a948-df42-4169-b3be-14e5e249d412}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -327,6 +342,18 @@
     <ClInclude Include="Src\Application\GameObject\Character\Player\Component\BlockGrabber.h">
       <Filter>Src\Application\GameObject\Character\Player\Component</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\UI\Reticle\Reticle.h">
+      <Filter>Src\Application\GameObject\UI\Reticle</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Scene\ResultScene\ResultScene.h">
+      <Filter>Src\Application\Scene\ResultScene</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Map\Gimmick\Goal\Goal.h">
+      <Filter>Src\Application\GameObject\Map\Gimmick\Goal</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Scene\StageData.h">
+      <Filter>Src\Application\Scene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -502,6 +529,15 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\Character\Player\Component\BlockGrabber.cpp">
       <Filter>Src\Application\GameObject\Character\Player\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\UI\Reticle\Reticle.cpp">
+      <Filter>Src\Application\GameObject\UI\Reticle</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Scene\ResultScene\ResultScene.cpp">
+      <Filter>Src\Application\Scene\ResultScene</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Map\Gimmick\Goal\Goal.cpp">
+      <Filter>Src\Application\GameObject\Map\Gimmick\Goal</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

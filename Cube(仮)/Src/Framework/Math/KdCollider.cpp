@@ -712,10 +712,65 @@ bool KdModelCollision::Intersects(const DirectX::BoundingSphere& target, const M
 // 判定回数は メッシュの個数 x 各メッシュのポリゴン数 計算回数がモデルのデータ依存のため処理効率は不安定
 // 単純に計算回数が多くなる可能性があるため重くなりがち
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-bool KdModelCollision::Intersects(const DirectX::BoundingBox& /*target*/, const Math::Matrix& /*world*/, KdCollider::CollisionResult* /*pRes*/)
+bool KdModelCollision::Intersects(const DirectX::BoundingBox& target, const Math::Matrix& world, KdCollider::CollisionResult* pRes)
 {
-	// TODO: 当たり計算は各自必要に応じて拡張して下さい
-	return false;
+	if (!m_enable || !m_shape) { return false; }
+
+	std::shared_ptr<KdModelData> spModelData = m_shape->GetData();
+	if (!spModelData) { return false; }
+
+	const std::vector<KdModelData::Node>& dataNodes = spModelData->GetOriginalNodes();
+	const std::vector<KdModelWork::Node>& workNodes = m_shape->GetNodes();
+
+	// 各メッシュに押される用のBOX・押される毎に座標を更新する必要がある
+	DirectX::BoundingBox pushedBox = target;
+	Math::Vector3 pushedBoxCenter = DirectX::XMLoadFloat3(&pushedBox.Center);
+
+	bool isHit = false;
+	Math::Vector3 hitPos;
+	Math::Vector3 hitNDir;
+
+	for (int index : spModelData->GetCollisionMeshNodeIndices())
+	{
+		const KdModelData::Node& dataNode = dataNodes[index];
+		const KdModelWork::Node& workNode = workNodes[index];
+
+		if (!dataNode.m_spMesh) { continue; }
+
+		CollisionMeshResult tmpResult;
+		CollisionMeshResult* pTmpResult = pRes ? &tmpResult : nullptr;
+
+		if (!MeshIntersect(*dataNode.m_spMesh, pushedBox, workNode.m_worldTransform * world, pTmpResult))
+		{
+			continue;
+		}
+
+		if (!pRes) { return true; }
+
+		isHit = true;
+
+		// 重なった分押し戻す
+		pushedBoxCenter = DirectX::XMVectorAdd(pushedBoxCenter, DirectX::XMVectorScale(tmpResult.m_hitDir, tmpResult.m_overlapDistance));
+		DirectX::XMStoreFloat3(&pushedBox.Center, pushedBoxCenter);
+
+		hitPos = tmpResult.m_hitPos;
+
+		// Sphere版と同じ慣習に合わせ、押し出し方向をhitNDirとして記憶(面法線が欲しい場合はtmpResult.m_hitNDirに差し替え可)
+		hitNDir = tmpResult.m_hitDir;
+	}
+
+	if (pRes && isHit)
+	{
+		pRes->m_hitPos = hitPos;
+
+		pRes->m_hitDir = DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&pushedBox.Center), DirectX::XMLoadFloat3(&target.Center));
+		pRes->m_overlapDistance = DirectX::XMVector3Length(pRes->m_hitDir).m128_f32[0];
+		pRes->m_hitDir = DirectX::XMVector3Normalize(pRes->m_hitDir);
+
+		pRes->m_hitNDir = hitNDir;
+	}
+
+	return isHit;
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

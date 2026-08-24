@@ -5,14 +5,13 @@ void Ground::Init()
 	if (!m_spModel)
 	{
 		m_spModel = std::make_shared<KdModelWork>();
-		m_spModel->SetModelData("Asset/Models/Map/Ground/Terrain.gltf");
+		m_spModel->SetModelData("Asset/Models/Map/Map1/Map1.gltf");
 
 		m_pCollider = std::make_unique<KdCollider>();
-		m_pCollider->RegisterCollisionShape("Ground", m_spModel, KdCollider::TypeGround);
+		m_pCollider->RegisterCollisionShape("Ground", m_spModel, KdCollider::TypeGround | KdCollider::TypeBump);
 	}
 
-
-	Math::Matrix sclaeMat = Math::Matrix::CreateScale(3.0f);
+	Math::Matrix sclaeMat = Math::Matrix::CreateScale(30.0f);
 	m_mWorld = sclaeMat;
 }
 

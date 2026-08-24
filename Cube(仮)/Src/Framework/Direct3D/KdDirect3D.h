@@ -172,7 +172,7 @@ private:
 	int				m_windowWidth				= 1280;
 	int				m_windowHeight				= 780;
 
-	Math::Color		m_backBafferClearColor		= kBlueColor;
+	Math::Color		m_backBafferClearColor		= kGrayColor;
 
 	// バッファ
 	std::shared_ptr<KdTexture>	m_backBuffer	= nullptr;		// バックバッファ

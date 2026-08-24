@@ -11,6 +11,7 @@ public :
 	{
 		Title,
 		Game,
+		Result,
 	};
 
 	void PreUpdate();
@@ -34,6 +35,9 @@ public :
 	// 現在のシーンにオブジェクトを追加
 	void AddObject(const std::shared_ptr<KdGameObject>& _obj);
 
+	int GetCurrentStage() const { return m_currentStage; }
+	void SetCurrentStage(int stage) { m_currentStage = stage; }
+
 private :
 
 	// マネージャーの初期化
@@ -51,10 +55,12 @@ private :
 	std::shared_ptr<BaseScene> m_currentScene = nullptr;
 
 	// 現在のシーンの種類を保持している変数
-	SceneType m_currentSceneType = SceneType::Game;
+	SceneType m_currentSceneType = SceneType::Title;
 	
 	// 次のシーンの種類を保持している変数
 	SceneType m_nextSceneType = m_currentSceneType;
+
+	int m_currentStage = 0;
 
 private:
 
