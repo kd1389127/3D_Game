@@ -7,10 +7,10 @@
 
 void SceneManager::PreUpdate()
 {
-	// シーン切替
-	if (m_currentSceneType != m_nextSceneType)
+	if (m_currentSceneType != m_nextSceneType || m_forceReload)
 	{
 		ChangeScene(m_nextSceneType);
+		m_forceReload = false;
 	}
 
 	m_currentScene->PreUpdate();

@@ -281,6 +281,7 @@
     <ClInclude Include="Src\Application\GameObject\Camera\TPSCamera\TPSCamera.h" />
     <ClInclude Include="Src\Application\GameObject\Character\Player\Component\BlockGrabber.h" />
     <ClInclude Include="Src\Application\GameObject\Character\Player\Player.h" />
+    <ClInclude Include="Src\Application\GameObject\Map\Gimmick\Cage\Cage.h" />
     <ClInclude Include="Src\Application\GameObject\Map\Gimmick\Goal\Goal.h" />
     <ClInclude Include="Src\Application\GameObject\Map\Ground\Ground.h" />
     <ClInclude Include="Src\Application\GameObject\UI\Reticle\Reticle.h" />
@@ -348,6 +349,7 @@
     <ClCompile Include="Src\Application\GameObject\Camera\TPSCamera\TPSCamera.cpp" />
     <ClCompile Include="Src\Application\GameObject\Character\Player\Component\BlockGrabber.cpp" />
     <ClCompile Include="Src\Application\GameObject\Character\Player\Player.cpp" />
+    <ClCompile Include="Src\Application\GameObject\Map\Gimmick\Cage\Cage.cpp" />
     <ClCompile Include="Src\Application\GameObject\Map\Gimmick\Goal\Goal.cpp" />
     <ClCompile Include="Src\Application\GameObject\Map\Ground\Ground.cpp" />
     <ClCompile Include="Src\Application\GameObject\UI\Reticle\Reticle.cpp" />

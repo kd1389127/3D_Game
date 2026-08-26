@@ -1,6 +1,7 @@
 ﻿#include "GameScene.h"
 #include "../SceneManager.h"
 #include "../StageData.h"
+#include "../../GameObject/Block/BlockGridManager.h"
 
 #include "../../GameObject/Camera/FPSCamera/FPSCamera.h"
 #include "../../GameObject/Map/Ground/Ground.h"
@@ -13,15 +14,16 @@ void GameScene::Event()
 {
 	if (GetAsyncKeyState('T') & 0x8000)
 	{
-		SceneManager::Instance().SetNextScene
-		(
-			SceneManager::SceneType::Title
-		);
+		SceneManager::Instance().SetCurrentStage(0); // タイトルに戻る＝進行状況をリセット
+		SceneManager::Instance().SetNextScene(SceneManager::SceneType::Title);
 	}
 }
 
 void GameScene::Init()
 {
+	// 前のステージで置かれたブロックの占有情報をクリア
+	BlockGridManager::Instance().Clear();
+
 	// 現在のステージ情報を取得
 	int stage = SceneManager::Instance().GetCurrentStage();
 	const StageData& data = g_stageTable[stage];
@@ -29,7 +31,7 @@ void GameScene::Init()
 	// Map(地面)
 	std::shared_ptr<Ground> ground;
 	ground = std::make_shared<Ground>();
-	ground->Init();
+	ground->Init(data.mapModelPath, data.mapScale);
 	m_objList.push_back(ground);
 
 	// Player

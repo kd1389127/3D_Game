@@ -133,6 +133,9 @@
     <Filter Include="Src\Application\GameObject\Map\Gimmick\Goal">
       <UniqueIdentifier>{bb50a948-df42-4169-b3be-14e5e249d412}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\GameObject\Map\Gimmick\Cage">
+      <UniqueIdentifier>{39beb97e-5762-48a5-9df9-350083c4a0a6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -354,6 +357,9 @@
     <ClInclude Include="Src\Application\Scene\StageData.h">
       <Filter>Src\Application\Scene</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Map\Gimmick\Cage\Cage.h">
+      <Filter>Src\Application\GameObject\Map\Gimmick\Cage</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -538,6 +544,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\Map\Gimmick\Goal\Goal.cpp">
       <Filter>Src\Application\GameObject\Map\Gimmick\Goal</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Map\Gimmick\Cage\Cage.cpp">
+      <Filter>Src\Application\GameObject\Map\Gimmick\Cage</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -49,6 +49,12 @@ public:
 	{
 		m_occupied.erase(ToKey(snappedPos));
 	}
+	
+	// ステージを読み込む際に前回置いたblockを無くす
+	void Clear()
+	{
+		m_occupied.clear();
+	}
 
 	// 法線ベクトル(斜めを含む)を、一番近いXYZ軸方向(±1方向のどれか)に丸める
 	// 例：弾が斜めの角に当たっても、「一番近い面」の向きとして扱いたい時に使う

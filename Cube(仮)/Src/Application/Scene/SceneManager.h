@@ -38,6 +38,8 @@ public :
 	int GetCurrentStage() const { return m_currentStage; }
 	void SetCurrentStage(int stage) { m_currentStage = stage; }
 
+	void ReloadScene() { m_forceReload = true; } // 同じ種類のシーンでも強制的に作り直す
+
 private :
 
 	// マネージャーの初期化
@@ -61,6 +63,8 @@ private :
 	SceneType m_nextSceneType = m_currentSceneType;
 
 	int m_currentStage = 0;
+
+	bool m_forceReload = false;
 
 private:
 

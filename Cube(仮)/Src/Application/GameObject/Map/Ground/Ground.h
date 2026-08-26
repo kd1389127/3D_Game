@@ -7,7 +7,7 @@ public:
 	Ground()				{}
 	~Ground()		override{}
 
-	void Init()		override;
+	void Init(const std::string& modelPath, float scale);
 	void DrawLit()	override;
 
 private:

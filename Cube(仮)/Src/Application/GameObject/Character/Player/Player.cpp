@@ -303,14 +303,13 @@ void Player::CheckGoal()
 
 		if (nextStage < g_stageCount)
 		{
-			// まだ次のステージが用意されているなら、ステージ番号を進めて
-			// もう一度GameSceneを作り直す(＝次のステージのデータで再配置される)
 			SceneManager::Instance().SetCurrentStage(nextStage);
 			SceneManager::Instance().SetNextScene(SceneManager::SceneType::Game);
+			SceneManager::Instance().ReloadScene();		// 型がGameのままでも強制的に作り直す
 		}
 		else
 		{
-			// 用意されている最後のステージまでクリアしたら、リザルト画面へ
+			SceneManager::Instance().SetCurrentStage(0); // 全ステージクリア→次は最初からなのでリセット
 			SceneManager::Instance().SetNextScene(SceneManager::SceneType::Result);
 		}
 	}
