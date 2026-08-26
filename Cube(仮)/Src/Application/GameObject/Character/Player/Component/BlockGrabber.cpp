@@ -86,8 +86,10 @@ namespace
 }
 
 // 初期化：プレビュー用モデルの読み込みと、半透明描画のための設定(ブレンドステート)を準備
-void BlockGrabber::Init()
+void BlockGrabber::Init(float groundHeight)
 {
+	m_groundHeight = groundHeight;
+
 	m_spPreviewModel = std::make_shared<KdModelWork>();
 	m_spPreviewModel->SetModelData("Asset/Models/Block/RockBlock/RockBlock.gltf");
 
@@ -112,6 +114,11 @@ void BlockGrabber::Update(const Math::Vector3& playerPos, const Math::Matrix& pl
 	HandleGrabAndDrop(playerPos, playerRotMat);
 	UpdateCarriedPos(playerPos, playerRotMat);
 	HandleDistanceControl(); // マウスホイール処理
+}
+
+float BlockGrabber::GetMinY() const
+{
+	return m_groundHeight + BlockGridManager::GridSize * 0.5f;
 }
 
 // 今持っているブロックの座標を返す(何も持っていなければ原点を返す)
@@ -167,9 +174,9 @@ void BlockGrabber::HandleGrabAndDrop(const Math::Vector3& playerPos, const Math:
 			{
 				Math::Vector3 targetPos = CalcTargetPos(playerPos, playerRotMat);
 
-				constexpr float minY = BlockGridManager::GridSize * 0.5f;
-				Math::Vector3 snappedPos = BlockGridManager::SnapToGrid(targetPos);
-				if (snappedPos.y < minY) snappedPos.y = minY; // 地面より下に置かれないようにする
+				const float minY = GetMinY();
+				Math::Vector3 snappedPos = BlockGridManager::Instance().SnapToGrid(targetPos);
+				if (snappedPos.y < minY) snappedPos.y = minY;
 
 				// そのマスが空いていれば実際に設置する
 				if (!BlockGridManager::Instance().IsOccupied(snappedPos))
@@ -222,7 +229,7 @@ void BlockGrabber::HandleGrabAndDrop(const Math::Vector3& playerPos, const Math:
 					m_holdDistance = 30.0f; // 持ち上げた瞬間の保持距離(初期値)
 
 					// マス目管理から「このマスはもう埋まっていない」ことにする(持ち上げたので)
-					Math::Vector3 snappedPos = BlockGridManager::SnapToGrid(targetBlock->GetPos());
+					Math::Vector3 snappedPos = BlockGridManager::Instance().SnapToGrid(targetBlock->GetPos());
 					BlockGridManager::Instance().Unregister(snappedPos);
 
 					m_spCarriedBlock->SetCarried(true);
@@ -244,10 +251,10 @@ void BlockGrabber::UpdateCarriedPos(const Math::Vector3& playerPos, const Math::
 
 	Math::Vector3 targetPos = CalcTargetPos(playerPos, playerRotMat);
 
-	constexpr float minY = BlockGridManager::GridSize * 0.5f;
+	const float minY = GetMinY();
 
 	// 「置いたらここに置かれる」位置(グリッドにスナップした位置)を計算
-	Math::Vector3 snappedPreview = BlockGridManager::SnapToGrid(targetPos);
+	Math::Vector3 snappedPreview = BlockGridManager::Instance().SnapToGrid(targetPos);
 	if (snappedPreview.y < minY) snappedPreview.y = minY;
 
 	m_previewPos = snappedPreview;
@@ -354,7 +361,7 @@ Math::Vector3 BlockGrabber::CalcTargetPos(const Math::Vector3& playerPos, const 
 	ClampMinDistanceFromPlayer(targetPos, eyePos, lookDirFlat);
 
 	// 最後に、地面より下に潜らないよう下限を保証
-	constexpr float minY = BlockGridManager::GridSize * 0.5f;
+	const float minY = GetMinY();
 	if (targetPos.y < minY) targetPos.y = minY;
 
 	return targetPos;

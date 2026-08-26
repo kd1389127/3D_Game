@@ -17,9 +17,15 @@ public:
 		return inst;
 	}
 
+	// ステージ切り替え時にGameScene::Initから呼ぶ：そのステージの地面の高さをグリッドの基準にする
+	void SetGroundHeight(float groundHeight)
+	{
+		m_groundHeight = groundHeight;
+	}
+	
 	// 自由な座標(小数)を、一番近いマスの中心座標に丸める(スナップ)
 	// 例：(9.8, 4.3, -3.1) → 一番近いマスの中心座標に変換
-	static Math::Vector3 SnapToGrid(const Math::Vector3& pos)
+	Math::Vector3 SnapToGrid(const Math::Vector3& pos)
 	{
 		constexpr float halfGrid = GridSize * 0.5f;
 
@@ -27,7 +33,7 @@ public:
 		(
 			std::round(pos.x / GridSize) * GridSize,
 			// Yだけ「マスの中心が地面から半マス浮いた位置」になるようオフセットしてから丸めている
-			std::round((pos.y - halfGrid) / GridSize) * GridSize + halfGrid,
+			std::round((pos.y - m_groundHeight - halfGrid) / GridSize) * GridSize + halfGrid + m_groundHeight,
 			std::round(pos.z / GridSize) * GridSize
 		);
 	}
@@ -71,14 +77,14 @@ public:
 private:
 	// 座標(小数)を、マス目上の「整数の住所」に変換する(重複チェック用のキー)
 	// 同じマスなら必ず同じ(x,y,z)の組になるようにしている
-	static std::tuple<int, int, int> ToKey(const Math::Vector3& pos)
+	std::tuple<int, int, int> ToKey(const Math::Vector3& pos) const
 	{
 		constexpr float halfGrid = GridSize * 0.5f;
 
 		return
 		{
 			(int)std::round(pos.x / GridSize),
-			(int)std::round((pos.y - halfGrid) / GridSize),
+			(int)std::round((pos.y - m_groundHeight - halfGrid) / GridSize),
 			(int)std::round(pos.z / GridSize)
 		};
 	}
@@ -96,4 +102,5 @@ private:
 
 	// 「使用中のマス」を全部記録しておくコンテナ
 	std::unordered_set<std::tuple<int, int, int>, KeyHash> m_occupied;
+	float m_groundHeight = 0.0f;
 };

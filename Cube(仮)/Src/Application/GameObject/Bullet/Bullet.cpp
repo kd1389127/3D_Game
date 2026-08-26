@@ -41,7 +41,7 @@ void Bullet::Update()
 		Math::Vector3 targetCellPos = m_targetPos + axisNormal * (BlockGridManager::GridSize * 0.5f + 0.01f);
 		
 		// 3. その位置をそのまま最寄りのグリッドの中心にスナップさせる
-		Math::Vector3 newCell = BlockGridManager::SnapToGrid(targetCellPos);
+		Math::Vector3 newCell = BlockGridManager::Instance().SnapToGrid(targetCellPos);
 
 		// 4. 重複がなければブロックを生成
 		if (!BlockGridManager::Instance().IsOccupied(newCell))

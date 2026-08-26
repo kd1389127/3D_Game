@@ -2,6 +2,7 @@
 #include <wrl/client.h>
 
 class NormalBlock;
+class BlockGridManager;
 
 class BlockGrabber
 {
@@ -9,13 +10,15 @@ public:
 	BlockGrabber() = default;
 	~BlockGrabber() = default;
 
-	void Init();
+	void Init(float groundHeight = 0.0f);
 
 	// PlayerのUpdateから呼ばれる
 	void Update(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
 
 	// 現在ブロックを持っているか？
 	bool IsCarrying() const { return m_spCarriedBlock != nullptr; }
+
+	float GetMinY() const;   // ← 中身は書かず、宣言だけにする
 
 	// 現在持っているブロックの座標を取得（持っていなければ判定不要なので呼び出し側でIsCarrying()チェック）
 	Math::Vector3 GetCarriedBlockPos() const;
@@ -41,4 +44,6 @@ private:
 
 	// ブロックとの保持距離（初期値 30.0f）
 	float m_holdDistance = 30.0f;
+
+	float m_groundHeight = 0.0f;
 };

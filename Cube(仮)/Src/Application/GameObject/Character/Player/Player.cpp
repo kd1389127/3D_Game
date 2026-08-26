@@ -9,15 +9,13 @@ Player::Player() = default;
 Player::~Player() = default;
 
 // 初期化：ステージごとの開始位置(startPos)を受け取ってセットする
-void Player::Init(const Math::Vector3& startPos)
+void Player::Init(const Math::Vector3& startPos, float groundHeight)
 {
 	m_pos = startPos;
-
-	// m_posは「頭寄りの座標」として扱いたいので、地面の高さから補正分だけ持ち上げておく
 	m_pos.y += m_adjustHeight;
 
 	m_upBlockGrabber = std::make_unique<BlockGrabber>();
-	m_upBlockGrabber->Init();
+	m_upBlockGrabber->Init(groundHeight); // ← groundHeightを渡す
 }
 
 // 毎フレームの更新：入力受付・移動・重力・ゴール判定などをまとめて行う

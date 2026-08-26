@@ -9,7 +9,7 @@ public:
 	Player();
 	~Player() override;
 
-	void Init(const Math::Vector3& startPos);
+	void Init(const Math::Vector3& startPos, float groundHeight = 0.0f);
 	void Update()	  override;
 	void PostUpdate() override;
 	void DrawLit()	  override;

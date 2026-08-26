@@ -28,6 +28,10 @@ void GameScene::Init()
 	int stage = SceneManager::Instance().GetCurrentStage();
 	const StageData& data = g_stageTable[stage];
 
+	// ステージ切り替え時：前ステージの占有情報をクリアし、今ステージの地面の高さをグリッド基準にする
+	BlockGridManager::Instance().Clear();
+	BlockGridManager::Instance().SetGroundHeight(data.groundHeight);
+	
 	// Map(地面)
 	std::shared_ptr<Ground> ground;
 	ground = std::make_shared<Ground>();
@@ -37,7 +41,7 @@ void GameScene::Init()
 	// Player
 	std::shared_ptr<Player> player;
 	player = std::make_shared<Player>();
-	player->Init(data.playerStartPos);
+	player->Init(data.playerStartPos, data.groundHeight);
 	m_objList.push_back(player);
 
 	// 魔法の杖
