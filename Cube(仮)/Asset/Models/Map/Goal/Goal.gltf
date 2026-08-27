@@ -3,10 +3,6 @@
 		"generator":"Khronos glTF Blender I/O v5.1.19",
 		"version":"2.0"
 	},
-	"extensionsUsed":[
-		"KHR_materials_specular",
-		"KHR_materials_ior"
-	],
 	"scene":0,
 	"scenes":[
 		{
@@ -19,30 +15,23 @@
 	"nodes":[
 		{
 			"mesh":0,
-			"name":"object1"
+			"name":"\u5186\u67f1",
+			"scale":[
+				0.17470760643482208,
+				0.278526246547699,
+				0.17470760643482208
+			]
 		}
 	],
 	"materials":[
 		{
 			"doubleSided":true,
-			"extensions":{
-				"KHR_materials_specular":{
-					"specularColorFactor":[
-						2.0,
-						2.0,
-						2.0
-					]
-				},
-				"KHR_materials_ior":{
-					"ior":1
-				}
-			},
-			"name":"Iron",
+			"name":"\u30de\u30c6\u30ea\u30a2\u30eb.001",
 			"pbrMetallicRoughness":{
 				"baseColorFactor":[
-					0.03486204892396927,
-					0.03486204892396927,
-					0.03486204892396927,
+					0.00020570984634105116,
+					0.02649831399321556,
+					0.8000229597091675,
 					1
 				],
 				"metallicFactor":0
@@ -51,7 +40,7 @@
 	],
 	"meshes":[
 		{
-			"name":"object1",
+			"name":"\u5186\u67f1",
 			"primitives":[
 				{
 					"attributes":{
@@ -69,68 +58,68 @@
 		{
 			"bufferView":0,
 			"componentType":5126,
-			"count":316,
+			"count":130,
 			"max":[
-				0.46904444694519043,
-				0.8999999761581421,
-				0.018924329429864883
+				1,
+				1,
+				1
 			],
 			"min":[
-				-0.46904441714286804,
-				-2.9802322387695312e-08,
-				-0.031075719743967056
+				-1,
+				-1,
+				-1
 			],
 			"type":"VEC3"
 		},
 		{
 			"bufferView":1,
 			"componentType":5126,
-			"count":316,
+			"count":130,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":2,
 			"componentType":5126,
-			"count":316,
+			"count":130,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":3,
 			"componentType":5123,
-			"count":663,
+			"count":372,
 			"type":"SCALAR"
 		}
 	],
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":3792,
+			"byteLength":1560,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":3792,
-			"byteOffset":3792,
+			"byteLength":1560,
+			"byteOffset":1560,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":2528,
-			"byteOffset":7584,
+			"byteLength":1040,
+			"byteOffset":3120,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":1326,
-			"byteOffset":10112,
+			"byteLength":744,
+			"byteOffset":4160,
 			"target":34963
 		}
 	],
 	"buffers":[
 		{
-			"byteLength":11440,
-			"uri":"Cage.bin"
+			"byteLength":4904,
+			"uri":"Goal.bin"
 		}
 	]
 }

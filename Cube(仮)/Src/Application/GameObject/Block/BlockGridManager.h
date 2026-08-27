@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include <unordered_set>
+#include <unordered_map>
 #include <cmath>
 
 // マップ上を「マス目(グリッド)」で管理するためのクラス
@@ -7,6 +7,13 @@
 class BlockGridManager
 {
 public:
+	// 置かれているブロックの種類
+	enum class BlockKind
+	{
+		Normal,		// 弾で生成する通常ブロック
+		GimmickKey	// スイッチ用のギミック専用ブロック
+	};
+
 	// 1マスのサイズ(ブロック1個分の大きさに合わせてある)
 	static constexpr float GridSize = 8.0f;
 
@@ -44,10 +51,19 @@ public:
 		return m_occupied.count(ToKey(snappedPos)) > 0;
 	}
 
-	// そのマスを「使用中」として記録する(ブロックを置いた時に呼ぶ)
-	void Register(const Math::Vector3& snappedPos)
+	// そのマスに置かれているブロックがGimmickKeyかどうかチェック
+	// (Switchが自分の真上のマスを毎フレーム調べるために使う)
+	bool IsGimmickBlockAt(const Math::Vector3& snappedPos) const
 	{
-		m_occupied.insert(ToKey(snappedPos));
+		auto it = m_occupied.find(ToKey(snappedPos));
+		return it != m_occupied.end() && it->second == BlockKind::GimmickKey;
+	}
+
+	// そのマスを「使用中」として記録する(ブロックを置いた時に呼ぶ)
+	// kindを省略した場合は従来通りNormalとして扱われる
+	void Register(const Math::Vector3& snappedPos, BlockKind kind = BlockKind::Normal)
+	{
+		m_occupied[ToKey(snappedPos)] = kind;
 	}
 
 	// そのマスの「使用中」記録を消す(ブロックを持ち上げた時に呼ぶ)
@@ -101,6 +117,6 @@ private:
 	};
 
 	// 「使用中のマス」を全部記録しておくコンテナ
-	std::unordered_set<std::tuple<int, int, int>, KeyHash> m_occupied;
+	std::unordered_map<std::tuple<int, int, int>, BlockKind, KeyHash> m_occupied;
 	float m_groundHeight = 0.0f;
 };

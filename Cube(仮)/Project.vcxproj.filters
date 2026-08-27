@@ -136,6 +136,12 @@
     <Filter Include="Src\Application\GameObject\Map\Gimmick\Cage">
       <UniqueIdentifier>{39beb97e-5762-48a5-9df9-350083c4a0a6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\GameObject\Map\Gimmick\Switch">
+      <UniqueIdentifier>{c0f52794-777d-4954-b99c-f71bf64b40de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\GameObject\Block\GimmickBlock">
+      <UniqueIdentifier>{830ad777-ef84-4201-97a0-4b5c4e534b11}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -360,6 +366,12 @@
     <ClInclude Include="Src\Application\GameObject\Map\Gimmick\Cage\Cage.h">
       <Filter>Src\Application\GameObject\Map\Gimmick\Cage</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Map\Gimmick\Switch\Switch.h">
+      <Filter>Src\Application\GameObject\Map\Gimmick\Switch</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Block\GimmickBlock\GimmickBlock.h">
+      <Filter>Src\Application\GameObject\Block\GimmickBlock</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -547,6 +559,12 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\Map\Gimmick\Cage\Cage.cpp">
       <Filter>Src\Application\GameObject\Map\Gimmick\Cage</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Map\Gimmick\Switch\Switch.cpp">
+      <Filter>Src\Application\GameObject\Map\Gimmick\Switch</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Block\GimmickBlock\GimmickBlock.cpp">
+      <Filter>Src\Application\GameObject\Block\GimmickBlock</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

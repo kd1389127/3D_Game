@@ -1,7 +1,5 @@
 ﻿#include "NormalBlock.h"
 
-#include "../../../Scene/SceneManager.h"
-
 void NormalBlock::Init(const Math::Vector3& pos)
 {
 	if (!m_spModel)

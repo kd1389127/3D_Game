@@ -274,6 +274,7 @@
     <ClInclude Include="..\Library\tinygltf\stb_image_write.h" />
     <ClInclude Include="..\Library\tinygltf\tiny_gltf.h" />
     <ClInclude Include="Src\Application\GameObject\Block\BlockGridManager.h" />
+    <ClInclude Include="Src\Application\GameObject\Block\GimmickBlock\GimmickBlock.h" />
     <ClInclude Include="Src\Application\GameObject\Block\NormalBlock\NormalBlock.h" />
     <ClInclude Include="Src\Application\GameObject\Bullet\Bullet.h" />
     <ClInclude Include="Src\Application\GameObject\Camera\CameraBase.h" />
@@ -283,6 +284,7 @@
     <ClInclude Include="Src\Application\GameObject\Character\Player\Player.h" />
     <ClInclude Include="Src\Application\GameObject\Map\Gimmick\Cage\Cage.h" />
     <ClInclude Include="Src\Application\GameObject\Map\Gimmick\Goal\Goal.h" />
+    <ClInclude Include="Src\Application\GameObject\Map\Gimmick\Switch\Switch.h" />
     <ClInclude Include="Src\Application\GameObject\Map\Ground\Ground.h" />
     <ClInclude Include="Src\Application\GameObject\UI\Reticle\Reticle.h" />
     <ClInclude Include="Src\Application\GameObject\Weapon\Magicwand\Magicwand.h" />
@@ -342,6 +344,7 @@
     <ClCompile Include="..\Library\imgui\imgui_stdlib.cpp" />
     <ClCompile Include="..\Library\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\Library\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Src\Application\GameObject\Block\GimmickBlock\GimmickBlock.cpp" />
     <ClCompile Include="Src\Application\GameObject\Block\NormalBlock\NormalBlock.cpp" />
     <ClCompile Include="Src\Application\GameObject\Bullet\Bullet.cpp" />
     <ClCompile Include="Src\Application\GameObject\Camera\CameraBase.cpp" />
@@ -351,6 +354,7 @@
     <ClCompile Include="Src\Application\GameObject\Character\Player\Player.cpp" />
     <ClCompile Include="Src\Application\GameObject\Map\Gimmick\Cage\Cage.cpp" />
     <ClCompile Include="Src\Application\GameObject\Map\Gimmick\Goal\Goal.cpp" />
+    <ClCompile Include="Src\Application\GameObject\Map\Gimmick\Switch\Switch.cpp" />
     <ClCompile Include="Src\Application\GameObject\Map\Ground\Ground.cpp" />
     <ClCompile Include="Src\Application\GameObject\UI\Reticle\Reticle.cpp" />
     <ClCompile Include="Src\Application\GameObject\Weapon\Magicwand\Magicwand.cpp" />
