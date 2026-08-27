@@ -18,7 +18,8 @@ void Switch::Update()
 {
 	// 自分の真上のマスをチェックし、GimmickBlockが乗っているかどうかで
 	// オン/オフを毎フレーム切り替える(乗せている間だけオン)
-	Math::Vector3 checkPos = GetPos() + Math::Vector3(0.0f, BlockGridManager::GridSize, 0.0f);
+	// 地面に置かれたブロックが実際に収まるセル(半マス分上)をチェックする
+	Math::Vector3 checkPos = GetPos() + Math::Vector3(0.0f, BlockGridManager::GridSize * 0.5f, 0.0f);
 	Math::Vector3 snapped = BlockGridManager::Instance().SnapToGrid(checkPos);
 
 	m_isActive = BlockGridManager::Instance().IsGimmickBlockAt(snapped);

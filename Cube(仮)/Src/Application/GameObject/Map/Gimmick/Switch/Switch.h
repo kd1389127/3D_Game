@@ -19,4 +19,6 @@ private:
 	std::shared_ptr<KdModelWork> m_spModel = nullptr;
 
 	bool m_isActive = false;
+
+	Math::Vector3 m_debugCheckPos = Math::Vector3::Zero; //判定位置保持用
 };

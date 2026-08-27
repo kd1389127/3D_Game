@@ -3,6 +3,7 @@
 
 class NormalBlock;
 class BlockGridManager;
+class IGrabbable;
 
 class BlockGrabber
 {
@@ -35,11 +36,13 @@ private:
 	// 設置プレビュー用
 	Math::Vector3 m_previewPos = Math::Vector3::Zero;
 	bool m_previewValid = false; // その位置に置けるか(占有されていないか)
-	std::shared_ptr<KdModelWork> m_spPreviewModel; // プレビュー表示用
+	std::shared_ptr<KdModelWork> m_spNormalPreviewModel;  // 通常ブロック用プレビュー
+	std::shared_ptr<KdModelWork> m_spGimmickPreviewModel; // ギミックブロック用プレビュー
+	std::shared_ptr<KdModelWork> m_spActivePreviewModel;  // 今表示すべきプレビュー(どちらかを指す)
 	Microsoft::WRL::ComPtr<ID3D11BlendState> m_alphaBlendState;
 
-	std::shared_ptr<NormalBlock> m_spCarriedBlock = nullptr;
-	
+	std::shared_ptr<KdGameObject> m_spCarriedBlock = nullptr;
+
 	bool m_eKeyFlg = false;
 
 	// ブロックとの保持距離（初期値 30.0f）

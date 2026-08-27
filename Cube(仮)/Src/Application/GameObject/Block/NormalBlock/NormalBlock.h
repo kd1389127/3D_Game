@@ -1,5 +1,8 @@
 ﻿#pragma once
-class NormalBlock : public KdGameObject
+
+#include "../Grabbable.h"
+
+class NormalBlock : public KdGameObject, public IGrabbable
 {
 public:
 
@@ -12,6 +15,10 @@ public:
 
 	void SetCarried(bool isCarried);
 	bool IsCarried() const { return m_isCarried; }
+	BlockGridManager::BlockKind GetBlockKind() const override
+	{
+		return BlockGridManager::BlockKind::Normal;
+	}
 
 private:
 

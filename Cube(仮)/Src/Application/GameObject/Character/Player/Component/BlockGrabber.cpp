@@ -8,18 +8,16 @@ namespace
 {
 	// 指定した座標(pos)に、他のブロックが重なっていないかチェックする
 	// ignoreBlock ＝ 今動かそうとしている本人のブロック(自分自身とは比較しない)
-	bool OverlapsAnyBlock(const Math::Vector3& pos, const std::shared_ptr<NormalBlock>& ignoreBlock)
+	bool OverlapsAnyBlock(const Math::Vector3& pos, const std::shared_ptr<KdGameObject>& ignoreBlock)
 	{
-		constexpr float blockSize = BlockGridManager::GridSize; // 8.0f
+		constexpr float blockSize = BlockGridManager::GridSize;
 
 		for (auto& obj : SceneManager::Instance().GetObjList())
 		{
-			auto block = std::dynamic_pointer_cast<NormalBlock>(obj);
-			// ブロックじゃない/自分自身/今持ち運び中のブロックは比較対象から除外
-			if (!block || block == ignoreBlock || block->IsCarried()) continue;
+			auto grabbable = std::dynamic_pointer_cast<IGrabbable>(obj);
+			if (!grabbable || obj == ignoreBlock || grabbable->IsCarried()) continue;
 
-			// XYZそれぞれの距離差が1マス分未満なら「重なっている」とみなす(簡易的な箱同士の判定)
-			Math::Vector3 diff = pos - block->GetPos();
+			Math::Vector3 diff = pos - obj->GetPos();
 			if (fabsf(diff.x) < blockSize && fabsf(diff.y) < blockSize && fabsf(diff.z) < blockSize)
 				return true;
 		}
@@ -33,7 +31,7 @@ namespace
 	// 壁際を滑るように移動できるようにしている(いわゆる「スライド移動」)
 	// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
 	Math::Vector3 SlideMove(const Math::Vector3& oldPos, const Math::Vector3& desiredPos,
-		const std::shared_ptr<NormalBlock>& ignoreBlock)
+		const std::shared_ptr<KdGameObject>& ignoreBlock)
 	{
 		Math::Vector3 result = oldPos;
 
@@ -90,8 +88,14 @@ void BlockGrabber::Init(float groundHeight)
 {
 	m_groundHeight = groundHeight;
 
-	m_spPreviewModel = std::make_shared<KdModelWork>();
-	m_spPreviewModel->SetModelData("Asset/Models/Block/RockBlock/RockBlock.gltf");
+	m_spNormalPreviewModel = std::make_shared<KdModelWork>();
+	m_spNormalPreviewModel->SetModelData("Asset/Models/Block/RockBlock/RockBlock.gltf");
+
+	m_spGimmickPreviewModel = std::make_shared<KdModelWork>();
+	// GimmickBlock::Initで使っているモデルパスと合わせる
+	m_spGimmickPreviewModel->SetModelData("Asset/Models/Block/WoodenBox/Wooden_Box.gltf");
+
+	m_spActivePreviewModel = m_spNormalPreviewModel; // 初期値
 
 	// 半透明描画をするための設定(アルファブレンド)を作成
 	// これがないと、持ち上げたブロックのプレビューを「透けた状態」で描画できない
@@ -130,7 +134,7 @@ Math::Vector3 BlockGrabber::GetCarriedBlockPos() const
 // 持ち上げ中のブロックを「置いたらここに置かれる」というプレビュー(半透明の見本)として描画する
 void BlockGrabber::DrawPreview()
 {
-	if (!m_spCarriedBlock || !m_spPreviewModel) return;
+	if (!m_spCarriedBlock || !m_spActivePreviewModel) return;
 
 	auto context = KdDirect3D::Instance().WorkDevContext();
 
@@ -146,12 +150,11 @@ void BlockGrabber::DrawPreview()
 
 	Math::Matrix mat = Math::Matrix::CreateScale(8.0f) * Math::Matrix::CreateTranslation(m_previewPos);
 
-	// 置ける場所なら緑、置けない場所(何かと重なっている)なら赤で表示する
 	Math::Color previewColor = m_previewValid
-		? Math::Color(0.5f, 1.0f, 0.5f, 0.6f)  // 緑・半透明
-		: Math::Color(1.0f, 0.3f, 0.3f, 0.6f); // 赤・半透明
+		? Math::Color(0.5f, 1.0f, 0.5f, 0.6f)
+		: Math::Color(1.0f, 0.3f, 0.3f, 0.6f);
 
-	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spPreviewModel, mat, previewColor);
+	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spActivePreviewModel, mat, previewColor);
 
 	// 描画設定を元に戻す(他の描画に影響を残さないため)
 	context->OMSetBlendState(prevBlendState.Get(), prevBlendFactor, prevSampleMask);
@@ -178,13 +181,14 @@ void BlockGrabber::HandleGrabAndDrop(const Math::Vector3& playerPos, const Math:
 				Math::Vector3 snappedPos = BlockGridManager::Instance().SnapToGrid(targetPos);
 				if (snappedPos.y < minY) snappedPos.y = minY;
 
-				// そのマスが空いていれば実際に設置する
 				if (!BlockGridManager::Instance().IsOccupied(snappedPos))
 				{
+					auto grabbable = std::dynamic_pointer_cast<IGrabbable>(m_spCarriedBlock);
+
 					m_spCarriedBlock->SetPos(snappedPos);
-					m_spCarriedBlock->SetCarried(false);
-					BlockGridManager::Instance().Register(snappedPos); // マスを「使用中」に登録
-					m_spCarriedBlock = nullptr; // 手放す
+					grabbable->SetCarried(false);
+					BlockGridManager::Instance().Register(snappedPos, grabbable->GetBlockKind()); // ← 種別を渡す
+					m_spCarriedBlock = nullptr;
 				}
 			}
 			// ---- 何も持っていない場合 → 「掴む」処理 ----
@@ -198,16 +202,16 @@ void BlockGrabber::HandleGrabAndDrop(const Math::Vector3& playerPos, const Math:
 				rayInfo.m_type = KdCollider::TypeBump | KdCollider::TypeGround;
 
 				std::list<KdCollider::CollisionResult> resultList;
-				std::shared_ptr<NormalBlock> targetBlock = nullptr;
+				std::shared_ptr<KdGameObject> targetBlock = nullptr;
 				float minDist = rayInfo.m_range;
 
 				// マップ上の全ブロックに対してレイが当たるかチェックし、一番近いブロックを探す
 				for (auto& obj : SceneManager::Instance().GetObjList())
 				{
-					auto block = std::dynamic_pointer_cast<NormalBlock>(obj);
-					if (!block || block->IsCarried()) continue; // ブロックでない/既に持ち運び中は除外
+					auto grabbable = std::dynamic_pointer_cast<IGrabbable>(obj);
+					if (!grabbable || grabbable->IsCarried()) continue; // ブロックでない/持ち運び中は除外
 
-					if (block->Intersects(rayInfo, &resultList))
+					if (obj->Intersects(rayInfo, &resultList))
 					{
 						for (auto& ret : resultList)
 						{
@@ -215,7 +219,7 @@ void BlockGrabber::HandleGrabAndDrop(const Math::Vector3& playerPos, const Math:
 							if (dist < minDist)
 							{
 								minDist = dist;
-								targetBlock = block; // より近いブロックを見つけたら更新
+								targetBlock = obj;
 							}
 						}
 						resultList.clear();
@@ -226,13 +230,18 @@ void BlockGrabber::HandleGrabAndDrop(const Math::Vector3& playerPos, const Math:
 				if (targetBlock)
 				{
 					m_spCarriedBlock = targetBlock;
-					m_holdDistance = 30.0f; // 持ち上げた瞬間の保持距離(初期値)
+					m_holdDistance = 30.0f;
 
-					// マス目管理から「このマスはもう埋まっていない」ことにする(持ち上げたので)
 					Math::Vector3 snappedPos = BlockGridManager::Instance().SnapToGrid(targetBlock->GetPos());
 					BlockGridManager::Instance().Unregister(snappedPos);
 
-					m_spCarriedBlock->SetCarried(true);
+					auto grabbable = std::dynamic_pointer_cast<IGrabbable>(m_spCarriedBlock);
+					grabbable->SetCarried(true);
+
+					// 掴んだブロックの種類に応じてプレビューモデルを切り替え
+					m_spActivePreviewModel = (grabbable->GetBlockKind() == BlockGridManager::BlockKind::GimmickKey)
+						? m_spGimmickPreviewModel
+						: m_spNormalPreviewModel;
 				}
 			}
 		}

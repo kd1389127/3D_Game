@@ -83,13 +83,16 @@ void GameScene::Init()
 		// 檻(鉄格子)：スイッチと紐付けて生成
 		std::shared_ptr<Cage> cage;
 		cage = std::make_shared<Cage>();
-		cage->Init(sw, data.cageBasePos, 64.0f, 0.2f);  //数値はmaxHeight,speed
+		cage->Init(sw, data.cageBasePos, 32.0f, 0.2f);  //数値はmaxHeight,speed
 		m_objList.push_back(cage);
 
 		// ギミック専用ブロック(スイッチに置くための鍵ブロック)
 		std::shared_ptr<GimmickBlock> gimmickBlock;
 		gimmickBlock = std::make_shared<GimmickBlock>();
 		gimmickBlock->Init(data.gimmickBlockPos);
+		BlockGridManager::Instance().Register(
+			BlockGridManager::Instance().SnapToGrid(data.gimmickBlockPos),
+			BlockGridManager::BlockKind::GimmickKey);
 		m_objList.push_back(gimmickBlock);
 	}
 

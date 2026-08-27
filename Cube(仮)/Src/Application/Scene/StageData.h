@@ -26,7 +26,7 @@ static const StageData g_stageTable[] =
 	// ステージ1(スイッチ・檻・ギミックブロックの座標)
 	{ Math::Vector3(50, 15, 0), Math::Vector3(-65, 45, 0), "Asset/Models/Map/Map2/Map2.gltf", 20.0f, 13.0f,
 	  true,								// hasGimmickCage
-	  Math::Vector3(1, 13.0f, -20),		// switchPos
+	  Math::Vector3(0, 13.0f, -16),		// switchPos
 	  Math::Vector3(-45, 35.0f, -0.5),  // cageBasePos
 	  Math::Vector3(25, 65.0f, 26.5)	// gimmickBlockPos
 	},
