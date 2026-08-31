@@ -27,8 +27,8 @@ static const StageData g_stageTable[] =
 	{ Math::Vector3(50, 15, 0), Math::Vector3(-65, 45, 0), "Asset/Models/Map/Map2/Map2.gltf", 20.0f, 13.0f,
 	  true,								// hasGimmickCage
 	  Math::Vector3(0, 13.0f, -16),		// switchPos
-	  Math::Vector3(-45, 35.0f, -0.5),  // cageBasePos
-	  Math::Vector3(25, 65.0f, 26.5)	// gimmickBlockPos
+	  Math::Vector3(-45, 35.0f, 0),     // cageBasePos
+	  Math::Vector3(62.5f, 65.5f, -1.0f)// gimmickBlockPos
 	},
 
 	//// ステージ2(仮の値。後で調整してください)

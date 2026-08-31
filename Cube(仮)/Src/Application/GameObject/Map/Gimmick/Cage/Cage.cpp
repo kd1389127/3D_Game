@@ -14,7 +14,7 @@ void Cage::Init(const std::shared_ptr<Switch>& targetSwitch,
 	if (!m_spModel)
 	{
 		m_spModel = std::make_shared<KdModelWork>();
-		m_spModel->SetModelData("Asset/Models/Map/Cage/Cage.gltf");
+		m_spModel->SetModelData("Asset/Models/Map/Cage1/Cage1.gltf");
 	}
 
 	if (!m_pCollider)
@@ -22,14 +22,13 @@ void Cage::Init(const std::shared_ptr<Switch>& targetSwitch,
 		m_pCollider = std::make_unique<KdCollider>();
 
 		// 閉じている間はプレイヤーを通さない壁として機能させる
-		// TODO: 実際の檻モデルのサイズに合わせてExtentsを調整する
 		DirectX::BoundingBox wallBox;
 		wallBox.Center = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 		wallBox.Extents = DirectX::XMFLOAT3(2.0f, 3.0f, 0.1f);
 		m_pCollider->RegisterCollisionShape("CageWall", wallBox, KdCollider::TypeBump);
 	}
 
-	Math::Matrix scaleMat = Math::Matrix::CreateScale(50.0f);
+	Math::Matrix scaleMat = Math::Matrix::CreateScale(Math::Vector3(55.0f, 45.0f, 45.0f));
 	Math::Matrix rotMat   = Math::Matrix::CreateRotationY(DirectX::XMConvertToRadians(90));
 	Math::Matrix transMat = Math::Matrix::CreateTranslation(basePos);
 

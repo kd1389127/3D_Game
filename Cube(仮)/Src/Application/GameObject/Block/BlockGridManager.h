@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <unordered_map>
 #include <cmath>
+#include <vector>
 
 // マップ上を「マス目(グリッド)」で管理するためのクラス
 // ブロックがどのマスに置かれているかを記録し、重複配置を防ぐ役割
@@ -49,6 +50,35 @@ public:
 	bool IsOccupied(const Math::Vector3& snappedPos) const
 	{
 		return m_occupied.count(ToKey(snappedPos)) > 0;
+	}
+
+	// ===================================================
+	// baseCellを起点に、stepDir方向へrequestCount段分の設置予定座標を計算する
+	// 例：baseCell=(0,8,0), stepDir=(0,1,0), requestCount=3 なら
+	//     (0,8,0) → (0,16,0) → (0,24,0) と縦に3段分の座標を返す
+	//
+	// 途中のマスに既にブロックがあった場合はそこで打ち切り、
+	// それより手前の分だけ返す(例：2段目が埋まっていたら1段分だけ返る)
+	// → 呼び出し側(RebuildPreview/ConfirmStack)はこの「実際に置ける数」を
+	//    そのまま使えばよく、重なりチェックを自前でやる必要がない
+	// ===================================================
+	std::vector<Math::Vector3> TryStack(const Math::Vector3& baseCell, const Math::Vector3& stepDir, int requestCount) const
+	{
+		std::vector<Math::Vector3> result;
+		result.reserve(requestCount);
+
+		Math::Vector3 pos = baseCell;
+		Math::Vector3 step = stepDir * GridSize; // 1段分の移動量(方向×グリッドサイズ)
+
+		for (int i = 0; i < requestCount; ++i)
+		{
+			if (IsOccupied(pos)) break; // 既に埋まっているマスに当たったら、それ以上は積めない
+
+			result.push_back(pos);
+			pos += step; // 次の段の座標へ進める
+		}
+
+		return result;
 	}
 
 	// そのマスに置かれているブロックがGimmickKeyかどうかチェック
