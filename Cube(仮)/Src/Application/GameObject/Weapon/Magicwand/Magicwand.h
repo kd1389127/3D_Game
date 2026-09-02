@@ -2,6 +2,7 @@
 #include "../WeaponBase.h"
 
 class NormalBlock; 
+class Ground;
 
 class Magicwand : public WeaponBase
 {
@@ -45,6 +46,9 @@ private:
 
 	// 弾が着弾した時にBulletから呼ばれる：調整モードに入る
 	void EnterAdjustMode(const Math::Vector3& hitPos, const Math::Vector3& axisNormal);
+
+	// 現在のシーンからGroundインスタンスを探して壁コライダーを取得する
+	std::shared_ptr<Ground> FindGround() const;
 
 	// 調整モード中、毎フレームの入力処理(ホイール/クリック)をまとめて行う
 	void UpdateAdjustMode();

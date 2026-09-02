@@ -443,59 +443,59 @@ static float BoxReachAlongDir(const DirectX::XMVECTOR& halfExtents, const Direct
 	return DirectX::XMVector3Dot(absDir, halfExtents).m128_f32[0];
 }
 
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// BOXの情報を逆行列化する(Sphere版のInvertSphereInfoと同じ考え方)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-static void InvertBoxInfo(DirectX::XMVECTOR& boxPosInv, DirectX::XMVECTOR& objScale,
-	const DirectX::XMMATRIX& matrix, const DirectX::BoundingBox& box)
-{
-	DirectX::XMMATRIX invMat = XMMatrixInverse(0, matrix);
-	boxPosInv = XMVector3TransformCoord(XMLoadFloat3(&box.Center), invMat);
-
-	objScale.m128_f32[0] = DirectX::XMVector3Length(matrix.r[0]).m128_f32[0];
-	objScale.m128_f32[1] = DirectX::XMVector3Length(matrix.r[1]).m128_f32[0];
-	objScale.m128_f32[2] = DirectX::XMVector3Length(matrix.r[2]).m128_f32[0];
-	objScale.m128_f32[3] = 0;
-}
-
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-// BOXとポリゴンの最近接点を元に接触しているかどうかを判定・押し出し(Sphere版のHitCheckAndPosUpdate相当)
-// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-static bool BoxHitCheckAndPosUpdate(DirectX::XMVECTOR& finalPos, DirectX::XMVECTOR& finalHitPos, std::vector<Math::Vector3>& finalFace,
-	const std::vector<Math::Vector3>& nearFace, const DirectX::XMVECTOR& nearPoint,
-	const DirectX::XMVECTOR& objScale, const DirectX::XMVECTOR& worldHalfExtents)
-{
-	// 最近接点→BOX中心 のベクトル(ローカル空間)
-	DirectX::XMVECTOR vToCenter = finalPos - nearPoint;
-
-	// ワールドスケールを反映した空間へ変換(Sphere版と同じ理由)
-	vToCenter *= objScale;
-
-	float dist = DirectX::XMVector3Length(vToCenter).m128_f32[0];
-
-	// ほぼ同一点(特異点)は今回のスコープ外として無視
-	if (dist < 1e-6f) { return false; }
-
-	DirectX::XMVECTOR dirN = vToCenter / dist;
-
-	// この方向にBOXがどれだけ張り出しているか
-	float boxReach = BoxReachAlongDir(worldHalfExtents, dirN);
-
-	// 届いていなければ当たっていない
-	if (dist > boxReach) { return false; }
-
-	// 押し戻しベクトル
-	DirectX::XMVECTOR vPush = dirN * (boxReach - dist);
-
-	// 拡縮を考慮した座標系へ戻す
-	vPush /= objScale;
-
-	finalPos += vPush;
-	finalHitPos = nearPoint;
-	finalFace = nearFace;
-
-	return true;
-}
+//// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+//// BOXの情報を逆行列化する(Sphere版のInvertSphereInfoと同じ考え方)
+//// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+//static void InvertBoxInfo(DirectX::XMVECTOR& boxPosInv, DirectX::XMVECTOR& objScale,
+//	const DirectX::XMMATRIX& matrix, const DirectX::BoundingBox& box)
+//{
+//	DirectX::XMMATRIX invMat = XMMatrixInverse(0, matrix);
+//	boxPosInv = XMVector3TransformCoord(XMLoadFloat3(&box.Center), invMat);
+//
+//	objScale.m128_f32[0] = DirectX::XMVector3Length(matrix.r[0]).m128_f32[0];
+//	objScale.m128_f32[1] = DirectX::XMVector3Length(matrix.r[1]).m128_f32[0];
+//	objScale.m128_f32[2] = DirectX::XMVector3Length(matrix.r[2]).m128_f32[0];
+//	objScale.m128_f32[3] = 0;
+//}
+//
+//// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+//// BOXとポリゴンの最近接点を元に接触しているかどうかを判定・押し出し(Sphere版のHitCheckAndPosUpdate相当)
+//// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+//static bool BoxHitCheckAndPosUpdate(DirectX::XMVECTOR& finalPos, DirectX::XMVECTOR& finalHitPos, std::vector<Math::Vector3>& finalFace,
+//	const std::vector<Math::Vector3>& nearFace, const DirectX::XMVECTOR& nearPoint,
+//	const DirectX::XMVECTOR& objScale, const DirectX::XMVECTOR& worldHalfExtents)
+//{
+//	// 最近接点→BOX中心 のベクトル(ローカル空間)
+//	DirectX::XMVECTOR vToCenter = finalPos - nearPoint;
+//
+//	// ワールドスケールを反映した空間へ変換(Sphere版と同じ理由)
+//	vToCenter *= objScale;
+//
+//	float dist = DirectX::XMVector3Length(vToCenter).m128_f32[0];
+//
+//	// ほぼ同一点(特異点)は今回のスコープ外として無視
+//	if (dist < 1e-6f) { return false; }
+//
+//	DirectX::XMVECTOR dirN = vToCenter / dist;
+//
+//	// この方向にBOXがどれだけ張り出しているか
+//	float boxReach = BoxReachAlongDir(worldHalfExtents, dirN);
+//
+//	// 届いていなければ当たっていない
+//	if (dist > boxReach) { return false; }
+//
+//	// 押し戻しベクトル
+//	DirectX::XMVECTOR vPush = dirN * (boxReach - dist);
+//
+//	// 拡縮を考慮した座標系へ戻す
+//	vPush /= objScale;
+//
+//	finalPos += vPush;
+//	finalHitPos = nearPoint;
+//	finalFace = nearFace;
+//
+//	return true;
+//}
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // BOXとの当たり判定結果をリザルトにセットする
@@ -517,6 +517,11 @@ static void SetBoxResult(CollisionMeshResult& result, bool isHit, const DirectX:
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // BOX(AABB)対メッシュの当たり判定本体
+// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
+// BOXは常にワールド空間の軸並行(AABB)なので、判定は必ずワールド空間で統一する。
+// 従来はBOX側をメッシュのローカル空間へ変換していたが、メッシュに回転が
+// 含まれていると押し出し方向がズレる問題があったため、
+// 逆に「三角形の頂点をワールド空間に変換してから判定する」方式に変更した。
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 bool MeshIntersect(const KdMesh& mesh, const DirectX::BoundingBox& box,
 	const DirectX::XMMATRIX& matrix, CollisionMeshResult* pResult)
@@ -533,6 +538,7 @@ bool MeshIntersect(const KdMesh& mesh, const DirectX::BoundingBox& box,
 
 	//------------------------------------------
 	// ナローフェイズ：BOXとメッシュとの詳細判定
+	// 　三角形側をワールド空間に変換してから比較する
 	//------------------------------------------
 	bool isHit = false;
 
@@ -540,33 +546,54 @@ bool MeshIntersect(const KdMesh& mesh, const DirectX::BoundingBox& box,
 	size_t faceNum = mesh.GetFaces().size();
 	auto& vertices = mesh.GetVertexPositions();
 
-	DirectX::XMVECTOR			finalHitPos = {};
-	DirectX::XMVECTOR			finalPos = {};	// 各面に押されて最終的に到達するBOXの中心(ローカル空間)
-	std::vector<Math::Vector3>	finalFace = {};
-	DirectX::XMVECTOR			objScale = {};
-
-	InvertBoxInfo(finalPos, objScale, matrix, box);
-
-	// BOXの半径(ワールド空間の半サイズ)。※isOriented=falseの回転無しBOX前提
-	DirectX::XMVECTOR worldHalfExtents = XMLoadFloat3(&box.Extents);
+	Math::Vector3 pushedCenter = box.Center;					// 押し出されていくBOX中心(ワールド空間)
+	Math::Vector3 finalHitPos = {};
+	std::vector<Math::Vector3> finalFace = {};
+	Math::Vector3 worldHalfExtents = box.Extents;				// BOXはもとからワールド空間なのでそのまま使える
 
 	for (UINT faceIdx = 0; faceIdx < faceNum; faceIdx++)
 	{
-		DirectX::XMVECTOR nearPoint;
 		const UINT* idx = pFaces[faceIdx].Idx;
 
-		KdPointToTriangle(finalPos, vertices[idx[0]], vertices[idx[1]], vertices[idx[2]], nearPoint);
+		// 3頂点をローカル→ワールド空間へ変換
+		// (回転・非一様スケールが行列に含まれていても、ここで正しく反映される)
+		Math::Vector3 v0 = DirectX::XMVector3TransformCoord(vertices[idx[0]], matrix);
+		Math::Vector3 v1 = DirectX::XMVector3TransformCoord(vertices[idx[1]], matrix);
+		Math::Vector3 v2 = DirectX::XMVector3TransformCoord(vertices[idx[2]], matrix);
 
-		isHit |= BoxHitCheckAndPosUpdate(finalPos, finalHitPos, finalFace,
-			{ vertices[idx[0]], vertices[idx[1]], vertices[idx[2]] }, nearPoint, objScale, worldHalfExtents);
+		DirectX::XMVECTOR nearPoint;
+		KdPointToTriangle(pushedCenter, v0, v1, v2, nearPoint);
 
-		if (!pResult && isHit) { return isHit; }
+		// 最近接点→BOX中心 のベクトル(すべてワールド空間で統一)
+		Math::Vector3 vToCenter = pushedCenter - Math::Vector3(nearPoint);
+		float dist = vToCenter.Length();
+
+		// ほぼ同一点(特異点)は今回のスコープ外として無視
+		if (dist < 1e-6f) { continue; }
+
+		Math::Vector3 dirN = vToCenter / dist;
+
+		// この方向にBOXがどれだけ張り出しているか(ワールド同士の比較なので常に正しい)
+		float boxReach = BoxReachAlongDir(worldHalfExtents, dirN);
+
+		// 届いていなければ、この三角形とは当たっていない
+		if (dist > boxReach) { continue; }
+
+		// 押し戻しベクトル
+		Math::Vector3 vPush = dirN * (boxReach - dist);
+		pushedCenter += vPush;
+
+		finalHitPos = Math::Vector3(nearPoint);
+		finalFace = { v0, v1, v2 };
+		isHit = true;
+
+		// CollisionResult無しなら結果は関係ないので当たった時点で返る
+		if (!pResult) { return true; }
 	}
 
 	if (pResult && isHit)
 	{
-		SetBoxResult(*pResult, isHit, XMVector3TransformCoord(finalHitPos, matrix),
-			XMVector3TransformCoord(finalPos, matrix), finalFace, XMLoadFloat3(&box.Center));
+		SetBoxResult(*pResult, isHit, finalHitPos, pushedCenter, finalFace, DirectX::XMLoadFloat3(&box.Center));
 	}
 
 	return isHit;

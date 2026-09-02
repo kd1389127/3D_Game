@@ -19,11 +19,11 @@ struct StageData
 // ステージテーブル(ステージを増やす場合はここに追加していくだけでOK)
 static const StageData g_stageTable[] =
 {
-	// ステージ0
+	// ステーシ１
 	// プレイヤーのスタート位置	   ゴールの位置		Model	Modelサイズ		地面の高さ指定
 	{ Math::Vector3(50, 0, 0), Math::Vector3(-125, 30, 0), "Asset/Models/Map/Map1/Map1.gltf" ,	30.0f,	0.0f},
 	
-	// ステージ1(スイッチ・檻・ギミックブロックの座標)
+	// ステージ２(スイッチ・檻・ギミックブロックの座標)
 	{ Math::Vector3(50, 15, 0), Math::Vector3(-65, 45, 0), "Asset/Models/Map/Map2/Map2.gltf", 20.0f, 13.0f,
 	  true,								// hasGimmickCage
 	  Math::Vector3(0, 13.0f, -16),		// switchPos
@@ -31,7 +31,7 @@ static const StageData g_stageTable[] =
 	  Math::Vector3(62.5f, 65.5f, -1.0f)// gimmickBlockPos
 	},
 
-	//// ステージ2(仮の値。後で調整してください)
+	//// ステージ３(仮の値。後で調整してください)
 	//{ Math::Vector3(0, 0, 0),      Math::Vector3(0, 0, 0) },
 };
 

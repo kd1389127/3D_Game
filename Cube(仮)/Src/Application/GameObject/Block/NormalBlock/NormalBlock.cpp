@@ -84,7 +84,7 @@ void NormalBlock::PostUpdate()
 	if (m_pDebugWire)
 	{
 		// BlockWall の可視化
-		m_pDebugWire->AddDebugBox(m_mWorld, Math::Vector3(0.5f, 0.5f, 0.5f), Math::Vector3::Zero, false, kRedColor);
+		//m_pDebugWire->AddDebugBox(m_mWorld, Math::Vector3(0.5f, 0.5f, 0.5f), Math::Vector3::Zero, false, kRedColor);
 
 		// BlockGround の可視化 (サイズ: 0.51f, 1.0f, 0.51f)
 		//m_pDebugWire->AddDebugBox(m_mWorld, Math::Vector3(0.51f, 0.51f, 0.51f), Math::Vector3::Zero, false, kGreenColor);

@@ -6,6 +6,7 @@
 #include "../../Character/Player/Player.h"
 #include "../../Block/BlockGridManager.h"
 #include "../../Block/NormalBlock/NormalBlock.h" 
+#include "../../Map/Ground/Ground.h"
 
 // 初期化：モデルの読み込みと、親(プレイヤー)から見た相対位置を設定する
 void Magicwand::Init()
@@ -55,6 +56,13 @@ void Magicwand::Update()
 
 	// 銃口(発射位置)のワールド座標を計算する
 	Math::Vector3 muzzlePos = (m_localMuzzleMat * parentMat).Translation();
+
+	// グリッドの表示
+	//if (m_pDebugWire)
+	//{
+	//	Math::Vector3 playerPos = parentMat.Translation();
+	//	BlockGridManager::Instance().DrawDebugGrid(*m_pDebugWire, playerPos, 40.0f); // 半径40くらい表示
+	//}
 
 	// ===================================================
 	// 状態(m_state)によって処理を分岐する
@@ -125,6 +133,11 @@ void Magicwand::Update()
 			// 何かに当たっていたら、その着弾点に向かう弾オブジェクトを生成する
 			if (isHit)
 			{
+				KdDebugGUI::Instance().AddLog(
+					"[Wand] hitPos: X=%.2f Y=%.2f Z=%.2f / hitNormal: X=%.2f Y=%.2f Z=%.2f\n",
+					hitPos.x, hitPos.y, hitPos.z,
+					hitNormal.x, hitNormal.y, hitNormal.z
+				);
 				auto bullet = std::make_shared<Bullet>();
 
 				// this(Magicwand自身)をweak_ptrにして、Bulletのコールバックに渡す
@@ -173,19 +186,39 @@ void Magicwand::Update()
 // ===================================================
 void Magicwand::EnterAdjustMode(const Math::Vector3& hitPos, const Math::Vector3& axisNormal)
 {
-	// 着弾点そのままだと壁の「表面」なので、法線方向に半マス分ずらして
-	// 「壁の外側のマス」を狙うようにしてからグリッドにスナップする
-	Math::Vector3 targetCellPos = hitPos + axisNormal * (BlockGridManager::GridSize * 0.5f + 0.01f);
-	m_aimBaseCell = BlockGridManager::Instance().SnapToGrid(targetCellPos);
+	auto spGround = FindGround();
 
-	// ★狙った面の法線方向をそのまま「せり出す方向」として記憶する
-	//   例：床(法線=上)を狙えば縦に、壁(法線=横)を狙えば横にせり出す
+	if (spGround)
+	{
+		m_aimBaseCell = BlockGridManager::Instance().ResolvePlaceableCell(hitPos, axisNormal, *spGround);
+	}
+	else
+	{
+		Math::Vector3 targetCellPos = hitPos + axisNormal * (BlockGridManager::GridSize * 0.5f + 0.01f);
+		m_aimBaseCell = BlockGridManager::Instance().SnapToGrid(targetCellPos);
+	}
+
 	m_aimDir = axisNormal;
-
-	m_stackCount = 1;              // 段数はまず1段からスタート
+	m_stackCount = 1;
 	m_state = WandState::Adjusting;
 
-	RebuildPreview(); // 1段目のプレビューを表示
+	RebuildPreview();
+}
+// ===================================================
+// シーン上のオブジェクトからGroundを探し、その壁コライダーを返す
+// (毎回検索するのはやや非効率、着弾時にしか呼ばれないので許容範囲)
+// ===================================================
+std::shared_ptr<Ground> Magicwand::FindGround() const
+{
+	for (auto& obj : SceneManager::Instance().GetObjList())
+	{
+		auto ground = std::dynamic_pointer_cast<Ground>(obj);
+		if (ground)
+		{
+			return ground;
+		}
+	}
+	return nullptr;
 }
 
 // ===================================================

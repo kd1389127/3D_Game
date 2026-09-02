@@ -43,9 +43,12 @@
 				}
 			},
 			"name":"\u30de\u30c6\u30ea\u30a2\u30eb.001",
+			"normalTexture":{
+				"index":1
+			},
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
-					"index":1
+					"index":2
 				},
 				"metallicFactor":0,
 				"roughnessFactor":0.5
@@ -75,6 +78,10 @@
 		},
 		{
 			"sampler":0,
+			"source":1
+		},
+		{
+			"sampler":0,
 			"source":0
 		}
 	],
@@ -83,6 +90,11 @@
 			"mimeType":"image/png",
 			"name":"CreateBullet",
 			"uri":"CreateBullet.png"
+		},
+		{
+			"mimeType":"image/png",
+			"name":"CreateBullet_specular",
+			"uri":"CreateBullet_specular.png"
 		}
 	],
 	"accessors":[

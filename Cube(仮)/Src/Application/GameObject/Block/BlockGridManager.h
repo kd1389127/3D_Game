@@ -44,6 +44,7 @@ public:
 			std::round((pos.y - m_groundHeight - halfGrid) / GridSize) * GridSize + halfGrid + m_groundHeight,
 			std::round(pos.z / GridSize) * GridSize
 		);
+
 	}
 
 	// 指定したマス(スナップ済み座標)に、すでに何か置かれているかチェック
@@ -96,6 +97,56 @@ public:
 		m_occupied[ToKey(snappedPos)] = kind;
 	}
 
+	// 指定したグリッドセル(スナップ済み座標)に、壁COLと重ならずにブロックを置けるかチェック
+	// ※groundObjのIntersects()を使うことで、Groundの実際のワールド行列(スケール込み)が自動的に反映される
+	bool CanPlaceBlockAt(const Math::Vector3& snappedPos, KdGameObject& groundObj) const
+	{
+		constexpr float checkMargin = 0.9f;
+		Math::Vector3 halfExtents(GridSize * 0.5f * checkMargin, GridSize * 0.5f * checkMargin, GridSize * 0.5f * checkMargin);
+
+		KdCollider::BoxInfo checkBox(
+			KdCollider::TypeGround | KdCollider::TypeBump,
+			Math::Matrix::CreateTranslation(snappedPos),
+			Math::Vector3::Zero,
+			halfExtents,
+			false
+		);
+
+		// KdGameObject::Intersectsは内部でm_mWorld(Groundの実際のスケール・位置)を使ってくれる
+		return !groundObj.Intersects(checkBox, nullptr);
+	}
+
+	// 弾の着弾情報から、実際に置けるセルを候補の中から探す
+	// baseCell自身がダメなら、法線方向前後にずらした候補も試す
+	Math::Vector3 ResolvePlaceableCell(const Math::Vector3& hitPos, const Math::Vector3& axisNormal, KdGameObject& groundObj)
+	{
+		Math::Vector3 baseCell = SnapToGrid(hitPos + axisNormal * (GridSize * 0.5f + 0.01f));
+
+		bool baseOccupied = IsOccupied(baseCell);
+		bool baseCanPlace = CanPlaceBlockAt(baseCell, groundObj);
+		KdDebugGUI::Instance().AddLog("[Grid] baseCell(%.1f,%.1f,%.1f) occupied=%d canPlace=%d\n",
+			baseCell.x, baseCell.y, baseCell.z, baseOccupied, baseCanPlace);
+
+		if (!IsOccupied(baseCell) && CanPlaceBlockAt(baseCell, groundObj))
+		{
+			return baseCell;
+		}
+
+		Math::Vector3 outerCell = baseCell + axisNormal * GridSize;
+		if (!IsOccupied(outerCell) && CanPlaceBlockAt(outerCell, groundObj))
+		{
+			return outerCell;
+		}
+
+		Math::Vector3 innerCell = baseCell - axisNormal * GridSize;
+		if (!IsOccupied(innerCell) && CanPlaceBlockAt(innerCell, groundObj))
+		{
+			return innerCell;
+		}
+
+		return baseCell;
+	}
+
 	// そのマスの「使用中」記録を消す(ブロックを持ち上げた時に呼ぶ)
 	void Unregister(const Math::Vector3& snappedPos)
 	{
@@ -118,6 +169,32 @@ public:
 		if (ax >= ay && ax >= az) return Math::Vector3(normal.x > 0 ? 1.f : -1.f, 0, 0);
 		if (ay >= ax && ay >= az) return Math::Vector3(0, normal.y > 0 ? 1.f : -1.f, 0);
 		return Math::Vector3(0, 0, normal.z > 0 ? 1.f : -1.f);
+	}
+
+	// デバッグ用：現在位置周辺のグリッド線を描画するイメージ
+	void DrawDebugGrid(KdDebugWireFrame& wire, const Math::Vector3& center, float range) const
+	{
+		constexpr Math::Color gridColor = { 0.2f, 0.8f, 1.0f, 1.0f }; // 見やすい水色
+
+		// centerに一番近いグリッド線の開始位置を求める(常に8.0刻みの線を引くため)
+		float startX = std::floor((center.x - range) / GridSize) * GridSize;
+		float startZ = std::floor((center.z - range) / GridSize) * GridSize;
+
+		// X方向に伸びる線(Z軸を固定して並べる)
+		for (float z = startZ; z <= center.z + range; z += GridSize)
+		{
+			Math::Vector3 lineStart = { center.x - range, m_groundHeight, z };
+			Math::Vector3 lineEnd = { center.x + range, m_groundHeight, z };
+			wire.AddDebugLine(lineStart, lineEnd, gridColor);
+		}
+
+		// Z方向に伸びる線(X軸を固定して並べる)
+		for (float x = startX; x <= center.x + range; x += GridSize)
+		{
+			Math::Vector3 lineStart = { x, m_groundHeight, center.z - range };
+			Math::Vector3 lineEnd = { x, m_groundHeight, center.z + range };
+			wire.AddDebugLine(lineStart, lineEnd, gridColor);
+		}
 	}
 
 private:

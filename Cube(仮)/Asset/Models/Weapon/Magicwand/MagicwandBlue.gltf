@@ -32,9 +32,12 @@
 		{
 			"doubleSided":true,
 			"name":"staff01",
+			"normalTexture":{
+				"index":0
+			},
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
-					"index":0
+					"index":1
 				},
 				"metallicFactor":0
 			}
@@ -60,9 +63,18 @@
 		{
 			"sampler":0,
 			"source":0
+		},
+		{
+			"sampler":0,
+			"source":1
 		}
 	],
 	"images":[
+		{
+			"mimeType":"image/png",
+			"name":"StaffGemRoyalD_normal",
+			"uri":"StaffGemRoyalD_normal.png"
+		},
 		{
 			"mimeType":"image/png",
 			"name":"StaffGemRoyalD",
