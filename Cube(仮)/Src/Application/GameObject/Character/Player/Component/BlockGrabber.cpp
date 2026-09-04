@@ -97,19 +97,6 @@ void BlockGrabber::Init(float groundHeight)
 
 	m_spActivePreviewModel = m_spNormalPreviewModel; // 初期値
 
-	// 半透明描画をするための設定(アルファブレンド)を作成
-	// これがないと、持ち上げたブロックのプレビューを「透けた状態」で描画できない
-	D3D11_BLEND_DESC blendDesc = {};
-	blendDesc.RenderTarget[0].BlendEnable = TRUE;
-	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-
-	KdDirect3D::Instance().WorkDev()->CreateBlendState(&blendDesc, m_alphaBlendState.GetAddressOf());
 }
 
 // 毎フレームの更新：「掴む/離す」「持っているブロックの位置更新」「ホイールでの距離調整」をまとめて呼ぶ
@@ -136,18 +123,9 @@ void BlockGrabber::DrawPreview()
 {
 	if (!m_spCarriedBlock || !m_spActivePreviewModel) return;
 
-	auto context = KdDirect3D::Instance().WorkDevContext();
-
-	// 現在のブレンドステート(描画設定)を一旦退避しておく(あとで元に戻すため)
-	Microsoft::WRL::ComPtr<ID3D11BlendState> prevBlendState;
-	float prevBlendFactor[4];
-	UINT prevSampleMask;
-	context->OMGetBlendState(prevBlendState.GetAddressOf(), prevBlendFactor, &prevSampleMask);
-
-	// 半透明用の設定に切り替える
-	float blendFactor[4] = { 1,1,1,1 };
-	context->OMSetBlendState(m_alphaBlendState.Get(), blendFactor, 0xFFFFFFFF);
-
+	// フレームワーク既存のAlphaブレンドに切り替え(元の状態は内部で自動退避される)
+	KdShaderManager::Instance().ChangeBlendState(KdBlendState::Alpha);
+	
 	Math::Matrix mat = Math::Matrix::CreateScale(8.0f) * Math::Matrix::CreateTranslation(m_previewPos);
 
 	Math::Color previewColor = m_previewValid
@@ -156,8 +134,8 @@ void BlockGrabber::DrawPreview()
 
 	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spActivePreviewModel, mat, previewColor);
 
-	// 描画設定を元に戻す(他の描画に影響を残さないため)
-	context->OMSetBlendState(prevBlendState.Get(), prevBlendFactor, prevSampleMask);
+	// 変更前のブレンドステートに戻す
+	KdShaderManager::Instance().UndoBlendState();
 }
 
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====

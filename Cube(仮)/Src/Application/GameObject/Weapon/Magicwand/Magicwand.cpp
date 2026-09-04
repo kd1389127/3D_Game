@@ -281,15 +281,16 @@ void Magicwand::RebuildPreview()
 	for (auto& block : m_previewBlocks) block->Expire();
 	m_previewBlocks.clear();
 
-	// 起点(m_aimBaseCell)からm_aimDir方向にm_stackCount段、
-	// 実際に置ける位置だけを計算してもらう(途中に障害物があればそこで打ち切られる)
-	auto positions = BlockGridManager::Instance().TryStack(m_aimBaseCell, m_aimDir, m_stackCount);
+	auto spGround = FindGround();
+	if (!spGround) return;			//Groundが見つからない異常時は何も表示しない
+
+	auto positions = BlockGridManager::Instance().TryStack(m_aimBaseCell, m_aimDir, m_stackCount, *spGround);
 
 	for (auto& pos : positions)
 	{
 		auto preview = std::make_shared<NormalBlock>();
 		preview->Init(pos);
-		preview->SetPreview(true); // ★見た目だけの「見本」扱いにする(当たり判定OFFなど)
+		preview->SetPreview(true); // 見た目だけの「見本」扱いにする(当たり判定OFFなど)
 
 		SceneManager::Instance().AddObject(preview);
 		m_previewBlocks.push_back(preview); // 次にRebuild/Confirm/Cancelする時に消せるよう保持
@@ -305,9 +306,16 @@ void Magicwand::ConfirmStack()
 	for (auto& block : m_previewBlocks) block->Expire();
 	m_previewBlocks.clear();
 
+	auto spGround = FindGround();
+	if (!spGround)
+	{
+		m_state = WandState::Idle;
+		return;
+	}
+
 	// 最終的な生成位置を、プレビューと同じロジックでもう一度計算する
 	// (プレビュー表示後に別の要因でマスが埋まっている可能性もあるため、確定直前に取り直す)
-	auto positions = BlockGridManager::Instance().TryStack(m_aimBaseCell, m_aimDir, m_stackCount);
+	auto positions = BlockGridManager::Instance().TryStack(m_aimBaseCell, m_aimDir, m_stackCount,*spGround);
 
 	constexpr int staggerFrames = 6; // 1段ごとにアニメーション開始をずらすフレーム数
 	// (0段目→6f後→12f後…と遅れて出現させることで、

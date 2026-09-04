@@ -39,7 +39,6 @@ private:
 	std::shared_ptr<KdModelWork> m_spNormalPreviewModel;  // 通常ブロック用プレビュー
 	std::shared_ptr<KdModelWork> m_spGimmickPreviewModel; // ギミックブロック用プレビュー
 	std::shared_ptr<KdModelWork> m_spActivePreviewModel;  // 今表示すべきプレビュー(どちらかを指す)
-	Microsoft::WRL::ComPtr<ID3D11BlendState> m_alphaBlendState;
 
 	std::shared_ptr<KdGameObject> m_spCarriedBlock = nullptr;
 

@@ -55,28 +55,25 @@ public:
 
 	// ===================================================
 	// baseCellを起点に、stepDir方向へrequestCount段分の設置予定座標を計算する
-	// 例：baseCell=(0,8,0), stepDir=(0,1,0), requestCount=3 なら
-	//     (0,8,0) → (0,16,0) → (0,24,0) と縦に3段分の座標を返す
-	//
-	// 途中のマスに既にブロックがあった場合はそこで打ち切り、
-	// それより手前の分だけ返す(例：2段目が埋まっていたら1段分だけ返る)
-	// → 呼び出し側(RebuildPreview/ConfirmStack)はこの「実際に置ける数」を
-	//    そのまま使えばよく、重なりチェックを自前でやる必要がない
+	// ★変更点：groundObjを受け取り、ブロック同士の重なりだけでなく
+	//   壁・天井などのCOLとの衝突もチェックするようにした
 	// ===================================================
-	std::vector<Math::Vector3> TryStack(const Math::Vector3& baseCell, const Math::Vector3& stepDir, int requestCount) const
+	std::vector<Math::Vector3> TryStack(const Math::Vector3& baseCell, const Math::Vector3& stepDir,
+		int requestCount, KdGameObject& groundObj) const
 	{
 		std::vector<Math::Vector3> result;
 		result.reserve(requestCount);
 
 		Math::Vector3 pos = baseCell;
-		Math::Vector3 step = stepDir * GridSize; // 1段分の移動量(方向×グリッドサイズ)
+		Math::Vector3 step = stepDir * GridSize;
 
 		for (int i = 0; i < requestCount; ++i)
 		{
-			if (IsOccupied(pos)) break; // 既に埋まっているマスに当たったら、それ以上は積めない
+			if (IsOccupied(pos)) break;
+			if (!CanPlaceBlockAt(pos, groundObj)) break;
 
 			result.push_back(pos);
-			pos += step; // 次の段の座標へ進める
+			pos += step;
 		}
 
 		return result;
@@ -101,7 +98,7 @@ public:
 	// ※groundObjのIntersects()を使うことで、Groundの実際のワールド行列(スケール込み)が自動的に反映される
 	bool CanPlaceBlockAt(const Math::Vector3& snappedPos, KdGameObject& groundObj) const
 	{
-		constexpr float checkMargin = 0.9f;
+		constexpr float checkMargin = 0.4f;
 		Math::Vector3 halfExtents(GridSize * 0.5f * checkMargin, GridSize * 0.5f * checkMargin, GridSize * 0.5f * checkMargin);
 
 		KdCollider::BoxInfo checkBox(

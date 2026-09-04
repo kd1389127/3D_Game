@@ -47,7 +47,9 @@ private:
 	// ----- せり出しアニメーション用のパラメータ -----
 	bool  m_isEmerging = false;                       // アニメーション再生中かどうか
 	int   m_emergeFrame = 0;                          // 経過フレーム数(負の値の間はまだ開始待ち＝delay中)
-	static constexpr int m_emergeDuration = 12;       // アニメーションが完了するまでのフレーム数
+	static constexpr int m_emergeDuration = 24;       // アニメーションが完了するまでのフレーム数
 	Math::Vector3 m_finalPos = Math::Vector3::Zero;   // 最終的に静止する座標(グリッドにスナップ済み)
 	Math::Vector3 m_emergeDir = Math::Vector3::Up;    // せり出してくる方向(スタート地点の計算に使う)
+
+	float m_dissolveProgress = 1.0f; // 0=出現前、1=完全に実体化済み(通常時は1で固定)
 };

@@ -1,5 +1,6 @@
 ﻿#include "NormalBlock.h"
 
+#include "../../../Scene/SceneManager.h"
 void NormalBlock::Init(const Math::Vector3& pos)
 {
 	if (!m_spModel)
@@ -58,17 +59,22 @@ void NormalBlock::Update()
 	// (等速で動かすより、せり出す・生えてくる感じが自然に見える)
 	float easedT = 1.0f - powf(1.0f - t, 3.0f);
 
+	// ディゾルブのしきい値は「1=見えない → 0=見える」なので、easedTを反転させる
+	m_dissolveProgress = 1.0f - easedT;
+
 	// スタート地点：最終位置から「せり出してくる方向の逆」に1マス分ずらした位置
 	// (例：上方向にせり出すなら、1マス分下＝地中に埋まった状態からスタート)
-	Math::Vector3 startPos = m_finalPos - m_emergeDir * BlockGridManager::GridSize;
+	//constexpr float test = 0.7f;
+	//Math::Vector3 startPos = m_finalPos * (BlockGridManager::GridSize * test);
 
-	// startPos → m_finalPos へ、easedTの割合で線形補間した座標に移動させる
-	SetPos(Math::Vector3::Lerp(startPos, m_finalPos, easedT));
+	//// startPos → m_finalPos へ、easedTの割合で線形補間した座標に移動させる
+	//SetPos(Math::Vector3::Lerp(startPos, m_finalPos, easedT));
 
 	// アニメーションが完了したら後片付け
 	if (t >= 1.0f)
 	{
 		m_isEmerging = false;
+		m_dissolveProgress = 0.0f;	// 完全に見える状態に
 
 		if (m_pCollider)
 		{
@@ -95,6 +101,31 @@ void NormalBlock::DrawLit()
 {
 	if (!m_spModel) return;
 
+	// ----- ① プレビュー中(見本)なら、半透明の緑で描く -----
+	if (m_isPreview)
+	{
+		// フレームワーク既存のAlphaブレンドに切り替え(元の状態は内部のUndoスタックへ自動退避)
+		KdShaderManager::Instance().ChangeBlendState(KdBlendState::Alpha);
+
+		Math::Color previewColor(0.5f, 1.0f, 0.5f, 0.6f);
+		KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld, previewColor);
+	
+		// 変更前のブレンドステートに戻す
+		KdShaderManager::Instance().UndoBlendState();
+		
+		return;
+	}
+
+	// ----- ② せり出しアニメーション中なら、ディゾルブで描く -----
+	if (m_isEmerging)
+	{
+		float range = 0.08f;							  // 境界のシャープさ(小さいほどくっきり)
+		Math::Vector3 edgeColor = { 0.5f,1.0f,1.0f };	  // 発光色(水色)
+
+		KdShaderManager::Instance().m_StandardShader.SetDissolve(m_dissolveProgress, &range, &edgeColor);
+	}
+
+	// ----- ③ 通常描画(確定済み、アニメーション完了後) -----
 	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
 }
 
@@ -117,11 +148,14 @@ void NormalBlock::StartEmerge(int delayFrames, const Math::Vector3& dir)
 	m_isEmerging = true;
 	m_emergeFrame = -delayFrames; // マイナスからスタートし、0になった瞬間から実際に動き始める
 	m_emergeDir = dir;
+	m_dissolveProgress = 1.0f;
 
 	// 見た目上のスタート地点(最終位置からdir方向の逆に1マス分ずらした位置)に、
 	// 先にワープさせておいてからアニメーションで最終位置まで動かす
-	Math::Vector3 startPos = m_finalPos - dir * BlockGridManager::GridSize;
-	SetPos(startPos);
+	/*constexpr float test = 0.7f;
+	Math::Vector3 startPos = m_finalPos - dir * (BlockGridManager::GridSize * test);*/
+	//SetPos(startPos);
+	SetPos(m_finalPos);
 
 	if (m_pCollider)
 	{
