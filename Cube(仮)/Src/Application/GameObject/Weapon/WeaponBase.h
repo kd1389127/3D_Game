@@ -12,7 +12,7 @@ public:
 	void DrawLit() override;
 
 	// 弾発射関数 … 純粋仮想関数なのでオーバライド必須！！！
-	virtual void ShotBullet(const bool _rayFlg = false) = 0;
+	//virtual void ShotBullet(const bool _rayFlg = false) = 0;
 
 	void SetParent(const std::shared_ptr<KdGameObject>& _parent)
 	{
