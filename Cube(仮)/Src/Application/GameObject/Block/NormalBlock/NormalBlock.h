@@ -37,12 +37,17 @@ public:
 	void SetPreview(bool isPreview);
 	bool IsPreview() const { return m_isPreview; }
 
+	// 消滅アニメーションを開始する(StartEmergeの逆再生)
+	// delayFrames … 何フレーム後に消滅を開始するか(スタックの先端から順に消すための時間差)
+	void StartDismiss(int delayFrames);
+
 private:
 
 	std::shared_ptr<KdModelWork> m_spModel = nullptr;
 
 	bool m_isCarried = false; // プレイヤーに持ち上げられている最中かどうか
 	bool m_isPreview = false; // プレビュー(まだ確定していない見本)かどうか
+
 
 	// ----- せり出しアニメーション用のパラメータ -----
 	bool  m_isEmerging = false;                       // アニメーション再生中かどうか
@@ -51,5 +56,13 @@ private:
 	Math::Vector3 m_finalPos = Math::Vector3::Zero;   // 最終的に静止する座標(グリッドにスナップ済み)
 	Math::Vector3 m_emergeDir = Math::Vector3::Up;    // せり出してくる方向(スタート地点の計算に使う)
 
-	float m_dissolveProgress = 1.0f; // 0=出現前、1=完全に実体化済み(通常時は1で固定)
+	float m_dissolveProgress = 1.0f;				  // 0=出現前、1=完全に実体化済み(通常時は1で固定)
+
+
+	// ----- 消滅アニメーション用のパラメータ(StartEmergeと対になる仕組み) -----
+	bool m_isDismissing = false;
+	int m_dismissFrame = 0;
+	static constexpr int m_dismissDuration = 24;	  // 消滅にかかるフレーム数
+
+
 };

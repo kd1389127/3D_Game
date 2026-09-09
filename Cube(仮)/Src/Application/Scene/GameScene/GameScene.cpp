@@ -99,5 +99,6 @@ void GameScene::Init()
 	// 各オブジェクトに必要なデータを渡しておく
 	fpscamera->SetTarget(player);	// カメラに注視対象(プレイヤー)をセット
 	magicwand->SetParent(player);
+	fpscamera->SetMagicwand(magicwand);
 
 }

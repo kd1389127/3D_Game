@@ -45,44 +45,56 @@ void NormalBlock::Init(const Math::Vector3& pos)
 // ===================================================
 void NormalBlock::Update()
 {
-	if (!m_isEmerging) return;
-
-	m_emergeFrame++;
-
-	// 段差演出用の開始遅延中(m_emergeFrameがまだマイナス)は、位置を動かさずに待つ
-	if (m_emergeFrame < 0) return;
-
-	// 経過フレームを 0.0～1.0 の進行度(t)に変換する
-	float t = std::clamp((float)m_emergeFrame / (float)m_emergeDuration, 0.0f, 1.0f);
-
-	// EaseOutCubic：最初は速く、終わりに近づくほどゆっくり止まる動き方に変換する
-	// (等速で動かすより、せり出す・生えてくる感じが自然に見える)
-	float easedT = 1.0f - powf(1.0f - t, 3.0f);
-
-	// ディゾルブのしきい値は「1=見えない → 0=見える」なので、easedTを反転させる
-	m_dissolveProgress = 1.0f - easedT;
-
-	// スタート地点：最終位置から「せり出してくる方向の逆」に1マス分ずらした位置
-	// (例：上方向にせり出すなら、1マス分下＝地中に埋まった状態からスタート)
-	//constexpr float test = 0.7f;
-	//Math::Vector3 startPos = m_finalPos * (BlockGridManager::GridSize * test);
-
-	//// startPos → m_finalPos へ、easedTの割合で線形補間した座標に移動させる
-	//SetPos(Math::Vector3::Lerp(startPos, m_finalPos, easedT));
-
-	// アニメーションが完了したら後片付け
-	if (t >= 1.0f)
+	if (m_isEmerging)
 	{
-		m_isEmerging = false;
-		m_dissolveProgress = 0.0f;	// 完全に見える状態に
+		m_emergeFrame++;
 
-		if (m_pCollider)
+		// 段差演出用の開始遅延中(m_emergeFrameがまだマイナス)は、位置を動かさずに待つ
+		if (m_emergeFrame < 0) return;
+
+		// 経過フレームを 0.0～1.0 の進行度(t)に変換する
+		float emergeRatio = std::clamp((float)m_emergeFrame / (float)m_emergeDuration, 0.0f, 1.0f);
+
+		// EaseOutCubic：最初は速く、終わりに近づくほどゆっくり止まる動き方に変換する
+		// (等速で動かすより、せり出す・生えてくる感じが自然に見える)
+		float emergeEased = 1.0f - powf(1.0f - emergeRatio, 3.0f);
+
+		// ディゾルブのしきい値は「1=見えない → 0=見える」なので、easedTを反転させる
+		m_dissolveProgress = 1.0f - emergeEased;
+
+		// アニメーションが完了したら後片付け
+		if (emergeRatio >= 1.0f)
 		{
-			// せり出し切ってから当たり判定を有効にする
-			// (アニメ中に当たり判定が効くと、途中の浮いた状態でプレイヤーを押し出してしまうため)
-			m_pCollider->SetEnableAll(true);
+			m_isEmerging = false;
+			m_dissolveProgress = 0.0f;	// 完全に見える状態に
+
+			if (m_pCollider)
+			{
+				// せり出し切ってから当たり判定を有効にする
+				// (アニメ中に当たり判定が効くと、途中の浮いた状態でプレイヤーを押し出してしまうため)
+				m_pCollider->SetEnableAll(true);
+			}
 		}
+		return;
 	}
+
+	if (m_isDismissing)
+	{
+		m_dismissFrame++;
+		if (m_dismissFrame < 0) return;
+
+		float dismissRatio = std::clamp((float)m_dismissFrame / (float)m_dismissDuration, 0.0f, 1.0f);
+		float dismissEased = 1.0f - powf(1.0f - dismissRatio, 3.0f);
+		m_dissolveProgress = dismissEased;		// 0(見える)→1(見えない)へ。StartEmergeと逆方向
+		
+		if (dismissRatio >= 1.0f)
+		{
+			m_isDismissing = false;
+			Expire();						// アニメーション完了後、実際に消滅させる
+		}
+		return;
+	}
+
 }
 
 void NormalBlock::PostUpdate()
@@ -117,7 +129,7 @@ void NormalBlock::DrawLit()
 	}
 
 	// ----- ② せり出しアニメーション中なら、ディゾルブで描く -----
-	if (m_isEmerging)
+	if (m_isEmerging || m_isDismissing || m_dissolveProgress > 0.0f)
 	{
 		float range = 0.08f;							  // 境界のシャープさ(小さいほどくっきり)
 		Math::Vector3 edgeColor = { 0.5f,1.0f,1.0f };	  // 発光色(水色)
@@ -171,5 +183,18 @@ void NormalBlock::SetPreview(bool isPreview)
 	if (m_pCollider)
 	{
 		m_pCollider->SetEnableAll(!isPreview); // プレビュー中は当たらないように
+	}
+}
+
+void NormalBlock::StartDismiss(int delayFrames)
+{
+	m_isDismissing = true;
+	m_dismissFrame = -delayFrames;
+	m_dissolveProgress = 0.0f;		// 完全に見えている状態からスタート
+
+	if (m_pCollider)
+	{
+		// 消滅演出中は当たり判定を切っておく(消えかけの状態で干渉させないため)
+		m_pCollider->SetEnableAll(false);
 	}
 }
