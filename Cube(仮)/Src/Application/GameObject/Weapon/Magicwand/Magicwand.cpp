@@ -446,12 +446,17 @@ void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix&
 	for (auto& block : m_previewBlocks)
 	{
 		previewPositions.push_back(block->GetPos());
-		block->Expire();
 	}
+
+	// ここではまだExpireしない。弾の着弾コールバックまで持ち越すため、
+	// m_previewBlocksの中身をローカル変数に移し替えて、メンバ自体は空にしておく
+	std::vector<std::shared_ptr<NormalBlock>> previewBlocksToExpire = std::move(m_previewBlocks);
 	m_previewBlocks.clear();
 
 	if (!m_hasValidAim)
 	{
+		// 狙いが無効なまま呼ばれた場合は、ここで消しておく(通常はほぼ空のはず)
+		for (auto& block : previewBlocksToExpire)block->Expire();
 		m_state = WandState::Idle;
 		return;
 	}
@@ -527,10 +532,13 @@ void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix&
 
 	if (isTargetHit)
 	{
-		// 着弾した瞬間、コピーしておいた確定情報を使ってGenerateStackAtを呼ぶ
+		// previewBlocksToExpireをコールバックに持ち越し、着弾した瞬間に消す
 		bullet->Init(muzzlePos, bulletTargetPos, realHitNormal,
-			[weakSelf, confirmedBaseCell, confirmedDir, confirmedCount](const Math::Vector3&, const Math::Vector3&)
+			[weakSelf, confirmedBaseCell, confirmedDir, confirmedCount,previewBlocksToExpire]
+			(const Math::Vector3&, const Math::Vector3&)
 			{
+				for (auto& block : previewBlocksToExpire)block->Expire();
+
 				if (auto self = weakSelf.lock())
 				{
 					self->GenerateStackAt(confirmedBaseCell, confirmedDir, confirmedCount);
@@ -539,12 +547,12 @@ void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix&
 	}
 	else
 	{
-		// ハズレ：弾は今向いている方向へ普通に飛ぶが、着弾しても何も生成しない
-		// ここでコールバックをnullptrにしないこと！
-		// Bullet::UpdateはonImpactがnullptrだと「その場に自動でブロックを生成する」 
-		// フォールバック処理が入っているため、ハズレなのに生成されてしまう
+		// ハズレの場合も、弾が着弾した(何にも当たらなかった)瞬間にプレビューを消す
 		bullet->Init(muzzlePos, bulletTargetPos, realHitNormal,
-			[](const Math::Vector3&, const Math::Vector3&) {/* 何もしない */});
+			[previewBlocksToExpire](const Math::Vector3&, const Math::Vector3&) 
+			{
+				for (auto& block : previewBlocksToExpire)block->Expire();
+			});
 	}
 
 	SceneManager::Instance().AddObject(bullet);
