@@ -53,6 +53,9 @@ private:
 	// ワールド座標
 	Math::Vector3 m_pos = Math::Vector3::Zero;
 
+	// スポーン地点
+	Math::Vector3 m_startPos = Math::Vector3::Zero;
+
 	// 進行方向(ベクトルの向き)
 	Math::Vector3 m_moveDir = Math::Vector3::Zero;
 

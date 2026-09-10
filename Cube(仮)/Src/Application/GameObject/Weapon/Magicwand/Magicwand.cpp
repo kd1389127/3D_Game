@@ -174,6 +174,8 @@ void Magicwand::Update()
 		// ---------------------------------------------------
 		case WandState::Adjusting:
 		{
+			UpdateHighlight(muzzlePos, parentMat);	// 毎フレーム、狙っているプレビューを判定
+
 			// ----- 右クリックでキャンセル -----
 			if (rightPressed)
 			{
@@ -194,7 +196,15 @@ void Magicwand::Update()
 
 			if (wheelValue != 0)
 			{
-				int newCount = std::clamp(m_stackCount + (wheelValue > 0 ? 1 : -1), 1, m_maxStackCount);
+				// 壁(水平方向)へのせり出しは、伸びる向きがプレイヤー側(手前)になるため、
+				// 床/天井(垂直方向)とは逆にホイールの符号を反転させて感覚を合わせる
+				int effectiveWheel = wheelValue;
+				if (fabsf(m_aimDir.y) < 0.5f) // Y成分が小さい＝水平方向(壁)
+				{
+					effectiveWheel = -wheelValue;
+				}
+
+				int newCount = std::clamp(m_stackCount + (effectiveWheel > 0 ? 1 : -1), 1, m_maxStackCount);
 
 				if (newCount != m_stackCount)
 				{
@@ -255,34 +265,13 @@ void Magicwand::SingleShot(const Math::Vector3& muzzlePos, const Math::Matrix& p
 	Math::Vector3 targetPos = isHit ? hitPos : (muzzlePos + rayInfo.m_dir * rayInfo.m_range);
 
 	auto bullet = std::make_shared<Bullet>();
-	std::weak_ptr<Magicwand> weakSelf = std::static_pointer_cast<Magicwand>(shared_from_this());
 
 	if (isHit)
 	{
-		// 斜めの角に当たっても扱いやすいよう、法線を軸方向(±X/±Y/±Z)に丸める
-		Math::Vector3 axisNormal = BlockGridManager::SnapNormalToAxis(hitNormal);
-		auto spGround = FindGround();
-
-		Math::Vector3 baseCell;
-		if (spGround)
-		{
-			baseCell = BlockGridManager::Instance().ResolvePlaceableCell(hitPos, axisNormal, *spGround);
-		}
-		else
-		{
-			Math::Vector3 targetCellPos = hitPos + axisNormal * (BlockGridManager::GridSize * 0.5f + 0.01f);
-			baseCell = BlockGridManager::Instance().SnapToGrid(targetCellPos);
-		}
-
-		// 着弾した瞬間、1個だけ(stackCount=1)生成する
+		// パーティクルが作れたらパーティクルを呼ぶように
+		// 何にも当たらなかった：弾は飛ぶが何も生成しない
 		bullet->Init(muzzlePos, targetPos, hitNormal,
-			[weakSelf, baseCell, axisNormal](const Math::Vector3&, const Math::Vector3&)
-			{
-				if (auto self = weakSelf.lock())
-				{
-					self->GenerateStackAt(baseCell, axisNormal, 1);
-				}
-			});
+			[](const Math::Vector3&, const Math::Vector3&) {/* 何もしない */});
 	}
 	else
 	{
@@ -408,6 +397,44 @@ void Magicwand::UpdateAimMode(const Math::Vector3& muzzlePos, const Math::Matrix
 }
 
 // ===================================================
+// Adjusting中、毎フレーム呼ばれる：レティクル方向のレイが
+// どのプレビューブロックに当たっているかを判定し、ハイライトを切り替える
+// ===================================================
+void Magicwand::UpdateHighlight(const Math::Vector3& muzzlePos, const Math::Matrix& parentMat)
+{
+	Math::Vector3 dir = parentMat.Backward();
+
+	Math::Vector3 halfExtent
+	(
+		BlockGridManager::GridSize * 0.5f,
+		BlockGridManager::GridSize * 0.5f,
+		BlockGridManager::GridSize * 0.5f
+	);
+	
+	std::shared_ptr<NormalBlock> hitBlock = nullptr;
+	float closestDist = FLT_MAX;
+
+	for (auto& block : m_previewBlocks)
+	{
+		float dist = 0.0f;
+		if (IntersectRayAABB(muzzlePos, dir, block->GetPos(), halfExtent, 1000.0f, &dist))
+		{
+			if (dist < closestDist)
+			{
+				closestDist = dist;
+				hitBlock	= block;
+			}
+		}
+	}
+
+	// 全プレビューを一旦OFFにしてから、当たっているものだけONにする
+	for (auto& block : m_previewBlocks)
+	{
+		block->SetHighlight(block == hitBlock);
+	}
+}
+
+// ===================================================
 // 現在の段数(m_stackCount)・方向(m_aimDir)を元に、
 // プレビュー用の半透明ブロックを作り直す
 // (呼ばれるたびに古いプレビューは全部消してから作り直すシンプルな実装)
@@ -448,23 +475,19 @@ void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix&
 		previewPositions.push_back(block->GetPos());
 	}
 
-	// ここではまだExpireしない。弾の着弾コールバックまで持ち越すため、
-	// m_previewBlocksの中身をローカル変数に移し替えて、メンバ自体は空にしておく
-	std::vector<std::shared_ptr<NormalBlock>> previewBlocksToExpire = std::move(m_previewBlocks);
-	m_previewBlocks.clear();
-
 	if (!m_hasValidAim)
 	{
-		// 狙いが無効なまま呼ばれた場合は、ここで消しておく(通常はほぼ空のはず)
-		for (auto& block : previewBlocksToExpire)block->Expire();
+		// 狙いが無効なまま呼ばれた場合のみ、ここで消して抜ける
+		for (auto& block : m_previewBlocks)block->Expire();
+		m_previewBlocks.clear();
 		m_state = WandState::Idle;
 		return;
 	}
 
 	// 生成用の情報(確定済みのスタック起点・方向・段数)保持
 	Math::Vector3 confirmedBaseCell = m_aimBaseCell;
-	Math::Vector3 confirmedDir = m_aimDir;
-	int confirmedCount = m_stackCount;
+	Math::Vector3 confirmedDir		= m_aimDir;
+	int confirmedCount				= m_stackCount;
 
 	// ② 今のカメラ向きで改めてレイキャストする(UpdateAimModeと同じロジック)
 	KdCollider::RayInfo rayInfo;
@@ -524,7 +547,7 @@ void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix&
 		? (muzzlePos + rayInfo.m_dir * closestHitDistance)
 		: realTargetPos;
 
-	auto bullet = std::make_shared<Bullet>();
+	auto bulletObj = std::make_shared<Bullet>();
 
 	// weak_ptrで持つことで、万が一Magicwand側が破棄されてもコールバック側で安全に弾ける
 	std::weak_ptr<Magicwand> weakSelf =
@@ -532,33 +555,33 @@ void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix&
 
 	if (isTargetHit)
 	{
-		// previewBlocksToExpireをコールバックに持ち越し、着弾した瞬間に消す
-		bullet->Init(muzzlePos, bulletTargetPos, realHitNormal,
-			[weakSelf, confirmedBaseCell, confirmedDir, confirmedCount,previewBlocksToExpire]
+		// 命中：生成し、この時初めてプレビューを消してIdleに戻す
+		// (m_previewBlocksはコールバック内でself経由で触るため、ここではコピーを渡さない)	
+		bulletObj->Init(muzzlePos, bulletTargetPos, realHitNormal,
+			[weakSelf, confirmedBaseCell, confirmedDir, confirmedCount]
 			(const Math::Vector3&, const Math::Vector3&)
 			{
-				for (auto& block : previewBlocksToExpire)block->Expire();
-
 				if (auto self = weakSelf.lock())
 				{
+					for (auto& block : self->m_previewBlocks)block->Expire();
+					self->m_previewBlocks.clear();
+
 					self->GenerateStackAt(confirmedBaseCell, confirmedDir, confirmedCount);
+				
+					self->m_hasValidAim = false;
+					self->m_state = WandState::Idle;
 				}
 			});
 	}
 	else
 	{
-		// ハズレの場合も、弾が着弾した(何にも当たらなかった)瞬間にプレビューを消す
-		bullet->Init(muzzlePos, bulletTargetPos, realHitNormal,
-			[previewBlocksToExpire](const Math::Vector3&, const Math::Vector3&) 
-			{
-				for (auto& block : previewBlocksToExpire)block->Expire();
-			});
+	    // ハズレ：プレビューには一切触らない。状態もAdjustingのまま維持する
+	    // (右クリックでの明示的なキャンセル、または再度の左クリックでの命中を待つ)
+		bulletObj->Init(muzzlePos, bulletTargetPos, realHitNormal,
+			[](const Math::Vector3&, const Math::Vector3&) {/* 何もしない */});
 	}
 
-	SceneManager::Instance().AddObject(bullet);
-
-	m_hasValidAim = false;
-	m_state = WandState::Idle;
+	SceneManager::Instance().AddObject(bulletObj);
 }
 
 // ===================================================

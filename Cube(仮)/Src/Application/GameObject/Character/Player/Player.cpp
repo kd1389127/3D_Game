@@ -14,6 +14,8 @@ void Player::Init(const Math::Vector3& startPos, float groundHeight)
 	m_pos = startPos;
 	m_pos.y += m_adjustHeight;
 
+	m_startPos = m_pos;
+
 	m_upBlockGrabber = std::make_unique<BlockGrabber>();
 	m_upBlockGrabber->Init(groundHeight); // ← groundHeightを渡す
 }
@@ -171,6 +173,15 @@ void Player::PostUpdate()
 		m_pos = groundPos;
 		m_pos.y += m_adjustHeight; // 頭基準の座標に戻す
 		m_gravity = 0;
+	}
+
+	// ----- 奈落判定 -----
+	// スタート地点のY座標を基準に、そこから大きく下に落ちたらリスポーン
+	constexpr float fallLimitOffset = -100.0f;
+	if (m_pos.y < m_startPos.y + fallLimitOffset)
+	{
+		m_pos = m_startPos;
+		m_gravity = 0.0f;	//	落下速度もリセットしないと復帰した瞬間また落ち続ける
 	}
 }
 

@@ -116,29 +116,39 @@ void NormalBlock::DrawLit()
 	// ----- ① プレビュー中(見本)なら、半透明の緑で描く -----
 	if (m_isPreview)
 	{
-		// フレームワーク既存のAlphaブレンドに切り替え(元の状態は内部のUndoスタックへ自動退避)
+		// フレームワーク既存のAlphaブレンドに切り替え
 		KdShaderManager::Instance().ChangeBlendState(KdBlendState::Alpha);
+		if (m_isHighlighted)
+		{
+			// ハイライト中：点滅させたいので、時間経過でアルファを揺らす
+			m_blinkTimer++;
+			float blink = (sinf(m_blinkTimer * 0.2f) * 0.5f + 0.5f); //0.0～1.0を往復
 
-		Math::Color previewColor(0.5f, 1.0f, 0.5f, 0.6f);
-		KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld, previewColor);
-	
+			Math::Color previewColor(0.0f, 1.0f, 0.0f, 0.4f + blink * 0.4f);
+			KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld, previewColor);
+		}
+		else
+		{
+			Math::Color previewColor(0.5f, 0.90f, 0.5f, 0.6f);
+			KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld, previewColor);
+		}
 		// 変更前のブレンドステートに戻す
 		KdShaderManager::Instance().UndoBlendState();
-		
-		return;
 	}
-
-	// ----- ② せり出しアニメーション中なら、ディゾルブで描く -----
-	if (m_isEmerging || m_isDismissing || m_dissolveProgress > 0.0f)
+	else if (m_isEmerging || m_isDismissing || m_dissolveProgress > 0.0f)
 	{
+		// ----- ② せり出しアニメーション中なら、ディゾルブで描く -----
 		float range = 0.08f;							  // 境界のシャープさ(小さいほどくっきり)
 		Math::Vector3 edgeColor = { 0.5f,1.0f,1.0f };	  // 発光色(水色)
 
 		KdShaderManager::Instance().m_StandardShader.SetDissolve(m_dissolveProgress, &range, &edgeColor);
+		KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
 	}
-
-	// ----- ③ 通常描画(確定済み、アニメーション完了後) -----
-	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
+	else
+	{
+		// ----- ③ 通常描画(確定済み、アニメーション完了後) -----
+		KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
+	}
 }
 
 void NormalBlock::SetCarried(bool isCarried)

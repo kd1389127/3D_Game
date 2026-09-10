@@ -62,6 +62,9 @@ private:
 	// (ボタン判定は行わない。Update側で状態遷移を管理する)
 	void UpdateAimMode(const Math::Vector3& muzzlePos, const Math::Matrix& parentMat);
 
+	// Adjusting中、毎フレーム呼ばれる：レティクルがどのプレビューブロックに合っているか判定する
+	void UpdateHighlight(const Math::Vector3& muzzlePos, const Math::Matrix& parentMat);
+
 	// 現在の狙い情報を元に、プレビューブロックを作り直す
 	void RebuildPreview();
 

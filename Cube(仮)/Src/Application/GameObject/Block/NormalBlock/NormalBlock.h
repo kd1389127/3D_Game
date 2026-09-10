@@ -41,6 +41,8 @@ public:
 	// delayFrames … 何フレーム後に消滅を開始するか(スタックの先端から順に消すための時間差)
 	void StartDismiss(int delayFrames);
 
+	void SetHighlight(bool isHighlighted) { m_isHighlighted = isHighlighted; }
+
 private:
 
 	std::shared_ptr<KdModelWork> m_spModel = nullptr;
@@ -61,8 +63,10 @@ private:
 
 	// ----- 消滅アニメーション用のパラメータ(StartEmergeと対になる仕組み) -----
 	bool m_isDismissing = false;
-	int m_dismissFrame = 0;
+	int  m_dismissFrame = 0;
 	static constexpr int m_dismissDuration = 24;	  // 消滅にかかるフレーム数
 
-
+	// 選択中のハイライト
+	bool m_isHighlighted = false;	// レティクルが合っている間true
+	int  m_blinkTimer	 = 0;
 };
