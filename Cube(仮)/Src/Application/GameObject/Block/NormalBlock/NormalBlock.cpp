@@ -124,7 +124,7 @@ void NormalBlock::DrawLit()
 			m_blinkTimer++;
 			float blink = (sinf(m_blinkTimer * 0.2f) * 0.5f + 0.5f); //0.0～1.0を往復
 
-			Math::Color previewColor(0.0f, 1.0f, 0.0f, 0.4f + blink * 0.4f);
+			Math::Color previewColor(0.0f, 1.0f, 0.0f, 0.6f + blink * 0.4f);
 			KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld, previewColor);
 		}
 		else
@@ -149,6 +149,13 @@ void NormalBlock::DrawLit()
 		// ----- ③ 通常描画(確定済み、アニメーション完了後) -----
 		KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
 	}
+
+	// ----- 狙われている面だけを光らせる枠を重ねて描く -----
+	if (m_isFaceHighlighted)
+	{
+		DrawFaceHighlight();
+	}
+
 }
 
 void NormalBlock::SetCarried(bool isCarried)
@@ -207,4 +214,39 @@ void NormalBlock::StartDismiss(int delayFrames)
 		// 消滅演出中は当たり判定を切っておく(消えかけの状態で干渉させないため)
 		m_pCollider->SetEnableAll(false);
 	}
+}
+
+void NormalBlock::DrawFaceHighlight()
+{
+	if (!m_spModel) return;
+
+	constexpr float half = 0.5f;		// ブロックのローカル半サイズ
+	constexpr float thickness = 0.02f;	// 面方向だけ薄く潰す厚み
+
+	Math::Vector3 faceNormal = m_highlightFaceNormal;
+
+	// 面の中心(ローカル座標)＝ 法線方向に半サイズ + ごくわずか浮かせた位置
+	Math::Vector3 localCenter = faceNormal * (half - 0.01f);
+
+	// 面と平行な2軸はほぼブロック大(0.98)、法線方向だけ薄く潰す
+	Math::Vector3 localScale
+	(
+		fabsf(faceNormal.x) > 0.5f ? thickness : 1.0f,
+		fabsf(faceNormal.y) > 0.5f ? thickness : 1.0f,
+		fabsf(faceNormal.z) > 0.5f ? thickness : 1.0f
+	);
+
+	// ブロック自身のワールド行列に乗せる
+	Math::Matrix quadWorld =
+		Math::Matrix::CreateScale(localScale) *
+		Math::Matrix::CreateTranslation(localCenter) *
+		m_mWorld;
+
+	m_blinkTimer++;
+	float blink = (sinf(m_blinkTimer * 0.2f) * 0.5f + 0.5f); //0.0～1.0を往復
+	Math::Color faceColor(0.0f, 1.0f, 0.0f, 0.6f + blink * 0.4f);
+
+	KdShaderManager::Instance().ChangeBlendState(KdBlendState::Alpha);
+	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, quadWorld, faceColor);
+	KdShaderManager::Instance().UndoBlendState();
 }

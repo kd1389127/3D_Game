@@ -15,20 +15,22 @@ namespace
 	// 当たった場合、出会うまでの距離(tOut)を返す
 	// ===================================================
 	bool IntersectRayAABB(const Math::Vector3& origin, const Math::Vector3& dir,
-		const Math::Vector3& center, const Math::Vector3& halfExtents, float maxDist, float* tOut = nullptr)
+		const Math::Vector3& center, const Math::Vector3& halfExtents, float maxDist,
+		float* tOut = nullptr, Math::Vector3* normalOut = nullptr)
 	{
 		Math::Vector3 boxMin = center - halfExtents;
 		Math::Vector3 boxMax = center + halfExtents;
 
 		float tMin = 0.0f;
 		float tMax = maxDist;
+		int   hitAxis = -1;
+		float hitSign = 1.0f;
 
 		const float* originArr = &origin.x;
 		const float* dirArr = &dir.x;
 		const float* boxMinArr = &boxMin.x;
 		const float* boxMaxArr = &boxMax.x;
 
-		// X/Y/Z の3軸それぞれについて、レイが箱の範囲内にいる区間[tMin, tMax]を絞り込んでいく
 		for (int axis = 0; axis < 3; ++axis)
 		{
 			float o = originArr[axis];
@@ -38,23 +40,31 @@ namespace
 
 			if (fabsf(d) < 1e-6f)
 			{
-				// この軸方向にはほぼ動かないレイ：原点がすでに範囲外なら絶対当たらない
 				if (o < mn || o > mx) return false;
+				continue;
 			}
-			else
+
+			float t1 = (mn - o) / d;
+			float t2 = (mx - o) / d;
+			if (t1 > t2) std::swap(t1, t2);
+
+			if (t1 > tMin)
 			{
-				float t1 = (mn - o) / d;
-				float t2 = (mx - o) / d;
-				if (t1 > t2) std::swap(t1, t2);
-
-				tMin = std::max(tMin, t1);
-				tMax = std::min(tMax, t2);
-
-				if (tMin > tMax) return false; // 区間が潰れた＝当たらない
+				tMin = t1;
+				hitAxis = axis;
+				hitSign = (d > 0.0f) ? -1.0f : 1.0f; // ★入った面の外向き法線の符号
 			}
+			tMax = std::min(tMax, t2);
+
+			if (tMin > tMax) return false;
 		}
 
 		if (tOut) *tOut = tMin;
+		if (normalOut)
+		{
+			*normalOut = Math::Vector3::Zero;
+			if (hitAxis >= 0) (&normalOut->x)[hitAxis] = hitSign;
+		}
 		return true;
 	}
 }
@@ -130,7 +140,6 @@ void Magicwand::Update()
 		// ---------------------------------------------------
 		case WandState::Idle:
 		{
-			// ブロックを持ち上げている間は発射できない(誤操作防止)
 			if (rightPressed && !isCarrying)
 			{
 				EnterAimMode();
@@ -152,11 +161,15 @@ void Magicwand::Update()
 		{
 			UpdateAimMode(muzzlePos, parentMat);
 
+			// ズーム判定用に経過フレームを数える
+			m_aimHoldFrames++;
+
 			// 右クリックを離したら、狙っている位置で固定して調整モードへ
 			if (rightReleased)
 			{
 				if (m_hasValidAim)
 				{
+					ClearFaceHighlight();	// 確定した瞬間、面ハイライトは役目を終える
 					m_state = WandState::Adjusting;
 				}
 				else
@@ -292,6 +305,7 @@ void Magicwand::EnterAimMode()
 	m_hasValidAim = false;
 	m_aimBaseCell = Math::Vector3::Zero;
 	m_aimDir = Math::Vector3::Up;
+	m_aimHoldFrames = 0;
 }
 
 // ===================================================
@@ -325,31 +339,33 @@ void Magicwand::UpdateAimMode(const Math::Vector3& muzzlePos, const Math::Matrix
 
 	std::list<KdCollider::CollisionResult> resultList;
 
-	// マップ上の全オブジェクトに対してレイ判定を行う
-	for (auto& obj : SceneManager::Instance().GetObjList())
-	{
-		obj->Intersects(rayInfo, &resultList);
-	}
-
 	// 当たった候補の中から一番近いものを選ぶ
 	bool isHit = false;
 	float minDistSqr = FLT_MAX;
 	Math::Vector3 hitPos = Math::Vector3::Zero;
 	Math::Vector3 hitNormal = Math::Vector3::Up;
+	std::shared_ptr<KdGameObject> hitObj = nullptr;		//当たったオブジェクトを覚える
 
-	for (auto& ret : resultList)
+	for (auto& obj : SceneManager::Instance().GetObjList())
 	{
-		float distSqr = (ret.m_hitPos - muzzlePos).LengthSquared(); // 平方根計算を省いて軽量化
+		// オブジェクトごとに分けて判定
+		std::list<KdCollider::CollisionResult> localResult;
+		if (!obj->Intersects(rayInfo, &localResult)) continue;
 
-		if (distSqr < minDistSqr)
+		for (auto& ret : localResult)
 		{
-			minDistSqr = distSqr;
-			hitPos = ret.m_hitPos;
-			hitNormal = ret.m_hitNDir;
-			isHit = true;
+			float distSqr = (ret.m_hitPos - muzzlePos).LengthSquared(); // 平方根計算を省いて軽量化
+
+			if (distSqr < minDistSqr)
+			{
+				minDistSqr = distSqr;
+				hitPos = ret.m_hitPos;
+				hitNormal = ret.m_hitNDir;
+				hitObj = obj;
+				isHit = true;
+			}
 		}
 	}
-
 	if (isHit)
 	{
 		KdDebugGUI::Instance().AddLog(
@@ -360,8 +376,11 @@ void Magicwand::UpdateAimMode(const Math::Vector3& muzzlePos, const Math::Matrix
 
 		// 斜めの角に当たっても扱いやすいよう、法線を軸方向(±X/±Y/±Z)に丸める
 		Math::Vector3 axisNormal = BlockGridManager::SnapNormalToAxis(hitNormal);
-		auto spGround = FindGround();
+		
+		// 面ハイライト更新
+		UpadateFaceHighlight(hitObj, axisNormal);
 
+		auto spGround = FindGround();
 		Math::Vector3 newBaseCell;
 		if (spGround)
 		{
@@ -393,6 +412,7 @@ void Magicwand::UpdateAimMode(const Math::Vector3& muzzlePos, const Math::Matrix
 		for (auto& block : m_previewBlocks) block->Expire();
 		m_previewBlocks.clear();
 		m_hasValidAim = false;
+		ClearFaceHighlight();	// 何も狙えなくなったら面ハイライトも消す
 	}
 }
 
@@ -402,35 +422,38 @@ void Magicwand::UpdateAimMode(const Math::Vector3& muzzlePos, const Math::Matrix
 // ===================================================
 void Magicwand::UpdateHighlight(const Math::Vector3& muzzlePos, const Math::Matrix& parentMat)
 {
+	if (m_previewBlocks.empty()) return;
+
 	Math::Vector3 dir = parentMat.Backward();
+	Math::Vector3 halfExtent(BlockGridManager::GridSize * 0.5f, BlockGridManager::GridSize * 0.5f, BlockGridManager::GridSize * 0.5f);
 
-	Math::Vector3 halfExtent
-	(
-		BlockGridManager::GridSize * 0.5f,
-		BlockGridManager::GridSize * 0.5f,
-		BlockGridManager::GridSize * 0.5f
-	);
-	
-	std::shared_ptr<NormalBlock> hitBlock = nullptr;
-	float closestDist = FLT_MAX;
+	// 常に「起点のマス」＝最初のプレビューブロックの面を判定対象にする
+	auto& baseBlock = m_previewBlocks.front();
 
-	for (auto& block : m_previewBlocks)
+	float dist = 0.0f;
+	Math::Vector3 faceNormal;
+	bool isHit = IntersectRayAABB(muzzlePos, dir, baseBlock->GetPos(), halfExtent, 1000.0f, &dist, &faceNormal);
+
+	if (!isHit)
 	{
-		float dist = 0.0f;
-		if (IntersectRayAABB(muzzlePos, dir, block->GetPos(), halfExtent, 1000.0f, &dist))
-		{
-			if (dist < closestDist)
-			{
-				closestDist = dist;
-				hitBlock	= block;
-			}
-		}
+		baseBlock->SetHighlightFace(false);
+		return;
 	}
 
-	// 全プレビューを一旦OFFにしてから、当たっているものだけONにする
-	for (auto& block : m_previewBlocks)
+	// 狙っている面をハイライト
+	baseBlock->SetHighlightFace(true, faceNormal);
+
+	// 狙っている面の方向が今の伸びる方向と違うなら、方向を切り替えてスタックを作り直す
+	if ((faceNormal - m_aimDir).LengthSquared() > 0.01f)
 	{
-		block->SetHighlight(block == hitBlock);
+		m_aimDir = faceNormal;
+		RebuildPreview(); // ← ここでm_previewBlocksが全部新しく作り直される
+
+		// 作り直した直後のbaseBlockは別インスタンスになっているので、ハイライトを付け直す
+		if (!m_previewBlocks.empty())
+		{
+			m_previewBlocks.front()->SetHighlightFace(true, faceNormal);
+		}
 	}
 }
 
@@ -451,11 +474,18 @@ void Magicwand::RebuildPreview()
 	// 実際に何段まで置けるかを衝突判定込みで計算する
 	auto positions = BlockGridManager::Instance().TryStack(m_aimBaseCell, m_aimDir, m_stackCount, *spGround);
 
-	for (auto& pos : positions)
+	for (size_t i = 0; i < positions.size(); ++i)
 	{
 		auto preview = std::make_shared<NormalBlock>();
-		preview->Init(pos);
-		preview->SetPreview(true); // 見た目だけの「見本」扱いにする(当たり判定OFFなど)
+		preview->Init(positions[i]);
+		preview->SetPreview(true);   // 見た目だけの「見本」扱いにする(当たり判定OFFなど)
+		
+		if (i > 0)
+		{
+			// 基点から伸びた分だけ光らせる(伸びた範囲を示す)
+			preview->SetHighlight(true);
+		}
+		// i == 0(基点)は何もしない → 今まで通りの半透明プレビューのまま
 
 		SceneManager::Instance().AddObject(preview);
 		m_previewBlocks.push_back(preview); 
@@ -656,4 +686,32 @@ void Magicwand::DismissStack(const std::vector<std::weak_ptr<NormalBlock>>& stac
 		}
 	}
 
+}
+
+void Magicwand::UpadateFaceHighlight(const std::shared_ptr<KdGameObject>& hitObj, const Math::Vector3& axisNormal)
+{
+	auto hitBlock = std::dynamic_pointer_cast<NormalBlock>(hitObj);
+	auto prevBlock = m_wpFaceHighlightBlock.lock();
+
+	if (prevBlock == hitBlock)
+	{
+		// 同じブロックの同じ面を狙い続けている場合でも、法線だけ更新しておく
+		if (hitBlock)hitBlock->SetHighlightFace(true, axisNormal);
+		return;
+	}
+
+	if (prevBlock)prevBlock->SetHighlightFace(false);
+	if (hitBlock) hitBlock->SetHighlightFace(true, axisNormal);
+
+	// hitObjがブロックでなければ自動的にリセットされる
+	m_wpFaceHighlightBlock = hitBlock;
+}
+
+void Magicwand::ClearFaceHighlight()
+{
+	if (auto prev = m_wpFaceHighlightBlock.lock())
+	{
+		prev->SetHighlightFace(false);
+	}
+	m_wpFaceHighlightBlock.reset();
 }

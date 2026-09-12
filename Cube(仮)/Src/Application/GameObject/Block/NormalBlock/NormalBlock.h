@@ -43,6 +43,13 @@ public:
 
 	void SetHighlight(bool isHighlighted) { m_isHighlighted = isHighlighted; }
 
+	// 面だけをハイライトする(true=表示, localNormalはブロックのローカル空間での面法線)
+	void SetHighlightFace(bool enable, const Math::Vector3& localNormal = Math::Vector3::Up)
+	{
+		m_isFaceHighlighted = enable;
+		if (enable) m_highlightFaceNormal = localNormal;
+	}
+
 private:
 
 	std::shared_ptr<KdModelWork> m_spModel = nullptr;
@@ -69,4 +76,12 @@ private:
 	// 選択中のハイライト
 	bool m_isHighlighted = false;	// レティクルが合っている間true
 	int  m_blinkTimer	 = 0;
+
+	// 選択中の面のハイライト
+	bool m_isFaceHighlighted = false;
+	Math::Vector3 m_highlightFaceNormal = Math::Vector3::Up;
+
+	// 面ハイライトの描画本体
+	void DrawFaceHighlight();
+
 };

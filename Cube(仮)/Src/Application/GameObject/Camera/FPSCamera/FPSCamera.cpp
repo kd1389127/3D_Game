@@ -26,7 +26,8 @@ void FPSCamera::PostUpdate()
 	bool isAiming = false;
 	if (auto spWand = m_wpMagicwand.lock())
 	{
-		isAiming = spWand->IsAiming();
+		// ズーム処理
+		isAiming = spWand->ShouldZoom();
 	}
 
 	float targetFov = isAiming ? m_adsFov : m_defaultFov;
