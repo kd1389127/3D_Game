@@ -118,13 +118,6 @@ void Magicwand::Update()
 	// 銃口(発射位置)のワールド座標を計算する
 	Math::Vector3 muzzlePos = (m_localMuzzleMat * parentMat).Translation();
 
-	// グリッドの表示
-	//if (m_pDebugWire)
-	//{
-	//	Math::Vector3 playerPos = parentMat.Translation();
-	//	BlockGridManager::Instance().DrawDebugGrid(*m_pDebugWire, playerPos, 40.0f); // 半径40くらい表示
-	//}
-
 	// ----- 今フレームのボタン状態と、押した/離した瞬間の判定 -----
 	bool rightDownNow = (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0;
 	bool leftDownNow  = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;

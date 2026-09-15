@@ -49,7 +49,7 @@ private:
 
 	// ----- ズーム開始判定用(Aimingに入ってからの経過フレーム。プレビューはすぐ出すが、ズームだけ遅らせる) -----
 	int					 m_aimHoldFrames = 0;
-	static constexpr int m_zoomHoldThreshold = 10;	 // これを超えたらズーム開始(60fps基準で約0.16秒)
+	static constexpr int m_zoomHoldThreshold = 8;	 // これを超えたらズーム開始(60fps基準で約0.13秒)
 
 	// 調整中に表示している半透明プレビュー用ブロックのリスト
 	// (実体はまだ確定していない「見本」なので、確定/キャンセル時にはExpireで消す)

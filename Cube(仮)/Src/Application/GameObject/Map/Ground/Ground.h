@@ -9,9 +9,10 @@ public:
 
 	void Init(const std::string& modelPath, float scale);
 	void DrawLit()	override;
+	void DrawDebug()override;
 
 private:
 
 	std::shared_ptr<KdModelWork> m_spModel = nullptr;
-
+	KdDebugWireFrame m_debugWire;
 };

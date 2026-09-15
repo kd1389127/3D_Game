@@ -33,7 +33,7 @@ public:
 	
 	// 自由な座標(小数)を、一番近いマスの中心座標に丸める(スナップ)
 	// 例：(9.8, 4.3, -3.1) → 一番近いマスの中心座標に変換
-	Math::Vector3 SnapToGrid(const Math::Vector3& pos)
+	Math::Vector3 SnapToGrid(const Math::Vector3& pos) const
 	{
 		constexpr float halfGrid = GridSize * 0.5f;
 
@@ -168,30 +168,42 @@ public:
 		return Math::Vector3(0, 0, normal.z > 0 ? 1.f : -1.f);
 	}
 
-	// デバッグ用：現在位置周辺のグリッド線を描画するイメージ
-	void DrawDebugGrid(KdDebugWireFrame& wire, const Math::Vector3& center, float range) const
+	// デバッグ用：グリッドの各マスを「ブロック形状の枠線」で描画する(高さ方向も含む)
+	void DrawDebugGrid(KdDebugWireFrame& wire, const Math::Vector3& center, float range, int yLayers = 5) const
 	{
-		constexpr Math::Color gridColor = { 0.2f, 0.8f, 1.0f, 1.0f }; // 見やすい水色
+		if (!m_showDebugGrid) { return; }
 
-		// centerに一番近いグリッド線の開始位置を求める(常に8.0刻みの線を引くため)
-		float startX = std::floor((center.x - range) / GridSize) * GridSize;
-		float startZ = std::floor((center.z - range) / GridSize) * GridSize;
+		constexpr Math::Color gridColor = { 0.2f, 0.8f, 1.0f, 1.0f };
+		constexpr float half = GridSize * 0.5f;
 
-		// X方向に伸びる線(Z軸を固定して並べる)
-		for (float z = startZ; z <= center.z + range; z += GridSize)
+		Math::Vector3 centerCell = SnapToGrid(center);
+		int cellRange = static_cast<int>(range / GridSize);
+
+		for (int x = -cellRange; x <= cellRange; ++x)
 		{
-			Math::Vector3 lineStart = { center.x - range, m_groundHeight, z };
-			Math::Vector3 lineEnd = { center.x + range, m_groundHeight, z };
-			wire.AddDebugLine(lineStart, lineEnd, gridColor);
-		}
+			for (int z = -cellRange; z <= cellRange; ++z)
+			{
+				for (int y = 0; y < yLayers; ++y) // ★Y方向にyLayers分積み上げる
+				{
+					Math::Vector3 cellPos = centerCell + Math::Vector3(x * GridSize, y * GridSize, z * GridSize);
 
-		// Z方向に伸びる線(X軸を固定して並べる)
-		for (float x = startX; x <= center.x + range; x += GridSize)
-		{
-			Math::Vector3 lineStart = { x, m_groundHeight, center.z - range };
-			Math::Vector3 lineEnd = { x, m_groundHeight, center.z + range };
-			wire.AddDebugLine(lineStart, lineEnd, gridColor);
+					Math::Matrix mat = Math::Matrix::CreateTranslation(cellPos);
+					Math::Vector3 halfExtents(half, half, half);
+
+					wire.AddDebugBox(mat, halfExtents, Math::Vector3::Zero, false, gridColor);
+				}
+			}
 		}
+	}
+
+	void ToggleDebugGrid()
+	{
+		m_showDebugGrid = !m_showDebugGrid;
+	}
+
+	bool IsDebugGridVisible() const
+	{
+		return m_showDebugGrid;
 	}
 
 private:
@@ -223,4 +235,5 @@ private:
 	// 「使用中のマス」を全部記録しておくコンテナ
 	std::unordered_map<std::tuple<int, int, int>, BlockKind, KeyHash> m_occupied;
 	float m_groundHeight = 0.0f;
+	bool  m_showDebugGrid = false;
 };

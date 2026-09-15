@@ -6,7 +6,7 @@ void NormalBlock::Init(const Math::Vector3& pos)
 	if (!m_spModel)
 	{
 		m_spModel = std::make_shared<KdModelWork>();
-		m_spModel->SetModelData("Asset/Models/Block/RockBlock/RockBlock.gltf");
+		m_spModel->SetModelData("Asset/Models/Block/MagicBlock/MagicBlock.gltf");
 	}
 
 	if (!m_pDebugWire)
@@ -124,12 +124,12 @@ void NormalBlock::DrawLit()
 			m_blinkTimer++;
 			float blink = (sinf(m_blinkTimer * 0.2f) * 0.5f + 0.5f); //0.0～1.0を往復
 
-			Math::Color previewColor(0.0f, 1.0f, 0.0f, 0.6f + blink * 0.4f);
+			Math::Color previewColor(0.4f, 0.9f, 1.0f, 0.6f + blink * 0.4f);
 			KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld, previewColor);
 		}
 		else
 		{
-			Math::Color previewColor(0.5f, 0.90f, 0.5f, 0.6f);
+			Math::Color previewColor(0.4f, 0.7f, 1.0f, 0.6f);
 			KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld, previewColor);
 		}
 		// 変更前のブレンドステートに戻す
@@ -149,13 +149,15 @@ void NormalBlock::DrawLit()
 		// ----- ③ 通常描画(確定済み、アニメーション完了後) -----
 		KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
 	}
+}
 
+void NormalBlock::DrawUnLit()
+{
 	// ----- 狙われている面だけを光らせる枠を重ねて描く -----
 	if (m_isFaceHighlighted)
 	{
 		DrawFaceHighlight();
 	}
-
 }
 
 void NormalBlock::SetCarried(bool isCarried)
@@ -226,7 +228,7 @@ void NormalBlock::DrawFaceHighlight()
 	Math::Vector3 faceNormal = m_highlightFaceNormal;
 
 	// 面の中心(ローカル座標)＝ 法線方向に半サイズ + ごくわずか浮かせた位置
-	Math::Vector3 localCenter = faceNormal * (half - 0.01f);
+	Math::Vector3 localCenter = faceNormal * (half - 0.02f);
 
 	// 面と平行な2軸はほぼブロック大(0.98)、法線方向だけ薄く潰す
 	Math::Vector3 localScale
@@ -244,9 +246,9 @@ void NormalBlock::DrawFaceHighlight()
 
 	m_blinkTimer++;
 	float blink = (sinf(m_blinkTimer * 0.2f) * 0.5f + 0.5f); //0.0～1.0を往復
-	Math::Color faceColor(0.0f, 1.0f, 0.0f, 0.6f + blink * 0.4f);
+	Math::Color faceColor(0.6f, 0.95f, 1.0f, 0.5f + blink * 0.5f);
 
-	KdShaderManager::Instance().ChangeBlendState(KdBlendState::Alpha);
+	KdShaderManager::Instance().ChangeBlendState(KdBlendState::Add);
 	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, quadWorld, faceColor);
 	KdShaderManager::Instance().UndoBlendState();
 }

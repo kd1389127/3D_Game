@@ -89,7 +89,7 @@ void BlockGrabber::Init(float groundHeight)
 	m_groundHeight = groundHeight;
 
 	m_spNormalPreviewModel = std::make_shared<KdModelWork>();
-	m_spNormalPreviewModel->SetModelData("Asset/Models/Block/RockBlock/RockBlock.gltf");
+	m_spNormalPreviewModel->SetModelData("Asset/Models/Block/MagicBlock/MagicBlock.gltf");
 
 	m_spGimmickPreviewModel = std::make_shared<KdModelWork>();
 	// GimmickBlock::Initで使っているモデルパスと合わせる

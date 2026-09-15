@@ -20,6 +20,23 @@ void GameScene::Event()
 		SceneManager::Instance().SetCurrentStage(0); // タイトルに戻る＝進行状況をリセット
 		SceneManager::Instance().SetNextScene(SceneManager::SceneType::Title);
 	}
+	// Gキーでデバッググリッドの表示切り替え
+	static bool prevG = false;
+	bool nowG = (GetAsyncKeyState('G') & 0x8000) != 0;
+	if (nowG && !prevG) // 押した瞬間だけ反応させる(トリガー判定)
+	{
+		BlockGridManager::Instance().ToggleDebugGrid();
+	}
+	prevG = nowG;
+
+	if (GetAsyncKeyState('1') & 0x8000)
+	{
+		SceneManager::Instance().SetCurrentStage(0); 
+	}
+	if (GetAsyncKeyState('2') & 0x8000)
+	{
+		SceneManager::Instance().SetCurrentStage(1);
+	}
 }
 
 void GameScene::Init()
@@ -34,7 +51,14 @@ void GameScene::Init()
 	// ステージ切り替え時：前ステージの占有情報をクリアし、今ステージの地面の高さをグリッド基準にする
 	BlockGridManager::Instance().Clear();
 	BlockGridManager::Instance().SetGroundHeight(data.groundHeight);
-	
+
+	// ステージ開始時は必ずグリッド非表示から始める
+	if (BlockGridManager::Instance().IsDebugGridVisible())
+	{
+		BlockGridManager::Instance().ToggleDebugGrid();
+	}
+
+
 	// Map(地面)
 	std::shared_ptr<Ground> ground;
 	ground = std::make_shared<Ground>();

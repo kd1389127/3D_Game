@@ -13,6 +13,7 @@ public:
 	void Update()	override;      // ★せり出しアニメーションの進行をここで処理する
 	void PostUpdate() override;
 	void DrawLit()	override;
+	void DrawUnLit()	override;
 
 	void SetCarried(bool isCarried);
 	bool IsCarried() const { return m_isCarried; }
