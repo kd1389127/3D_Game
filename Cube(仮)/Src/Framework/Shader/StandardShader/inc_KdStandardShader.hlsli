@@ -11,6 +11,15 @@ cbuffer cbObject : register(b0)
 	float g_dissolveValue;		// ディゾルブの閾値
 	float g_dissolveEdgeRange;	// ディゾルブの境界線の太さ
 	float3 g_dissolveEmissive;	// 境界の色
+
+	// リムライト(フレネル)関連(ゲーム内では現在使ってない)
+	float  g_RimPower;
+	float3 g_RimColor;
+
+	// オーロラ演出用(ゲーム内では現在使ってない)
+	float g_Time;
+	float g_AuroraStrength;			// 面全体に乗せる強さ(0.2〜0.5くらいがおすすめ)
+	float2 _blank2;					// 16バイト境界合わせ用のダミー
 };
 
 // 定数バッファ(メッシュ単位)

@@ -38,4 +38,10 @@ protected:
 
 	// レイ弾フラグ
 	bool m_rayBulletFlg = false;
+
+	// 演出用の追加回転行列(武器を振る等)。デフォルトは単位行列(何もしない)
+	Math::Matrix m_animMat = Math::Matrix::Identity;
+
+	// 武器モデル自体の非等方スケール(振りの回転より先に適用する)
+	Math::Matrix m_scaleMat = Math::Matrix::Identity;
 };

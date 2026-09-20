@@ -56,8 +56,8 @@
 	"images":[
 		{
 			"mimeType":"image/png",
-			"name":"MagicBlockTexture",
-			"uri":"MagicBlockTexture.png"
+			"name":"magic_block_texture_v2",
+			"uri":"magic_block_texture_v2.png"
 		}
 	],
 	"accessors":[

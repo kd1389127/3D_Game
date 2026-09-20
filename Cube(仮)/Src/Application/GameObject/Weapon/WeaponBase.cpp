@@ -5,11 +5,11 @@ void WeaponBase::Update()
 	const std::shared_ptr<const KdGameObject> spParent = m_wpParent.lock();
 	if (spParent)
 	{
-		// 親の行列を取得
 		Math::Matrix parentMat = spParent->GetMatrix();
 
-		// 親の行列を反映したワールド行列を作成
-		m_mWorld = m_localMat * parentMat;
+		// スケール→振り(animMat)→傾き・位置(localMat)→親、の順に適用する
+		// (スケールを回転より先にかけることで、非等方スケールによる歪みを防ぐ)
+		m_mWorld = m_scaleMat * m_animMat * m_localMat * parentMat;
 	}
 }
 

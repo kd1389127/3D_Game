@@ -82,8 +82,22 @@ void Magicwand::Init()
 			m_pDebugWire = std::make_unique<KdDebugWireFrame>();
 		}
 
+		// 杖を大きく見せるためのスケール(1.5倍程度から調整)
+		m_scaleMat = Math::Matrix::CreateScale(1.3f, 1.3f, 1.3f);
+
+		// 杖を傾けて構えているように見せるための回転
+		// X軸：前後の傾き(先端を少し奥に倒す)　Z軸：左右の傾き(内側に少し倒す)
+		Math::Matrix rot =
+			Math::Matrix::CreateRotationX(DirectX::XMConvertToRadians(20.0f)) *  // 前後の傾きを少し強める
+			Math::Matrix::CreateRotationY(DirectX::XMConvertToRadians(15.0f)) *  // 横方向にひねる
+			Math::Matrix::CreateRotationZ(DirectX::XMConvertToRadians(15.0f));   // 左右の傾きも少し強める
+
 		// 親(プレイヤー)から見た「杖本体」の相対位置(手元に構えている位置)
-		m_localMat = Math::Matrix::CreateTranslation(0.2f, -0.55f, 0.4f);
+		// 位置も右下寄りに調整
+		Math::Matrix pos = Math::Matrix::CreateTranslation(0.35f, -0.6f, 0.6f);
+
+		// 親(プレイヤー)から見た「杖本体」の相対位置(手元に構えている位置)
+		m_localMat = rot * pos;
 
 		// 杖本体から見た「銃口(発射位置)」の相対位置に、さらに親からの相対位置を掛け合わせる
 		// (＝結果的に「親から見た銃口の相対位置」になる)
@@ -227,8 +241,44 @@ void Magicwand::Update()
 	m_rightDownPrev = rightDownNow;
 	m_leftDownPrev  = leftDownNow;
 
+	UpdateSwingAnim();
+
 	// 基底クラス(WeaponBase)の更新処理を呼んで、ワールド行列などを確定させる
 	WeaponBase::Update();
+}
+
+void Magicwand::StartSwingAnim()
+{
+	m_isSwinging = true;
+	m_SwingFram = 0;
+}
+
+void Magicwand::UpdateSwingAnim()
+{
+	if (!m_isSwinging)
+	{
+		m_animMat = Math::Matrix::Identity;
+		return;
+	}
+
+	m_SwingFram++;
+	float t = m_SwingFram / (float)m_swingDuration;
+
+	if (t >= 1.0f)
+	{
+		m_isSwinging = false;
+		m_animMat = Math::Matrix::Identity;
+		return;
+	}
+
+	// 0→1→0と滑らかに変化するカーブ(振り上げて、振り下ろして戻る動き)
+	float swingT = sinf(t * DirectX::XM_PI);
+
+	// X軸回転で「前に振り下ろす」動きを表現(角度はお好みで調整)
+	float angle = DirectX::XMConvertToRadians(25.0f) * swingT;
+
+	m_animMat = Math::Matrix::CreateRotationX(angle);
+
 }
 
 // ===================================================
@@ -288,6 +338,7 @@ void Magicwand::SingleShot(const Math::Vector3& muzzlePos, const Math::Matrix& p
 
 	SceneManager::Instance().AddObject(bullet);
 
+	StartSwingAnim();
 }
 
 // エイムモード開始：段数・狙い情報をリセットする
@@ -605,6 +656,8 @@ void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix&
 	}
 
 	SceneManager::Instance().AddObject(bulletObj);
+
+	StartSwingAnim();
 }
 
 // ===================================================

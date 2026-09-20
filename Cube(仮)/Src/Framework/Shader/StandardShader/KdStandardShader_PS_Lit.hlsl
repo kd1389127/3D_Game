@@ -258,7 +258,32 @@ float4 main(VSOutput In) : SV_Target0
 		// 適用
 		outColor = lerp(g_DistanceFogColor, outColor, f);
 	}
+
+	//(ゲーム内では現在使ってない)
+	// フレネル(リムライト)効果
+	// オーロラの色相巡回(x/y/z全部を混ぜて、面を斜めに這うような色の帯にする)
+	if(g_AuroraStrength > 0)
+	{
 	
+		float phase = g_Time * 0.5 + (In.wPos.x + In.wPos.y * 1.5 + In.wPos.z) * 0.15;
+
+		float3 auroraColor;
+		auroraColor.r = 0.2 + 0.3 * sin(phase);		  // 0.0～0.5の範囲までしか上がらない
+		auroraColor.g = 0.6 + 0.4 * sin(phase + 2.0); // 0.2～1.0
+		auroraColor.b = 0.8 + 0.2 * sin(phase + 4.0); // 0.6～1.0
+
+		// カメラ角度に関係なく、面全体に常時乗せる
+		outColor += auroraColor * g_AuroraStrength;
+	
+	
+		// 輪郭だけさらに強調したい場合はフレネルも足す
+		if (g_RimPower > 0)
+		{
+			float fresnel = pow(1.0 - saturate(dot(wN, vCam)), g_RimPower);
+			outColor += auroraColor * fresnel;
+		}
+	}
+	//(ゲーム内では現在使ってない)
 	// ディゾルブ輪郭発光
 	if (g_dissolveValue > 0)
 	{

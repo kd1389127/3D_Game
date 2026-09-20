@@ -22,11 +22,16 @@ public:
 
 private:
 
+	// ----- 発射時の「振る」モーション -----
+	bool m_isSwinging = false;
+	int m_SwingFram = 0;
+	static constexpr int m_swingDuration = 12;
+	void StartSwingAnim();	// 発射時に呼ぶ：振りモーション開始
+	void UpdateSwingAnim(); // 毎フレーム呼ぶ：m_animMatを更新する
+	
+
 	// ===================================================
 	// 長押しエイム(狙い)モード関連
-	// 「右クリック長押し→視線の先にプレビュー表示→離すと位置固定→
-	//  ホイールで段数調整→左クリックで確定発射 / 右クリックでキャンセル」
-	// という操作フローを管理する状態
 	// ===================================================
 	enum class WandState
 	{

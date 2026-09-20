@@ -58,7 +58,6 @@ private:
 	bool m_isCarried = false; // プレイヤーに持ち上げられている最中かどうか
 	bool m_isPreview = false; // プレビュー(まだ確定していない見本)かどうか
 
-
 	// ----- せり出しアニメーション用のパラメータ -----
 	bool  m_isEmerging = false;                       // アニメーション再生中かどうか
 	int   m_emergeFrame = 0;                          // 経過フレーム数(負の値の間はまだ開始待ち＝delay中)
@@ -84,5 +83,4 @@ private:
 
 	// 面ハイライトの描画本体
 	void DrawFaceHighlight();
-
 };

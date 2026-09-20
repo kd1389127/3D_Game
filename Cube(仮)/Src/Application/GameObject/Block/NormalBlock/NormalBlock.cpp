@@ -183,9 +183,6 @@ void NormalBlock::StartEmerge(int delayFrames, const Math::Vector3& dir)
 
 	// 見た目上のスタート地点(最終位置からdir方向の逆に1マス分ずらした位置)に、
 	// 先にワープさせておいてからアニメーションで最終位置まで動かす
-	/*constexpr float test = 0.7f;
-	Math::Vector3 startPos = m_finalPos - dir * (BlockGridManager::GridSize * test);*/
-	//SetPos(startPos);
 	SetPos(m_finalPos);
 
 	if (m_pCollider)
@@ -246,7 +243,7 @@ void NormalBlock::DrawFaceHighlight()
 
 	m_blinkTimer++;
 	float blink = (sinf(m_blinkTimer * 0.2f) * 0.5f + 0.5f); //0.0～1.0を往復
-	Math::Color faceColor(0.6f, 0.95f, 1.0f, 0.5f + blink * 0.5f);
+	Math::Color faceColor(0.6f, 0.95f, 1.0f, 0.85f + blink * 0.15f);
 
 	KdShaderManager::Instance().ChangeBlendState(KdBlendState::Add);
 	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, quadWorld, faceColor);

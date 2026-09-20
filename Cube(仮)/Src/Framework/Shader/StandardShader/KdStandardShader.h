@@ -31,6 +31,17 @@ public:
 		float			DissolveEdgeRange = 0.03f;	// 0 ～ 1
 
 		Math::Vector3	DissolveEmissive = { 0.0f, 1.0f, 1.0f };
+
+		//(ゲーム内では現在使ってない)
+		// リムライト(フレネル)関連
+		float		  RimPower = 0.0f;
+		Math::Vector3 RimColor = { 0.3f,0.6f,1.0f };
+		//(ゲーム内では現在使ってない)
+		// オーロラ演出用の経過時間
+		float Time = 0.0f;
+		float AuroraStrength = 0.0f;
+		float _blank[2] = { 0.0f,0.0f};
+
 	};
 
 	// 定数バッファ(メッシュ単位更新)
@@ -126,6 +137,33 @@ public:
 		if (!m_dissolveTex) { return; }
 
 		SetDissolveTexture(*m_dissolveTex);
+	}
+
+	//(ゲーム内では現在使ってない)
+	// リムライト(フレネル)設定
+	void SetRimLight(float power, const Math::Vector3* color = nullptr)
+	{
+		auto& cbObj = m_cb0_Obj.Work();
+
+		cbObj.RimPower = power;
+
+		if (color)
+		{
+			cbObj.RimColor = *color;
+		}
+
+		m_dirtyCBObj = true;
+	}
+	//(ゲーム内では現在使ってない)
+	// 経過時間の設定(オーロラなど時間変化する演出用)
+	void SetAurora(float time,float strength = 0.4f)
+	{
+		auto& cbObj = m_cb0_Obj.Work();
+
+		cbObj.Time = time;
+		cbObj.AuroraStrength = strength;
+
+		m_dirtyCBObj = true;
 	}
 
 	//================================================
