@@ -147,7 +147,18 @@ void NormalBlock::DrawLit()
 	else
 	{
 		// ----- ③ 通常描画(確定済み、アニメーション完了後) -----
-		KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
+		if (m_isDeleteTargeted)
+		{
+			// 削除対象として狙われている間は赤く明滅させる
+			m_blinkTimer++;
+			float blink = (sinf(m_blinkTimer * 0.2f) * 0.5f + 0.5f);
+			Math::Color deleteColor(1.0f, 0.25f + blink * 0.2f, 0.25f + blink * 0.2f, 1.0f);
+			KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld, deleteColor);
+		}
+		else
+		{
+			KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
+		}
 	}
 }
 

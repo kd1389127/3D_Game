@@ -142,6 +142,12 @@
     <Filter Include="Src\Application\GameObject\Block\GimmickBlock">
       <UniqueIdentifier>{830ad777-ef84-4201-97a0-4b5c4e534b11}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\GameObject\UI\MagicGaugeUI">
+      <UniqueIdentifier>{3447cf7e-0054-4045-a563-20c2043d11d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\GameObject\Magic">
+      <UniqueIdentifier>{f728d39e-6af5-4c81-958b-1cf229ba7a5b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -375,6 +381,15 @@
     <ClInclude Include="Src\Application\GameObject\Block\Grabbable.h">
       <Filter>Src\Application\GameObject\Block</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\UI\MagicGaugeUI\MagicGaugeUI.h">
+      <Filter>Src\Application\GameObject\UI\MagicGaugeUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Magic\MagicManager.h">
+      <Filter>Src\Application\GameObject\Magic</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Character\Player\Component\BlockDestroyer.h">
+      <Filter>Src\Application\GameObject\Character\Player\Component</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -568,6 +583,12 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\Block\GimmickBlock\GimmickBlock.cpp">
       <Filter>Src\Application\GameObject\Block\GimmickBlock</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\UI\MagicGaugeUI\MagicGaugeUI.cpp">
+      <Filter>Src\Application\GameObject\UI\MagicGaugeUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Character\Player\Component\BlockDestroyer.cpp">
+      <Filter>Src\Application\GameObject\Character\Player\Component</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

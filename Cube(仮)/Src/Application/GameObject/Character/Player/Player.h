@@ -2,6 +2,7 @@
 
 class CameraBase;
 class BlockGrabber;
+class BlockDestroyer;
 
 class Player : public KdGameObject
 {
@@ -16,6 +17,9 @@ public:
 
 	// ブロックを保持しているかチェックする関数
 	bool IsCarryingBlock() const;
+
+	// 削除モード中かどうかチェックする関数(Magicwandなどが発射を止めるために使う)
+	bool IsBlockDeleteMode()const;
 
 private:
 
@@ -47,8 +51,9 @@ private:
 	// カメラ回転用マウス座標の差分
 	POINT m_fixMousePos = { 640,360 };
 
-	// ★ ブロック操作コンポーネント（所有権管理）
+	// ブロック操作コンポーネント（所有権管理）
 	std::unique_ptr<BlockGrabber> m_upBlockGrabber = nullptr;
+	std::unique_ptr<BlockDestroyer>m_upBlockDestroyer = nullptr;
 
 	// ワールド座標
 	Math::Vector3 m_pos = Math::Vector3::Zero;

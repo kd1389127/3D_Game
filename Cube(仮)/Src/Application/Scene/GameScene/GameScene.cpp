@@ -2,12 +2,14 @@
 #include "../SceneManager.h"
 #include "../StageData.h"
 #include "../../GameObject/Block/BlockGridManager.h"
+#include "../../GameObject/Magic/MagicManager.h"
 
 #include "../../GameObject/Camera/FPSCamera/FPSCamera.h"
 #include "../../GameObject/Map/Ground/Ground.h"
 #include "../../GameObject/Character/Player/Player.h"
 #include "../../GameObject/Weapon/Magicwand/Magicwand.h"
 #include "../../GameObject/UI/Reticle/Reticle.h"
+#include "../../GameObject/UI/MagicGaugeUI/MagicGaugeUI.h"
 #include "../../GameObject/Block/GimmickBlock/GimmickBlock.h"
 #include "../../GameObject/Map/Gimmick/Goal/Goal.h"
 #include "../../GameObject/Map/Gimmick/Cage/Cage.h"
@@ -43,6 +45,9 @@ void GameScene::Init()
 {
 	// 前のステージで置かれたブロックの占有情報をクリア
 	BlockGridManager::Instance().Clear();
+
+	// ステージ開始時は魔力を満タンにリセット
+	MagicManager::Instance().Reset();
 
 	// 現在のステージ情報を取得
 	int stage = SceneManager::Instance().GetCurrentStage();
@@ -81,7 +86,14 @@ void GameScene::Init()
 	std::shared_ptr<Reticle> reticle;
 	reticle = std::make_shared<Reticle>();
 	reticle->Init();
+	reticle->SetTarget(player); 
 	m_objList.push_back(reticle);
+
+	// 魔力ゲージ
+	std::shared_ptr<MagicGaugeUI> magicgaugeUI;
+	magicgaugeUI = std::make_shared<MagicGaugeUI>();
+	magicgaugeUI->Init();
+	m_objList.push_back(magicgaugeUI);
 
 	// FPSカメラ
 	std::shared_ptr<FPSCamera> fpscamera;

@@ -51,6 +51,16 @@ public:
 		if (enable) m_highlightFaceNormal = localNormal;
 	}
 
+	// 削除モード中、レティクルが合っているブロックを赤くハイライトする
+	void SetDeleteHighlight(bool enable) { m_isDeleteTargeted = enable; }
+	bool IsDeleteHighlighted()const { return m_isDeleteTargeted; }
+
+	// このブロックがどの「スタック(1回の発動でまとめて生成された一連のブロック)」に属するか
+	// stackIndexは0=基点、数字が大きいほど先端側(消す時の演出の順番に使う)
+	void SetStackInfo(int stackId, int stackIndex) { m_stackId = stackId; m_stackIndex = stackIndex; }
+	int GetStackId() const { return m_stackId; }
+	int GetStackIndex() const { return m_stackIndex; }
+
 private:
 
 	std::shared_ptr<KdModelWork> m_spModel = nullptr;
@@ -83,4 +93,10 @@ private:
 
 	// 面ハイライトの描画本体
 	void DrawFaceHighlight();
+
+	// 削除モード中、レティクルがあっているか
+	bool m_isDeleteTargeted = false;
+
+	int m_stackId = -1;   // 所属するスタックのID(-1=未所属/単体)
+	int m_stackIndex = 0; // スタック内の順番(先端から消すアニメの遅延計算に使う)
 };

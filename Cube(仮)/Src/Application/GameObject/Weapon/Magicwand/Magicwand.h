@@ -90,7 +90,6 @@ private:
 
 	// ----- 生成したスタックの履歴(古いスタックから消すため) -----
 	std::deque<std::vector<std::weak_ptr<NormalBlock>>> m_generatedStacks;
-	static constexpr int m_maxAliveStacks = 5; // 同時に存在できるスタックの上限
 
 	// 指定したスタックを、先端(伸ばした側)から根元へ向かって消していく
 	void DismissStack(const std::vector<std::weak_ptr<NormalBlock>>& stack);
@@ -100,4 +99,7 @@ private:
 
 	void UpadateFaceHighlight(const std::shared_ptr<KdGameObject>& hitObj, const Math::Vector3& axisNormal);
 	void ClearFaceHighlight();
+
+	// 生成するたびに発行するスタックID
+	int m_nextStackId = 0;
 };

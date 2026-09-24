@@ -4,6 +4,7 @@
 #include "../../../Scene/StageData.h"
 #include "Component/BlockGrabber.h"
 #include "../../Block/BlockGridManager.h"
+#include "Component/BlockDestroyer.h"
 
 Player::Player() = default;
 Player::~Player() = default;
@@ -18,6 +19,8 @@ void Player::Init(const Math::Vector3& startPos, float groundHeight)
 
 	m_upBlockGrabber = std::make_unique<BlockGrabber>();
 	m_upBlockGrabber->Init(groundHeight); // ← groundHeightを渡す
+
+	m_upBlockDestroyer = std::make_unique<BlockDestroyer>();
 }
 
 // 毎フレームの更新：入力受付・移動・重力・ゴール判定などをまとめて行う
@@ -68,10 +71,17 @@ void Player::Update()
 	// 横方向の移動を確定(壁への当たり判定はまだしていない。PostUpdateで後から押し戻す方式)
 	m_pos += m_moveDir * m_moveSpeed;
 
-	// ブロックを掴む/置く/持ち運ぶ処理を、専用のコンポーネントに任せる
-	if (m_upBlockGrabber)
+	bool isDeleteMode = m_upBlockDestroyer && m_upBlockDestroyer->IsDeleteMode();
+
+	// 削除モード中はEキーでの掴む/置く操作を止める
+	if (m_upBlockGrabber && !isDeleteMode)
 	{
 		m_upBlockGrabber->Update(m_pos, GetRotationMatrix());
+	}
+
+	if (m_upBlockDestroyer)
+	{
+		m_upBlockDestroyer->Update(m_pos, GetRotationMatrix());
 	}
 
 	// 持っているブロックにプレイヤー自身がめり込んでいないかチェックして押し出す
@@ -200,6 +210,15 @@ bool Player::IsCarryingBlock() const
 	if (m_upBlockGrabber)
 	{
 		return m_upBlockGrabber->IsCarrying();
+	}
+	return false;
+}
+
+bool Player::IsBlockDeleteMode() const
+{
+	if (m_upBlockDestroyer)
+	{
+		return m_upBlockDestroyer->IsDeleteMode();
 	}
 	return false;
 }

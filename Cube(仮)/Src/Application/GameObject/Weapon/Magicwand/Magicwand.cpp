@@ -7,6 +7,7 @@
 #include "../../Block/BlockGridManager.h"
 #include "../../Block/NormalBlock/NormalBlock.h" 
 #include "../../Map/Ground/Ground.h"
+#include "../../Magic/MagicManager.h"
 
 namespace
 {
@@ -113,12 +114,14 @@ void Magicwand::Update()
 
 	// 親がブロックを持ち上げ中かどうかを確認する(持っている間は発射できないようにするため)
 	bool isCarrying = false;
+	bool isDeleteMode = false;
 	if (spParent)
 	{
 		auto player = std::dynamic_pointer_cast<const Player>(spParent);
-		if (player && player->IsCarryingBlock())
+		if (player)
 		{
-			isCarrying = true;
+			if (player->IsCarryingBlock())   isCarrying = true;
+			if (player->IsBlockDeleteMode()) isDeleteMode = true;
 		}
 	}
 
@@ -147,13 +150,20 @@ void Magicwand::Update()
 		// ---------------------------------------------------
 		case WandState::Idle:
 		{
-			if (rightPressed && !isCarrying)
+			if (rightPressed && !isCarrying && !isDeleteMode)
 			{
-				EnterAimMode();
-				// 押した瞬間から即座にプレビューが出るよう、同じフレームで1回更新しておく
-				UpdateAimMode(muzzlePos, parentMat);
+				if (MagicManager::Instance().CanCast())
+				{
+					EnterAimMode();
+					// 押した瞬間から即座にプレビューが出るよう、同じフレームで1回更新しておく
+					UpdateAimMode(muzzlePos, parentMat);
+				}
+				else
+				{
+					MagicManager::Instance().MarkAttemptFailed();
+				}
 			}
-			else if (leftPressed && !isCarrying)
+			else if (leftPressed && !isCarrying && !isDeleteMode)
 			{
 				// 左クリック単発：エイムなしで即座に1個だけ生成する
 				SingleShot(muzzlePos, parentMat);
@@ -670,17 +680,26 @@ void Magicwand::GenerateStackAt(const Math::Vector3& baseCell, const Math::Vecto
 
 	// 弾が飛んでいる間に状況が変わっている可能性があるため、着弾した瞬間にもう一度計算し直す
 	auto positions = BlockGridManager::Instance().TryStack(baseCell, dir, stackCount, *spGround);
+	if (positions.empty()) return;
+
+	// 段数(生成されるブロック個数)に関わらず、1回の発動につき消費は1固定
+	if (!MagicManager::Instance().TryConsumeCast())
+	{
+		return;
+	}
 
 	// 1段ごとにアニメーション開始をずらし、根元から順に生えて見せる
 	constexpr int staggerFrames = 6;
-
 	std::vector<std::weak_ptr<NormalBlock>> newStack;	// このスタックの一員を記録するリスト
+
+	int stackId = m_nextStackId++;
 
 	for (size_t i = 0; i < positions.size(); ++i)
 	{
 		auto block = std::make_shared<NormalBlock>();
 		block->Init(positions[i]);
 		block->StartEmerge((int)i * staggerFrames, dir);
+		block->SetStackInfo(stackId, (int)i);
 
 		SceneManager::Instance().AddObject(block);
 
@@ -691,15 +710,6 @@ void Magicwand::GenerateStackAt(const Math::Vector3& baseCell, const Math::Vecto
 	}
 
 	m_generatedStacks.push_back(newStack);   // スタックの履歴に追加
-
-	// スタック数が上限を超えたら、一番古いスタックをまとめて消す
-	if((int)m_generatedStacks.size() > m_maxAliveStacks)
-	{
-		auto oldest = m_generatedStacks.front();
-		m_generatedStacks.pop_front();
-		DismissStack(oldest);
-	}
-
 }
 
 // ===================================================
