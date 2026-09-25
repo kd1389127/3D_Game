@@ -25,10 +25,9 @@ private:
 	// ----- 発射時の「振る」モーション -----
 	bool m_isSwinging = false;
 	int m_SwingFram = 0;
-	static constexpr int m_swingDuration = 12;
+	static constexpr int m_swingDuration = 16;
 	void StartSwingAnim();	// 発射時に呼ぶ：振りモーション開始
 	void UpdateSwingAnim(); // 毎フレーム呼ぶ：m_animMatを更新する
-	
 
 	// ===================================================
 	// 長押しエイム(狙い)モード関連

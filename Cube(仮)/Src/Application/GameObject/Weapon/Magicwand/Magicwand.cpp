@@ -91,11 +91,11 @@ void Magicwand::Init()
 		Math::Matrix rot =
 			Math::Matrix::CreateRotationX(DirectX::XMConvertToRadians(20.0f)) *  // 前後の傾きを少し強める
 			Math::Matrix::CreateRotationY(DirectX::XMConvertToRadians(15.0f)) *  // 横方向にひねる
-			Math::Matrix::CreateRotationZ(DirectX::XMConvertToRadians(15.0f));   // 左右の傾きも少し強める
+			Math::Matrix::CreateRotationZ(DirectX::XMConvertToRadians(30.0f));   // 左右の傾きも少し強める
 
 		// 親(プレイヤー)から見た「杖本体」の相対位置(手元に構えている位置)
 		// 位置も右下寄りに調整
-		Math::Matrix pos = Math::Matrix::CreateTranslation(0.35f, -0.6f, 0.6f);
+		Math::Matrix pos = Math::Matrix::CreateTranslation(0.6f, -0.7f, 0.6f);
 
 		// 親(プレイヤー)から見た「杖本体」の相対位置(手元に構えている位置)
 		m_localMat = rot * pos;
@@ -165,8 +165,15 @@ void Magicwand::Update()
 			}
 			else if (leftPressed && !isCarrying && !isDeleteMode)
 			{
-				// 左クリック単発：エイムなしで即座に1個だけ生成する
-				SingleShot(muzzlePos, parentMat);
+				if (MagicManager::Instance().CanCast())
+				{
+					// 左クリック単発：エイムなしで即座に1個だけ生成する
+					SingleShot(muzzlePos, parentMat);
+				}
+				else
+				{
+					MagicManager::Instance().MarkAttemptFailed();
+				}
 			}
 			break;
 		}
@@ -234,7 +241,8 @@ void Magicwand::Update()
 					effectiveWheel = -wheelValue;
 				}
 
-				int newCount = std::clamp(m_stackCount + (effectiveWheel > 0 ? 1 : -1), 1, m_maxStackCount);
+				int maxAllowed = std::min(m_maxStackCount, MagicManager::Instance().GetRemainingCasts());
+				int newCount = std::clamp(m_stackCount + (effectiveWheel > 0 ? 1 : -1), 1, maxAllowed);
 
 				if (newCount != m_stackCount)
 				{
@@ -285,7 +293,7 @@ void Magicwand::UpdateSwingAnim()
 	float swingT = sinf(t * DirectX::XM_PI);
 
 	// X軸回転で「前に振り下ろす」動きを表現(角度はお好みで調整)
-	float angle = DirectX::XMConvertToRadians(25.0f) * swingT;
+	float angle = DirectX::XMConvertToRadians(45.0f) * swingT;
 
 	m_animMat = Math::Matrix::CreateRotationX(angle);
 
@@ -682,8 +690,9 @@ void Magicwand::GenerateStackAt(const Math::Vector3& baseCell, const Math::Vecto
 	auto positions = BlockGridManager::Instance().TryStack(baseCell, dir, stackCount, *spGround);
 	if (positions.empty()) return;
 
-	// 段数(生成されるブロック個数)に関わらず、1回の発動につき消費は1固定
-	if (!MagicManager::Instance().TryConsumeCast())
+	// 段数(生成される実際のブロック数)ぶんだけ消費する
+	int needCasts = (int)positions.size();
+	if (!MagicManager::Instance().TryConsumeCast(needCasts))
 	{
 		return;
 	}

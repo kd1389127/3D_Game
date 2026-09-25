@@ -21,20 +21,20 @@ public:
 	int GetMaxCasts() const { return MaxCastCount; }
 
 	// 今、杖を１回発動できるか(消費しない、判定だけを取ってる)
-	bool CanCast() const
+	bool CanCast(int count = 1) const
 	{
-		return m_remainingCasts > 0;
+		return m_remainingCasts >= count;
 	}
 
 	// １回分の発動を消費する(固定１)。残りが無ければ何もせずfalseを返す
-	bool TryConsumeCast()
+	bool TryConsumeCast(int count = 1)
 	{
-		if (!CanCast())
+		if (!CanCast(count))
 		{
-			m_lastAttemptFailed = true;	// UI側で「魔力が足りない」表示に使うフラグ
+			MarkAttemptFailed();
 			return false;
 		}
-		m_remainingCasts -= 1;
+		m_remainingCasts -= count;
 		return true;
 	}
 
@@ -46,29 +46,27 @@ public:
 
 	// 魔力が無いのに発動しようとした時に呼ぶ
 	// (TryConsumeCastを呼ばずに事前ガードした場面用)
+	// 呼ばれるたびにIDが進む。複数のUI(Reticle/MagicGaugeUI)が
+	// それぞれ独立に「前回見たIDと違うか」を見て検知できるようにするため、
+	// 一度読んだら消える単一フラグではなくカウンタにしている
 	void MarkAttemptFailed()
 	{
-		m_lastAttemptFailed = true;
+		m_attemptFailedId++;
 	}
 
-	// UI側が「魔力がありません」メッセージを一度だけ表示するためのフラグ取得(読むとリセットされる)
-	bool ConsumeAttemptFailedFlag()
-	{
-		bool f = m_lastAttemptFailed;
-		m_lastAttemptFailed = false;
-		return f;
-	}
+	// UI側が「前回チェックした時から失敗が起きたか」を判定するためのID
+	// (読んでも消費されない。値の変化だけをUI側で見る)
+	int GetAttemptFailedId() const { return m_attemptFailedId; }
 
 	// ステージ開始時などに満タンへ戻す
 	void Reset()
 	{
 		m_remainingCasts = MaxCastCount;
-		m_lastAttemptFailed = false;
 	}
 
 private:
 	MagicManager() = default;
 	int  m_remainingCasts = MaxCastCount;
-	bool m_lastAttemptFailed = false;
+	int m_attemptFailedId = 0;
 
 };

@@ -15,5 +15,4 @@ private:
 
 	static constexpr int m_texCount = 6;
 	KdTexture m_texArray[m_texCount];
-
 };
