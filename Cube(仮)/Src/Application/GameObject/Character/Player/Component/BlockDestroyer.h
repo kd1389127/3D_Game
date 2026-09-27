@@ -11,23 +11,20 @@ public:
 	// PlayerのUpdateから呼ばれる
 	void Update(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
 
-	// 削除モード中かどうか
-	bool IsDeleteMode() const { return m_isDeleteMode; }
+	// 現在、削除対象を狙っているか
+	bool HasTarget() const { return !m_wpTarget.expired(); }
+
+	// 狙っているブロックを1個だけ削除し、魔力を1回復する。対象が無ければ何もせずfalseを返す
+	bool TryDeleteTarget();
+
+	// 対象のハイライトを消す(エイム中など、削除判定自体を止めたい時に呼ぶ)
+	void ClearTarget();
 
 private:
 
-	void HandleModeToggle();
-
 	// レイキャストで、レティクルが合っている確定済みブロックを探してハイライトを切り替える
 	void UpdateTargeting(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
-	
-	void HandleDeleteInput();
-	void ClearTarget();
 
-	bool m_isDeleteMode = false;
-	bool m_qKeyFlg = false;
-	bool m_leftDownPrev = false;
-
-	// 今ハイライト中の「スタック全体」(単体の時は要素1つ)
-	std::vector<std::weak_ptr<NormalBlock>> m_wpTargetStack;
+	// 今ハイライト中のブロック
+	std::weak_ptr<NormalBlock> m_wpTarget;
 };

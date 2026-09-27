@@ -71,17 +71,25 @@ void Player::Update()
 	// 横方向の移動を確定(壁への当たり判定はまだしていない。PostUpdateで後から押し戻す方式)
 	m_pos += m_moveDir * m_moveSpeed;
 
-	bool isDeleteMode = m_upBlockDestroyer && m_upBlockDestroyer->IsDeleteMode();
-
-	// 削除モード中はEキーでの掴む/置く操作を止める
-	if (m_upBlockGrabber && !isDeleteMode)
+	if (m_upBlockGrabber)
 	{
 		m_upBlockGrabber->Update(m_pos, GetRotationMatrix());
 	}
+	
+	// ブロック削除関連
+	bool isCarrying = m_upBlockGrabber->IsCarrying();
 
 	if (m_upBlockDestroyer)
 	{
-		m_upBlockDestroyer->Update(m_pos, GetRotationMatrix());
+		if (m_isAimBlocking || isCarrying)
+		{
+			// エイム中/プレビュー中/持ち運び中は削除判定を止め、ハイライトも消す
+			m_upBlockDestroyer->ClearTarget();
+		}
+		else
+		{
+			m_upBlockDestroyer->Update(m_pos, GetRotationMatrix());
+		}
 	}
 
 	// 持っているブロックにプレイヤー自身がめり込んでいないかチェックして押し出す
@@ -214,13 +222,15 @@ bool Player::IsCarryingBlock() const
 	return false;
 }
 
-bool Player::IsBlockDeleteMode() const
+bool Player::HasDeleteTarget() const
 {
-	if (m_upBlockDestroyer)
-	{
-		return m_upBlockDestroyer->IsDeleteMode();
-	}
-	return false;
+	return m_upBlockDestroyer && m_upBlockDestroyer->HasTarget();
+}
+
+bool Player::TryDeleteTarget()
+{
+	if (!m_upBlockDestroyer) return false;
+	return m_upBlockDestroyer->TryDeleteTarget();
 }
 
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====

@@ -44,7 +44,7 @@ void Reticle::DrawSprite()
 	bool isDeleteMode = false;
 	if (auto player = m_wpPlayer.lock())
 	{
-		isDeleteMode = player->IsBlockDeleteMode();
+		isDeleteMode = player->HasDeleteTarget();
 	}
 
 	KdTexture& tex = isDeleteMode ? m_texDelete : m_texNormal;

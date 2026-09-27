@@ -112,16 +112,27 @@ void Magicwand::Update()
 	// 親オブジェクト(プレイヤー)を取得(weak_ptrなのでlock()して安全に使う)
 	const std::shared_ptr<const KdGameObject> spParent = m_wpParent.lock();
 
+	// ★non-const版のPlayerを1回だけ取得し、SetAimBlocking/TryDeleteTargetの両方で使い回す
+	std::shared_ptr<Player> player = nullptr;
+	if (auto spParentMutable = m_wpParent.lock())
+	{
+		player = std::dynamic_pointer_cast<Player>(spParentMutable);
+	}
+
+	// 毎フレーム、Aiming/Adjusting中かどうかをPlayerに伝える(Idleの時だけ削除判定を許可する)
+	if (player)
+	{
+		player->SetAimBlocking(m_state != WandState::Idle);
+	}
+
 	// 親がブロックを持ち上げ中かどうかを確認する(持っている間は発射できないようにするため)
 	bool isCarrying = false;
-	bool isDeleteMode = false;
 	if (spParent)
 	{
-		auto player = std::dynamic_pointer_cast<const Player>(spParent);
-		if (player)
+		auto p = std::dynamic_pointer_cast<const Player>(spParent);
+		if (p)
 		{
-			if (player->IsCarryingBlock())   isCarrying = true;
-			if (player->IsBlockDeleteMode()) isDeleteMode = true;
+			if (p->IsCarryingBlock())   isCarrying = true;
 		}
 	}
 
@@ -137,11 +148,11 @@ void Magicwand::Update()
 
 	// ----- 今フレームのボタン状態と、押した/離した瞬間の判定 -----
 	bool rightDownNow = (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0;
-	bool leftDownNow  = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
+	bool leftDownNow = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
 
-	bool rightPressed  = rightDownNow && !m_rightDownPrev;	// 右クリックを押した瞬間
+	bool rightPressed = rightDownNow && !m_rightDownPrev;	// 右クリックを押した瞬間
 	bool rightReleased = !rightDownNow && m_rightDownPrev;	// 右クリックを離した瞬間
-	bool leftPressed   = leftDownNow && !m_leftDownPrev;	//左クリックを押した瞬間
+	bool leftPressed = leftDownNow && !m_leftDownPrev;	//左クリックを押した瞬間
 
 	switch (m_state)
 	{
@@ -150,7 +161,7 @@ void Magicwand::Update()
 		// ---------------------------------------------------
 		case WandState::Idle:
 		{
-			if (rightPressed && !isCarrying && !isDeleteMode)
+			if (rightPressed && !isCarrying)
 			{
 				if (MagicManager::Instance().CanCast())
 				{
@@ -163,16 +174,22 @@ void Magicwand::Update()
 					MagicManager::Instance().MarkAttemptFailed();
 				}
 			}
-			else if (leftPressed && !isCarrying && !isDeleteMode)
+			else if (leftPressed && !isCarrying)
 			{
-				if (MagicManager::Instance().CanCast())
+				// ★既存ブロックを狙っていれば削除を優先し、無ければ従来通り新規生成
+				bool deleted = player ? player->TryDeleteTarget() : false;
+
+				if (!deleted)
 				{
-					// 左クリック単発：エイムなしで即座に1個だけ生成する
-					SingleShot(muzzlePos, parentMat);
-				}
-				else
-				{
-					MagicManager::Instance().MarkAttemptFailed();
+					if (MagicManager::Instance().CanCast())
+					{
+						// 左クリック単発：エイムなしで即座に1個だけ生成する
+						SingleShot(muzzlePos, parentMat);
+					}
+					else
+					{
+						MagicManager::Instance().MarkAttemptFailed();
+					}
 				}
 			}
 			break;
@@ -223,7 +240,7 @@ void Magicwand::Update()
 			// ----- 左クリックで確定発射 -----
 			if (leftPressed)
 			{
-				ConfirmStack(muzzlePos,parentMat);
+				ConfirmStack(muzzlePos, parentMat);
 				break;
 			}
 
@@ -257,7 +274,7 @@ void Magicwand::Update()
 
 	// 次フレームの判定用に、今フレームのボタン状態を保存しておく
 	m_rightDownPrev = rightDownNow;
-	m_leftDownPrev  = leftDownNow;
+	m_leftDownPrev = leftDownNow;
 
 	UpdateSwingAnim();
 

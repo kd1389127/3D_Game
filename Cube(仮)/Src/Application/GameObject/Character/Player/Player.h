@@ -18,9 +18,12 @@ public:
 	// ブロックを保持しているかチェックする関数
 	bool IsCarryingBlock() const;
 
-	// 削除モード中かどうかチェックする関数(Magicwandなどが発射を止めるために使う)
-	bool IsBlockDeleteMode()const;
+	// ブロック削除関連
+	bool HasDeleteTarget() const;
+	bool TryDeleteTarget();
 
+	// エイム中/プレビュー配置中かどうかをMagicwand側から知らせてもらう
+	void SetAimBlocking(bool isBlocking) { m_isAimBlocking = isBlocking; }
 private:
 
 	// 当たり判定
@@ -80,4 +83,5 @@ private:
 	// ジャンプ力
 	const float m_jumpPow = 1.0f;
 
+	bool m_isAimBlocking = false;
 };
