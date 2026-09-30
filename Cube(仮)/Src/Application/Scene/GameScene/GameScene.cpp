@@ -14,6 +14,7 @@
 #include "../../GameObject/Map/Gimmick/Goal/Goal.h"
 #include "../../GameObject/Map/Gimmick/Cage/Cage.h"
 #include "../../GameObject/Map/Gimmick/Switch/Switch.h"
+#include "../../GameObject/Map/MapBackGround/MapBackGround.h"
 
 void GameScene::Event()
 {
@@ -30,6 +31,15 @@ void GameScene::Event()
 		BlockGridManager::Instance().ToggleDebugGrid();
 	}
 	prevG = nowG;
+
+	// PageUp/PageDownでグリッドを表示する高さ(段)を切り替える
+	static bool prevUp = false, prevDown = false;
+	bool nowUp = (GetAsyncKeyState(VK_UP) & 0x8000) != 0;
+	bool nowDown = (GetAsyncKeyState(VK_DOWN) & 0x8000) != 0;
+	if (nowUp && !prevUp) { BlockGridManager::Instance().ChangeDebugLayer(1); }
+	if (nowDown && !prevDown) { BlockGridManager::Instance().ChangeDebugLayer(-1); }
+	prevUp = nowUp;
+	prevDown = nowDown;
 
 	if (GetAsyncKeyState('1') & 0x8000)
 	{
@@ -63,6 +73,12 @@ void GameScene::Init()
 		BlockGridManager::Instance().ToggleDebugGrid();
 	}
 
+	// Map背景
+	std::shared_ptr<MapBackGround> mapbackground;
+	mapbackground = std::make_shared<MapBackGround>();
+	mapbackground->Init();
+	mapbackground->SetBaseY(data.groundHeight - 300.0f);
+	m_objList.push_back(mapbackground);
 
 	// Map(地面)
 	std::shared_ptr<Ground> ground;
@@ -135,6 +151,7 @@ void GameScene::Init()
 	// 各オブジェクトに必要なデータを渡しておく
 	fpscamera->SetTarget(player);	// カメラに注視対象(プレイヤー)をセット
 	magicwand->SetParent(player);
+	mapbackground->SetTarget(player);
 	fpscamera->SetMagicwand(magicwand);
 
 }

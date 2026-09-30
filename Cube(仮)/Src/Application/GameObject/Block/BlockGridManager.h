@@ -169,31 +169,59 @@ public:
 	}
 
 	// デバッグ用：グリッドの各マスを「ブロック形状の枠線」で描画する(高さ方向も含む)
-	void DrawDebugGrid(KdDebugWireFrame& wire, const Math::Vector3& center, float range, int yLayers = 5) const
+	void DrawDebugGrid(KdDebugWireFrame& wire, const Math::Vector3& center, float range) const
 	{
 		if (!m_showDebugGrid) { return; }
 
-		constexpr Math::Color gridColor = { 0.2f, 0.8f, 1.0f, 1.0f };
 		constexpr float half = GridSize * 0.5f;
+		constexpr Math::Color gridColor = { 0.2f, 0.8f, 1.0f, 1.0f };
+		constexpr Math::Color axisXColor = { 1.0f, 0.2f, 0.2f, 1.0f };
+		constexpr Math::Color axisZColor = { 0.2f, 0.4f, 1.0f, 1.0f };
+		constexpr Math::Color normalColor = { 1.0f, 1.0f, 0.2f, 1.0f };
+		constexpr Math::Color gimmickColor = { 1.0f, 0.3f, 1.0f, 1.0f };
 
 		Math::Vector3 centerCell = SnapToGrid(center);
 		int cellRange = static_cast<int>(range / GridSize);
 
-		for (int x = -cellRange; x <= cellRange; ++x)
+		// マスの「境界線」の高さ(=ブロックの底面の高さ)
+		float y = m_groundHeight + m_debugLayer * GridSize;
+
+		// 線の描画範囲
+		float minX = centerCell.x - (cellRange + 0.5f) * GridSize;
+		float maxX = centerCell.x + (cellRange + 0.5f) * GridSize;
+		float minZ = centerCell.z - (cellRange + 0.5f) * GridSize;
+		float maxZ = centerCell.z + (cellRange + 0.5f) * GridSize;
+
+		// マスの境界線(ブロックの外周に当たる線)
+		for (int i = 0; i <= cellRange * 2 + 1; ++i)
 		{
-			for (int z = -cellRange; z <= cellRange; ++z)
-			{
-				for (int y = 0; y < yLayers; ++y) // ★Y方向にyLayers分積み上げる
-				{
-					Math::Vector3 cellPos = centerCell + Math::Vector3(x * GridSize, y * GridSize, z * GridSize);
-
-					Math::Matrix mat = Math::Matrix::CreateTranslation(cellPos);
-					Math::Vector3 halfExtents(half, half, half);
-
-					wire.AddDebugBox(mat, halfExtents, Math::Vector3::Zero, false, gridColor);
-				}
-			}
+			float x = minX + i * GridSize;
+			float z = minZ + i * GridSize;
+			wire.AddDebugLine({ x,y,minZ }, { x,y,maxZ }, gridColor);
+			wire.AddDebugLine({ minX,y,z }, { maxX,y,z }, gridColor);
 		}
+
+		// ワールド原点の軸(マスの中心を通る線)
+		wire.AddDebugLine({ 0,y,minZ }, { 0,y,maxZ }, axisZColor);
+		wire.AddDebugLine({ minX,y,0 }, { maxX,y,0 }, axisXColor);
+
+		// 置き済みブロックのマス
+		for (const auto& [key, kind] : m_occupied)
+		{
+			auto [kx, ky, kz] = key;
+			Math::Vector3 cellPos(kx * GridSize, ky * GridSize + half + m_groundHeight, kz * GridSize);
+			
+			Math::Matrix mat = Math::Matrix::CreateTranslation(cellPos);
+			wire.AddDebugBox(mat, Math::Vector3(half, half, half), Math::Vector3::Zero, false,
+				kind == BlockKind::GimmickKey ? gimmickColor : normalColor);
+		}
+	}
+
+	// 表示する高さの段を切り替える(0=地面の高さ)
+	void ChangeDebugLayer(int delta)
+	{
+		m_debugLayer += delta;
+		if (m_debugLayer < 0) { m_debugLayer = 0; }
 	}
 
 	void ToggleDebugGrid()
@@ -236,4 +264,5 @@ private:
 	std::unordered_map<std::tuple<int, int, int>, BlockKind, KeyHash> m_occupied;
 	float m_groundHeight = 0.0f;
 	bool  m_showDebugGrid = false;
+	int   m_debugLayer = 0;
 };

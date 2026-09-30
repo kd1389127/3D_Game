@@ -26,9 +26,8 @@ void Ground::DrawLit()
 void Ground::DrawDebug()
 {
 	// ワールド全体のグリッドをブロック形状で表示
-	BlockGridManager::Instance().DrawDebugGrid(m_debugWire, Math::Vector3::Zero, 65.0f, 5);
+	BlockGridManager::Instance().DrawDebugGrid(m_debugWire, Math::Vector3::Zero, 65.0f);
 
 	// 貯めた頂点を実際に描画してクリア
 	m_debugWire.Draw();
-
 }

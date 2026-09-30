@@ -148,6 +148,9 @@
     <Filter Include="Src\Application\GameObject\Magic">
       <UniqueIdentifier>{f728d39e-6af5-4c81-958b-1cf229ba7a5b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\GameObject\Map\MapBackGround">
+      <UniqueIdentifier>{a2b93226-ef30-464d-9ac1-bd20f40cf510}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -390,6 +393,9 @@
     <ClInclude Include="Src\Application\GameObject\Character\Player\Component\BlockDestroyer.h">
       <Filter>Src\Application\GameObject\Character\Player\Component</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Map\MapBackGround\MapBackGround.h">
+      <Filter>Src\Application\GameObject\Map\MapBackGround</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -589,6 +595,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\Character\Player\Component\BlockDestroyer.cpp">
       <Filter>Src\Application\GameObject\Character\Player\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Map\MapBackGround\MapBackGround.cpp">
+      <Filter>Src\Application\GameObject\Map\MapBackGround</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
