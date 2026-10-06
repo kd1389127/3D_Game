@@ -1,0 +1,363 @@
+﻿#include "BlockGrabber.h"
+#include "../../../Block/NormalBlock/NormalBlock.h"
+#include "../../../Block/BlockGridManager.h"
+#include "../../../../Scene/SceneManager.h"
+#include "../../../../main.h"
+
+namespace
+{
+	// 指定した座標(pos)に、他のブロックが重なっていないかチェックする
+	// ignoreBlock ＝ 今動かそうとしている本人のブロック(自分自身とは比較しない)
+	bool OverlapsAnyBlock(const Math::Vector3& pos, const std::shared_ptr<KdGameObject>& ignoreBlock)
+	{
+		constexpr float blockSize = BlockGridManager::GridSize;
+
+		for (auto& obj : SceneManager::Instance().GetObjList())
+		{
+			auto grabbable = std::dynamic_pointer_cast<IGrabbable>(obj);
+			if (!grabbable || obj == ignoreBlock || grabbable->IsCarried()) continue;
+
+			Math::Vector3 diff = pos - obj->GetPos();
+			if (fabsf(diff.x) < blockSize && fabsf(diff.y) < blockSize && fabsf(diff.z) < blockSize)
+				return true;
+		}
+		return false;
+	}
+
+	// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
+	// 持っているブロックを「安全な位置(oldPos)」から「目標位置(desiredPos)」へ移動させる関数
+	// ただし、他のブロックに重なる移動は許可しない(すり抜け防止)
+	// X→Z→Yの順に「その軸だけ動かしてみて、重ならなければ確定」を1軸ずつ試すことで、
+	// 壁際を滑るように移動できるようにしている(いわゆる「スライド移動」)
+	// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
+	Math::Vector3 SlideMove(const Math::Vector3& oldPos, const Math::Vector3& desiredPos,
+		const std::shared_ptr<KdGameObject>& ignoreBlock)
+	{
+		Math::Vector3 result = oldPos;
+
+		// X軸だけ動かしてみて、重ならなければ確定
+		Math::Vector3 tryX = result; tryX.x = desiredPos.x;
+		if (!OverlapsAnyBlock(tryX, ignoreBlock)) result.x = desiredPos.x;
+
+		// 次にZ軸だけ動かしてみて、重ならなければ確定
+		Math::Vector3 tryZ = result; tryZ.z = desiredPos.z;
+		if (!OverlapsAnyBlock(tryZ, ignoreBlock)) result.z = desiredPos.z;
+
+		// 最後にY軸だけ動かしてみて、重ならなければ確定
+		Math::Vector3 tryY = result; tryY.y = desiredPos.y;
+		if (!OverlapsAnyBlock(tryY, ignoreBlock)) result.y = desiredPos.y;
+
+		return result;
+	}
+
+	// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
+	// 持っているブロックが、プレイヤー自身に近づきすぎないようにする関数
+	// (ブロックを引き寄せすぎるとプレイヤーにめり込んでしまうのを防ぐ)
+	// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
+	void ClampMinDistanceFromPlayer(Math::Vector3& pos, const Math::Vector3& playerPos, const Math::Vector3& fallbackDir)
+	{
+		constexpr float minPlayerDist = BlockGridManager::GridSize; // 最低でも1マス分は離す
+
+		Math::Vector3 toBlock = pos - playerPos;
+		toBlock.y = 0.0f; // 上下は無視して、水平方向の距離だけで判定
+
+		float dist = toBlock.Length();
+
+		// 最低距離より近い場合は、方向はそのままで距離だけ最低値まで押し戻す
+		if (dist < minPlayerDist)
+		{
+			Math::Vector3 dir;
+			if (dist > 0.0001f)
+			{
+				dir = toBlock / dist; // 正規化(向きだけを取り出す)
+			}
+			else
+			{
+				// プレイヤーの真上/真下などで方向が定まらない場合の保険(見ている方向を代わりに使う)
+				dir = fallbackDir;
+			}
+
+			pos.x = playerPos.x + dir.x * minPlayerDist;
+			pos.z = playerPos.z + dir.z * minPlayerDist;
+		}
+	}
+}
+
+// 初期化：プレビュー用モデルの読み込みと、半透明描画のための設定(ブレンドステート)を準備
+void BlockGrabber::Init(float groundHeight)
+{
+	m_groundHeight = groundHeight;
+
+	m_spNormalPreviewModel = std::make_shared<KdModelWork>();
+	m_spNormalPreviewModel->SetModelData("Asset/Models/Block/MagicBlock/MagicBlock.gltf");
+
+	m_spGimmickPreviewModel = std::make_shared<KdModelWork>();
+	// GimmickBlock::Initで使っているモデルパスと合わせる
+	m_spGimmickPreviewModel->SetModelData("Asset/Models/Block/WoodenBox/Wooden_Box.gltf");
+
+	m_spActivePreviewModel = m_spNormalPreviewModel; // 初期値
+
+}
+
+// 毎フレームの更新：「掴む/離す」「持っているブロックの位置更新」「ホイールでの距離調整」をまとめて呼ぶ
+void BlockGrabber::Update(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat)
+{
+	HandleGrabAndDrop(playerPos, playerRotMat);
+	UpdateCarriedPos(playerPos, playerRotMat);
+	HandleDistanceControl(); // マウスホイール処理
+}
+
+float BlockGrabber::GetMinY() const
+{
+	return m_groundHeight + BlockGridManager::GridSize * 0.5f;
+}
+
+// 今持っているブロックの座標を返す(何も持っていなければ原点を返す)
+Math::Vector3 BlockGrabber::GetCarriedBlockPos() const
+{
+	return m_spCarriedBlock ? m_spCarriedBlock->GetPos() : Math::Vector3::Zero;
+}
+
+// 持ち上げ中のブロックを「置いたらここに置かれる」というプレビュー(半透明の見本)として描画する
+void BlockGrabber::DrawPreview()
+{
+	if (!m_spCarriedBlock || !m_spActivePreviewModel) return;
+
+	// フレームワーク既存のAlphaブレンドに切り替え(元の状態は内部で自動退避される)
+	KdShaderManager::Instance().ChangeBlendState(KdBlendState::Alpha);
+	
+	Math::Matrix mat = Math::Matrix::CreateScale(8.0f) * Math::Matrix::CreateTranslation(m_previewPos);
+
+	Math::Color previewColor = m_previewValid
+		? Math::Color(0.5f, 1.0f, 0.5f, 0.6f)
+		: Math::Color(1.0f, 0.3f, 0.3f, 0.6f);
+
+	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spActivePreviewModel, mat, previewColor);
+
+	// 変更前のブレンドステートに戻す
+	KdShaderManager::Instance().UndoBlendState();
+}
+
+// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
+// Eキーで「掴む」「置く」を切り替える処理
+// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
+void BlockGrabber::HandleGrabAndDrop(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat)
+{
+	if (GetAsyncKeyState('E') & 0x8000)
+	{
+		// キーを押しっぱなしで毎フレーム反応しないよう、押した瞬間だけ処理するためのフラグ
+		if (!m_eKeyFlg)
+		{
+			m_eKeyFlg = true;
+
+			// ---- すでに何か持っている場合 → 「置く」処理 ----
+			if (m_spCarriedBlock)
+			{
+				Math::Vector3 targetPos = CalcTargetPos(playerPos, playerRotMat);
+
+				const float minY = GetMinY();
+				Math::Vector3 snappedPos = BlockGridManager::Instance().SnapToGrid(targetPos);
+				if (snappedPos.y < minY) snappedPos.y = minY;
+
+				if (!BlockGridManager::Instance().IsOccupied(snappedPos))
+				{
+					auto grabbable = std::dynamic_pointer_cast<IGrabbable>(m_spCarriedBlock);
+
+					m_spCarriedBlock->SetPos(snappedPos);
+					grabbable->SetCarried(false);
+					BlockGridManager::Instance().Register(snappedPos, grabbable->GetBlockKind()); // ← 種別を渡す
+					m_spCarriedBlock = nullptr;
+				}
+			}
+			// ---- 何も持っていない場合 → 「掴む」処理 ----
+			else
+			{
+				// プレイヤーの視線方向にレイ(見えない光線)を飛ばして、ブロックに当たるか調べる
+				KdCollider::RayInfo rayInfo;
+				rayInfo.m_pos = playerPos;
+				rayInfo.m_dir = playerRotMat.Backward(); // カメラの前方向
+				rayInfo.m_range = 30.0f; // これより遠いブロックは掴めない
+				rayInfo.m_type = KdCollider::TypeBump | KdCollider::TypeGround;
+
+				std::list<KdCollider::CollisionResult> resultList;
+				std::shared_ptr<KdGameObject> nearestObj = nullptr;
+				float minDist = rayInfo.m_range;
+
+				// 壁も含めて、レイが最初に当たったものを探す
+				for (auto& obj : SceneManager::Instance().GetObjList())
+				{
+					// 持ち運び中のブロックだけ、障害物としても数えない
+					auto grabbable = std::dynamic_pointer_cast<IGrabbable>(obj);
+					if (grabbable && grabbable->IsCarried()) continue;
+
+					std::list<KdCollider::CollisionResult> resultList;
+					if (!obj->Intersects(rayInfo, &resultList)) continue;
+
+					for (auto& ret : resultList)
+					{
+						float dist = (ret.m_hitPos - rayInfo.m_pos).Length();
+						if (dist < minDist)
+						{
+							minDist = dist;
+							nearestObj = obj;
+						}
+					}
+				}
+
+				// 一番手前に当たったものが、掴めるブロックのときだけ掴む
+				// (壁が手前にあれば、nearestObjは壁なので、掴まない)
+				std::shared_ptr<KdGameObject> targetBlock = nullptr;
+				if (nearestObj && std::dynamic_pointer_cast<IGrabbable>(nearestObj))
+				{
+					targetBlock = nearestObj;
+				}
+
+				// 見つかったブロックを「持っている状態」にする
+				if (targetBlock)
+				{
+					m_spCarriedBlock = targetBlock;
+					m_holdDistance = 30.0f;
+
+					Math::Vector3 snappedPos = BlockGridManager::Instance().SnapToGrid(targetBlock->GetPos());
+					BlockGridManager::Instance().Unregister(snappedPos);
+
+					auto grabbable = std::dynamic_pointer_cast<IGrabbable>(m_spCarriedBlock);
+					grabbable->SetCarried(true);
+
+					// 掴んだブロックの種類に応じてプレビューモデルを切り替え
+					m_spActivePreviewModel = (grabbable->GetBlockKind() == BlockGridManager::BlockKind::GimmickKey)
+						? m_spGimmickPreviewModel
+						: m_spNormalPreviewModel;
+				}
+			}
+		}
+	}
+	else
+	{
+		// キーが離されたらフラグをリセット(次に押した時にまた反応できるようにする)
+		m_eKeyFlg = false;
+	}
+}
+
+// 持っているブロックの位置と、プレビュー(緑/赤の半透明表示)の位置を毎フレーム更新する
+void BlockGrabber::UpdateCarriedPos(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat)
+{
+	if (!m_spCarriedBlock) return;
+
+	Math::Vector3 targetPos = CalcTargetPos(playerPos, playerRotMat);
+
+	const float minY = GetMinY();
+
+	// 「置いたらここに置かれる」位置(グリッドにスナップした位置)を計算
+	Math::Vector3 snappedPreview = BlockGridManager::Instance().SnapToGrid(targetPos);
+	if (snappedPreview.y < minY) snappedPreview.y = minY;
+
+	m_previewPos = snappedPreview;
+	// そのマスが空いているかどうかで、プレビューの色(緑/赤)を切り替える判定材料にする
+	m_previewValid = !BlockGridManager::Instance().IsOccupied(snappedPreview);
+
+	// 実際に持っているブロック本体は(グリッドにスナップしない)なめらかな位置に追従させる
+	m_spCarriedBlock->SetPos(targetPos);
+}
+
+// マウスホイールで、ブロックを持つ距離(プレイヤーからどれだけ離すか)を調整する
+void BlockGrabber::HandleDistanceControl()
+{
+	if (!m_spCarriedBlock) return;
+
+	int wheelValue = Application::Instance().GetMouseWheelValue();
+
+	if (wheelValue != 0)
+	{
+		// ホイールの回転量を正規化(WHEEL_DELTA=120が「1クリック分」)
+		float scrollDelta = static_cast<float>(wheelValue) / 120.0f;
+
+		// 上回しで遠く、下回しで近くへ
+		m_holdDistance += scrollDelta * 2.5f;
+
+		// 極端に遠すぎ/近すぎにならないよう範囲を制限
+		m_holdDistance = std::clamp(m_holdDistance, 10.0f, 60.0f);
+	}
+}
+
+// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
+// 「今持っているブロックをどこに配置しようとしているか」の目標座標を計算する
+// カメラの向き・保持距離・他のブロックとの重なり・プレイヤーとの最低距離、
+// 全部を考慮した最終的な座標がここで決まる
+// ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
+Math::Vector3 BlockGrabber::CalcTargetPos(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat) const
+{
+	Math::Vector3 eyePos = playerPos;
+
+	Math::Vector3 rawForward = playerRotMat.Backward(); // カメラが向いている方向(上下含む)
+
+	// 上下方向(Y)を無視した「水平方向の向き」を作る(ブロックが変な高さに飛ばないようにするため)
+	Math::Vector3 lookDirFlat = rawForward;
+	lookDirFlat.y = 0.0f;
+	lookDirFlat.Normalize();
+
+	// 基本の目標位置：プレイヤーの水平な向きに、保持距離分だけ進んだ位置
+	Math::Vector3 targetPos = eyePos + lookDirFlat * m_holdDistance;
+
+	// 見上げ/見下ろしの角度に応じて、ブロックの高さも上下させる(上を見れば高い位置に置ける)
+	float pitchFactor = rawForward.y;
+	constexpr float verticalRange = 30.0f;
+	float pitchOffset = pitchFactor * verticalRange;
+
+	// 視線方向に壁などがないか、レイでチェックする
+	// (壁の向こう側にブロックを出現させないための処理)
+	KdCollider::RayInfo rayInfo;
+	rayInfo.m_pos = eyePos;
+	rayInfo.m_dir = lookDirFlat;
+	rayInfo.m_range = m_holdDistance;
+	rayInfo.m_type = KdCollider::TypeBump | KdCollider::TypeGround;
+
+	std::list<KdCollider::CollisionResult> resultList;
+	float closestDist = m_holdDistance;
+	bool isHit = false;
+
+	for (auto& obj : SceneManager::Instance().GetObjList())
+	{
+		if (obj == m_spCarriedBlock) continue; // 自分自身(持っているブロック)には当たらないようにする
+
+		if (obj->Intersects(rayInfo, &resultList))
+		{
+			for (auto& ret : resultList)
+			{
+				float dist = (ret.m_hitPos - rayInfo.m_pos).Length();
+				if (dist < closestDist)
+				{
+					closestDist = dist;
+					isHit = true;
+				}
+			}
+			resultList.clear();
+		}
+	}
+
+	// 壁に当たっていたら、壁の手前(ブロック1個分くらい)までしか置けないよう距離を縮める
+	if (isHit)
+	{
+		constexpr float blockRadius = BlockGridManager::GridSize;
+		float adjustedDist = std::max(0.0f, closestDist - blockRadius);
+		targetPos = eyePos + lookDirFlat * adjustedDist;
+	}
+
+	// 高さを、プレイヤーの目線 + 見上げ/見下ろし補正 で決定
+	constexpr float baseHeightOffset = 0.0f;
+	targetPos.y = eyePos.y + baseHeightOffset + pitchOffset;
+
+	// ここまでで計算した「理想の目標位置」に対して、
+	// 他のブロックに重ならないようスライド移動(SlideMove)で調整する
+	Math::Vector3 oldPos = m_spCarriedBlock->GetPos();
+	targetPos = SlideMove(oldPos, targetPos, m_spCarriedBlock);
+
+	// プレイヤーに近づきすぎないよう最終調整
+	ClampMinDistanceFromPlayer(targetPos, eyePos, lookDirFlat);
+
+	// 最後に、地面より下に潜らないよう下限を保証
+	const float minY = GetMinY();
+	if (targetPos.y < minY) targetPos.y = minY;
+
+	return targetPos;
+}
