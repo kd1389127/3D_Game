@@ -8,43 +8,36 @@
 		{
 			"name":"Scene",
 			"nodes":[
-				0
+				0,
+				1
 			]
 		}
 	],
 	"nodes":[
 		{
 			"mesh":0,
-			"name":"\u7403"
+			"name":"MapStair"
+		},
+		{
+			"mesh":1,
+			"name":"COL"
 		}
 	],
 	"materials":[
 		{
 			"doubleSided":true,
-			"name":"\u30de\u30c6\u30ea\u30a2\u30eb",
+			"name":"\u30de\u30c6\u30ea\u30a2\u30eb.001",
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
 					"index":0
 				},
-				"metallicFactor":0,
-				"roughnessFactor":0.5
-			}
-		},
-		{
-			"doubleSided":true,
-			"name":"\u30de\u30c6\u30ea\u30a2\u30eb.001",
-			"pbrMetallicRoughness":{
-				"baseColorTexture":{
-					"index":1
-				},
-				"metallicFactor":0,
-				"roughnessFactor":0.5
+				"metallicFactor":0
 			}
 		}
 	],
 	"meshes":[
 		{
-			"name":"\u7403",
+			"name":"\u7acb\u65b9\u4f53",
 			"primitives":[
 				{
 					"attributes":{
@@ -54,15 +47,19 @@
 					},
 					"indices":3,
 					"material":0
-				},
+				}
+			]
+		},
+		{
+			"name":"\u5e73\u9762",
+			"primitives":[
 				{
 					"attributes":{
 						"POSITION":4,
 						"NORMAL":5,
 						"TEXCOORD_0":6
 					},
-					"indices":7,
-					"material":1
+					"indices":7
 				}
 			]
 		}
@@ -71,141 +68,132 @@
 		{
 			"sampler":0,
 			"source":0
-		},
-		{
-			"sampler":0,
-			"source":1
 		}
 	],
 	"images":[
 		{
 			"mimeType":"image/png",
-			"name":"MapBackGround_4tile",
-			"uri":"MapBackGround_4tile.png"
-		},
-		{
-			"mimeType":"image/png",
-			"name":"MapBackGround_Floor",
-			"uri":"MapBackGround_Floor.png"
+			"name":"MapTexture",
+			"uri":"MapTexture.png"
 		}
 	],
 	"accessors":[
 		{
 			"bufferView":0,
 			"componentType":5126,
-			"count":992,
+			"count":48,
 			"max":[
-				9.99999713897705,
-				10,
-				9.999993324279785
+				0.5,
+				0.5,
+				0.5
 			],
 			"min":[
-				-9.999990463256836,
-				0,
-				-10
+				-0.5,
+				-0.5,
+				-0.5
 			],
 			"type":"VEC3"
 		},
 		{
 			"bufferView":1,
 			"componentType":5126,
-			"count":992,
+			"count":48,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":2,
 			"componentType":5126,
-			"count":992,
+			"count":48,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":3,
 			"componentType":5123,
-			"count":1440,
+			"count":72,
 			"type":"SCALAR"
 		},
 		{
 			"bufferView":4,
 			"componentType":5126,
-			"count":32,
+			"count":4,
 			"max":[
-				9.99999713897705,
-				0,
-				9.999993324279785
+				0.4999951720237732,
+				0.4999951720237732,
+				0.5
 			],
 			"min":[
-				-9.999990463256836,
-				0,
-				-10
+				-0.4999951720237732,
+				-0.4999951720237732,
+				-0.5
 			],
 			"type":"VEC3"
 		},
 		{
 			"bufferView":5,
 			"componentType":5126,
-			"count":32,
+			"count":4,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":6,
 			"componentType":5126,
-			"count":32,
+			"count":4,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":7,
 			"componentType":5123,
-			"count":90,
+			"count":6,
 			"type":"SCALAR"
 		}
 	],
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":11904,
+			"byteLength":576,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":11904,
-			"byteOffset":11904,
+			"byteLength":576,
+			"byteOffset":576,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":7936,
-			"byteOffset":23808,
+			"byteLength":384,
+			"byteOffset":1152,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":2880,
-			"byteOffset":31744,
+			"byteLength":144,
+			"byteOffset":1536,
 			"target":34963
 		},
 		{
 			"buffer":0,
-			"byteLength":384,
-			"byteOffset":34624,
+			"byteLength":48,
+			"byteOffset":1680,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":384,
-			"byteOffset":35008,
+			"byteLength":48,
+			"byteOffset":1728,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":256,
-			"byteOffset":35392,
+			"byteLength":32,
+			"byteOffset":1776,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":180,
-			"byteOffset":35648,
+			"byteLength":12,
+			"byteOffset":1808,
 			"target":34963
 		}
 	],
@@ -217,8 +205,8 @@
 	],
 	"buffers":[
 		{
-			"byteLength":35828,
-			"uri":"MapBackGround.bin"
+			"byteLength":1820,
+			"uri":"MapStair.bin"
 		}
 	]
 }

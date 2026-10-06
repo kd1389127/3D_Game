@@ -12,7 +12,8 @@ public:
 	enum class BlockKind
 	{
 		Normal,		// 弾で生成する通常ブロック
-		GimmickKey	// スイッチ用のギミック専用ブロック
+		GimmickKey,	// スイッチ用のギミック専用ブロック
+		Map,		// CSVでのMapブロック用
 	};
 
 	// 1マスのサイズ(ブロック1個分の大きさに合わせてある)
@@ -179,6 +180,7 @@ public:
 		constexpr Math::Color axisZColor = { 0.2f, 0.4f, 1.0f, 1.0f };
 		constexpr Math::Color normalColor = { 1.0f, 1.0f, 0.2f, 1.0f };
 		constexpr Math::Color gimmickColor = { 1.0f, 0.3f, 1.0f, 1.0f };
+		constexpr Math::Color mapColor = { 0.6f, 0.6f, 0.6f, 1.0f };
 
 		Math::Vector3 centerCell = SnapToGrid(center);
 		int cellRange = static_cast<int>(range / GridSize);
@@ -211,9 +213,12 @@ public:
 			auto [kx, ky, kz] = key;
 			Math::Vector3 cellPos(kx * GridSize, ky * GridSize + half + m_groundHeight, kz * GridSize);
 			
+			Math::Color c = normalColor;
+			if (kind == BlockKind::GimmickKey)  c = gimmickColor;
+			else if (kind == BlockKind::Map)	c = mapColor;
+
 			Math::Matrix mat = Math::Matrix::CreateTranslation(cellPos);
-			wire.AddDebugBox(mat, Math::Vector3(half, half, half), Math::Vector3::Zero, false,
-				kind == BlockKind::GimmickKey ? gimmickColor : normalColor);
+			wire.AddDebugBox(mat, Math::Vector3(half, half, half), Math::Vector3::Zero, false,c);
 		}
 	}
 

@@ -14,6 +14,12 @@ struct StageData
 	Math::Vector3 switchPos = Math::Vector3::Zero;			// スイッチの座標
 	Math::Vector3 cageBasePos = Math::Vector3::Zero;		// 檻(鉄格子)の基準座標(閉じている時の位置)
 	Math::Vector3 gimmickBlockPos = Math::Vector3::Zero;	// ギミック専用ブロックの初期配置座標
+
+	// CSV方式のMapを使うステージ用(空文字なら従来のモデル方式)
+	std::string   mapCsvPath;
+	int           csvOriginCol = 0;	// CSV上でワールド原点(X=0)にあたる列
+	int           csvOriginRow = 0;	// CSV上でワールド原点(Z=0)にあたる行
+	
 };
 
 // ステージテーブル(ステージを増やす場合はここに追加していくだけでOK)
@@ -21,8 +27,11 @@ static const StageData g_stageTable[] =
 {
 	// ステーシ１
 	// プレイヤーのスタート位置	   ゴールの位置		Model	Modelサイズ		地面の高さ指定
-	{ Math::Vector3(50, 0, 0), Math::Vector3(-125, 30, 0), "Asset/Models/Map/Map1/Map1.gltf" ,	30.0f,	0.0f},
-	
+	//{ Math::Vector3(50, 0, 0), Math::Vector3(-125, 30, 0), "Asset/Models/Map/Map1/Map1.gltf" ,	32.0f,	0.0f},
+	{ Math::Vector3(80, 0, 0), Math::Vector3(-100, 25, 10), "", 0.0f, 0.0f,
+	  false, Math::Vector3::Zero, Math::Vector3::Zero, Math::Vector3::Zero,
+	  "Asset/Data/MapData/Map1.csv", 14, 4 },
+
 	// ステージ２(スイッチ・檻・ギミックブロックの座標)
 	{ Math::Vector3(50, 15, 0), Math::Vector3(-65, 45, 0), "Asset/Models/Map/Map2/Map2.gltf", 20.0f, 13.0f,
 	  true,								// hasGimmickCage

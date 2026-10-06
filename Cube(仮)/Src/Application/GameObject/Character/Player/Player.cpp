@@ -243,6 +243,7 @@ void Player::ResolveWallCollsion()
 	// プレイヤーの体を表すBOXサイズ
 	static const float bodyRadius = 3.0f;   // 横幅(半分)
 	static const float bodyHeight = 10.0f;  // 身長
+	static const float footCut    = 4.0f;	// 足元から、この高さ未満は壁として扱わない(bodyRadius以上にする)
 
 	static const float wallNormalYThreshold = 0.5f; // 法線のY成分がこれを超えたら「床/天井」とみなして無視する
 	static const float maxPushPerHit = bodyRadius;   // 1回の押し出し量に上限を設け、異常なすっ飛びを防ぐ
@@ -258,9 +259,10 @@ void Player::ResolveWallCollsion()
 
 		// プレイヤーの体を表すBOX(当たり判定用の箱)を作成
 		Math::Matrix boxMat = Math::Matrix::CreateTranslation(m_pos);
-		Math::Vector3 boxOffset(0.0f, -m_adjustHeight + bodyHeight * 0.5f, 0.0f); // 足元〜頭の中間に合わせる
-		Math::Vector3 boxHalfExtents(bodyRadius, bodyHeight * 0.5f, bodyRadius);
-
+		const float boxHeight = bodyHeight - footCut;
+		Math::Vector3 boxOffset(0.0f, -m_adjustHeight + footCut + boxHeight * 0.5f, 0.0f);
+		Math::Vector3 boxHalfExtents(bodyRadius, boxHeight * 0.5f, bodyRadius);
+		
 		// isOriented = false → 回転を考慮しないシンプルな箱(AABB)として判定する
 		KdCollider::BoxInfo boxInfo(KdCollider::TypeBump, boxMat, boxOffset, boxHalfExtents, false);
 

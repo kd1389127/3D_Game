@@ -290,6 +290,8 @@
     <ClInclude Include="Src\Application\GameObject\Map\Gimmick\Switch\Switch.h" />
     <ClInclude Include="Src\Application\GameObject\Map\Ground\Ground.h" />
     <ClInclude Include="Src\Application\GameObject\Map\MapBackGround\MapBackGround.h" />
+    <ClInclude Include="Src\Application\GameObject\Map\MapBlock\MapBlock.h" />
+    <ClInclude Include="Src\Application\GameObject\Map\MapLoader.h" />
     <ClInclude Include="Src\Application\GameObject\UI\MagicGaugeUI\MagicGaugeUI.h" />
     <ClInclude Include="Src\Application\GameObject\UI\Reticle\Reticle.h" />
     <ClInclude Include="Src\Application\GameObject\Weapon\Magicwand\Magicwand.h" />
@@ -363,6 +365,8 @@
     <ClCompile Include="Src\Application\GameObject\Map\Gimmick\Switch\Switch.cpp" />
     <ClCompile Include="Src\Application\GameObject\Map\Ground\Ground.cpp" />
     <ClCompile Include="Src\Application\GameObject\Map\MapBackGround\MapBackGround.cpp" />
+    <ClCompile Include="Src\Application\GameObject\Map\MapBlock\MapBlock.cpp" />
+    <ClCompile Include="Src\Application\GameObject\Map\MapLoader.cpp" />
     <ClCompile Include="Src\Application\GameObject\UI\MagicGaugeUI\MagicGaugeUI.cpp" />
     <ClCompile Include="Src\Application\GameObject\UI\Reticle\Reticle.cpp" />
     <ClCompile Include="Src\Application\GameObject\Weapon\Magicwand\Magicwand.cpp" />

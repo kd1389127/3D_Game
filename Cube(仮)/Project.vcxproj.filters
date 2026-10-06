@@ -151,6 +151,9 @@
     <Filter Include="Src\Application\GameObject\Map\MapBackGround">
       <UniqueIdentifier>{a2b93226-ef30-464d-9ac1-bd20f40cf510}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\GameObject\Map\MapBlock">
+      <UniqueIdentifier>{b7979630-2dbc-4ee2-b8c0-040d8c8c0f40}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -396,6 +399,12 @@
     <ClInclude Include="Src\Application\GameObject\Map\MapBackGround\MapBackGround.h">
       <Filter>Src\Application\GameObject\Map\MapBackGround</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Map\MapBlock\MapBlock.h">
+      <Filter>Src\Application\GameObject\Map\MapBlock</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Map\MapLoader.h">
+      <Filter>Src\Application\GameObject\Map</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -598,6 +607,12 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\Map\MapBackGround\MapBackGround.cpp">
       <Filter>Src\Application\GameObject\Map\MapBackGround</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Map\MapBlock\MapBlock.cpp">
+      <Filter>Src\Application\GameObject\Map\MapBlock</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Map\MapLoader.cpp">
+      <Filter>Src\Application\GameObject\Map</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

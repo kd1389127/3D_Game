@@ -15,6 +15,7 @@
 #include "../../GameObject/Map/Gimmick/Cage/Cage.h"
 #include "../../GameObject/Map/Gimmick/Switch/Switch.h"
 #include "../../GameObject/Map/MapBackGround/MapBackGround.h"
+#include "../../GameObject/Map/MapLoader.h"
 
 void GameScene::Event()
 {
@@ -53,9 +54,6 @@ void GameScene::Event()
 
 void GameScene::Init()
 {
-	// 前のステージで置かれたブロックの占有情報をクリア
-	BlockGridManager::Instance().Clear();
-
 	// ステージ開始時は魔力を満タンにリセット
 	MagicManager::Instance().Reset();
 
@@ -63,7 +61,8 @@ void GameScene::Init()
 	int stage = SceneManager::Instance().GetCurrentStage();
 	const StageData& data = g_stageTable[stage];
 
-	// ステージ切り替え時：前ステージの占有情報をクリアし、今ステージの地面の高さをグリッド基準にする
+	// 前ステージの占有情報をクリアし、今ステージの地面の高さをグリッド基準にする
+	// MapLoader::Loadはこの後に呼ぶこと(順番が重要)	
 	BlockGridManager::Instance().Clear();
 	BlockGridManager::Instance().SetGroundHeight(data.groundHeight);
 
@@ -77,14 +76,31 @@ void GameScene::Init()
 	std::shared_ptr<MapBackGround> mapbackground;
 	mapbackground = std::make_shared<MapBackGround>();
 	mapbackground->Init();
-	mapbackground->SetBaseY(data.groundHeight - 300.0f);
+	mapbackground->SetBaseY(data.groundHeight - 100.0f);
 	m_objList.push_back(mapbackground);
 
 	// Map(地面)
 	std::shared_ptr<Ground> ground;
 	ground = std::make_shared<Ground>();
-	ground->Init(data.mapModelPath, data.mapScale);
+	if (data.mapCsvPath.empty())
+	{
+		// 従来のモデル方式(Map2など)
+		ground->Init(data.mapModelPath, data.mapScale);
+	}
+	else
+	{
+		// CSV方式：Groundは「空」のまま置いておく(デバッググリッドの描画に使うため)
+		MapLoader loader;
+		std::vector<std::shared_ptr<KdGameObject>> mapBlocks;
+		loader.Load(data.mapCsvPath, data.groundHeight, data.csvOriginCol, data.csvOriginRow, mapBlocks);
+
+		for (auto& block : mapBlocks)
+		{
+			m_objList.push_back(block);
+		}
+	}
 	m_objList.push_back(ground);
+
 
 	// Player
 	std::shared_ptr<Player> player;
