@@ -24,14 +24,29 @@ public:
 	// 現在持っているブロックの座標を取得（持っていなければ判定不要なので呼び出し側でIsCarrying()チェック）
 	Math::Vector3 GetCarriedBlockPos() const;
 	
+	// レティクルを緑にするか(ギミックブロックを運んでいる、または狙っている)
+	bool IsGrabActive() const { return m_spCarriedBlock != nullptr || m_hasGrabTarget; }
+
 	void DrawPreview();
 
 private:
 	void HandleGrabAndDrop(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
 	void UpdateCarriedPos(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
-	void HandleDistanceControl(); // ★ ホイール入力で距離を変更する処理
+	void HandleDistanceControl(); // ホイール入力で距離を変更する処理
 
 	Math::Vector3 CalcTargetPos(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat) const;
+
+	// 視線の先にある、掴めるギミックブロックを探す(無ければnullptr)
+	std::shared_ptr<KdGameObject> FindGradTarget(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat)const;
+	void UpdateGrabTarget(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
+	
+	// ハイライトの対象を切り替える(前の対象は消し、新しい対象を光らせる)
+	void SetGrabHighlightTarget(const std::shared_ptr<KdGameObject>& target);
+	// 今ハイライト中のブロック
+	std::weak_ptr<KdGameObject> m_wpHighlighted;
+
+	// 離した位置から真下へ進み、最初に埋まっているマスの1つ上(着地するマス)を返す
+	Math::Vector3 FindLandingPos(const Math::Vector3& snappedPos) const;
 
 	// 設置プレビュー用
 	Math::Vector3 m_previewPos = Math::Vector3::Zero;
@@ -48,4 +63,6 @@ private:
 	float m_holdDistance = 30.0f;
 
 	float m_groundHeight = 0.0f;
+
+	bool m_hasGrabTarget = false;
 };

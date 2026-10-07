@@ -86,6 +86,10 @@ private:
 
 	// キャンセル操作：何も生成せず、プレビューだけ消してIdleに戻る
 	void CancelAim();
+	bool IsPreviewInView(const Math::Vector3& eyePos, const Math::Matrix& parentMat) const;
+
+	// 確定の弾が飛んでいる間true(この間は、視界から外れても自動キャンセルしない)
+	bool m_isFiring = false;
 
 	// ----- 生成したスタックの履歴(古いスタックから消すため) -----
 	std::deque<std::vector<std::weak_ptr<NormalBlock>>> m_generatedStacks;

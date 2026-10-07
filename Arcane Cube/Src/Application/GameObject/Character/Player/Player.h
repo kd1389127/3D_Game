@@ -17,6 +17,7 @@ public:
 
 	// ブロックを保持しているかチェックする関数
 	bool IsCarryingBlock() const;
+	bool IsGrabActive() const;
 
 	// ブロック削除関連
 	bool HasDeleteTarget() const;

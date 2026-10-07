@@ -36,6 +36,35 @@ void GimmickBlock::Init(const Math::Vector3& pos)
 	SetScale(8.0f);
 }
 
+void GimmickBlock::Update()
+{
+	if (!m_isFalling) return;
+
+	constexpr float gravity  = 0.04f;
+	constexpr float maxSpeed = 3.0f;
+	m_fallSpeed = std::min(m_fallSpeed + gravity, maxSpeed);
+
+	Math::Vector3 pos = GetPos();
+	pos.y -= m_fallSpeed;
+
+	// 着地位置に届いたら、ぴったりその位置に止めて、当たり判定を戻す
+	if (pos.y <= m_fallTarget.y)
+	{
+		pos = m_fallTarget;
+		m_isFalling = false;
+		m_fallSpeed = 0.0f;
+
+		// 予約を、本物のギミックブロックの登録に書き換える(スイッチが反応するのはここから)
+		BlockGridManager::Instance().Register(m_fallTarget, GetBlockKind());
+
+		if (m_pCollider)
+		{
+			m_pCollider->SetEnableAll(true);
+		}
+	}
+	SetPos(pos);
+}
+
 void GimmickBlock::PostUpdate()
 {
 	if (m_pDebugWire)
@@ -48,6 +77,17 @@ void GimmickBlock::DrawLit()
 {
 	if (!m_spModel) return;
 
+	// 狙われている間だけ、緑にゆっくり点滅させる
+	// (運んでいる間は、置く位置のプレビューを見やすくするため、点滅しない)
+	if (m_isGrabTargeted)
+	{
+		m_blinkTimer++;
+		float blink = (sinf(m_blinkTimer * 0.1f) * 0.5f + 0.5f); // 0.0～1.0を往復(赤より遅い)
+		Math::Color grabColor(0.4f + blink * 0.3f, 1.0f, 0.4f + blink * 0.3f, 1.0f);
+		KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld, grabColor);
+		return;
+	}
+
 	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
 }
 
@@ -58,5 +98,19 @@ void GimmickBlock::SetCarried(bool isCarried)
 	if (m_pCollider)
 	{
 		m_pCollider->SetEnableAll(!isCarried);
+	}
+}
+
+// 空中で離された時に呼ばれる：着地位置まで落とし始める
+void GimmickBlock::StartFall(const Math::Vector3& landingPos)
+{
+	m_isFalling = true;
+	m_fallTarget = landingPos;
+	m_fallSpeed = 0.0f;
+
+	if (m_pCollider)
+	{
+		// 落下中は当たり判定を切っておく(途中の位置でプレイヤーを押し出さないため)
+		m_pCollider->SetEnableAll(false);
 	}
 }

@@ -105,6 +105,7 @@ void BlockGrabber::Update(const Math::Vector3& playerPos, const Math::Matrix& pl
 	HandleGrabAndDrop(playerPos, playerRotMat);
 	UpdateCarriedPos(playerPos, playerRotMat);
 	HandleDistanceControl(); // マウスホイール処理
+	UpdateGrabTarget(playerPos, playerRotMat);
 }
 
 float BlockGrabber::GetMinY() const
@@ -129,8 +130,8 @@ void BlockGrabber::DrawPreview()
 	Math::Matrix mat = Math::Matrix::CreateScale(8.0f) * Math::Matrix::CreateTranslation(m_previewPos);
 
 	Math::Color previewColor = m_previewValid
-		? Math::Color(0.5f, 1.0f, 0.5f, 0.6f)
-		: Math::Color(1.0f, 0.3f, 0.3f, 0.6f);
+		? Math::Color(0.4f, 1.0f, 0.5f, 1.0f)
+		: Math::Color(1.0f, 0.3f, 0.3f, 1.0f);
 
 	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spActivePreviewModel, mat, previewColor);
 
@@ -163,54 +164,30 @@ void BlockGrabber::HandleGrabAndDrop(const Math::Vector3& playerPos, const Math:
 				{
 					auto grabbable = std::dynamic_pointer_cast<IGrabbable>(m_spCarriedBlock);
 
+					// 空中で離したら、真下の着地するマスまで落とす
+					Math::Vector3 landingPos = FindLandingPos(snappedPos);
+
 					m_spCarriedBlock->SetPos(snappedPos);
 					grabbable->SetCarried(false);
-					BlockGridManager::Instance().Register(snappedPos, grabbable->GetBlockKind()); // ← 種別を渡す
+					if (landingPos.y < snappedPos.y - 0.01f)
+					{
+						// 落ちる場合：着地するマスを「予約」にする(本登録は、着地した時にブロック側が行う)
+						BlockGridManager::Instance().Register(landingPos, BlockGridManager::BlockKind::Reserved);
+						grabbable->StartFall(landingPos);
+					}
+					else
+					{
+						// その場に置く場合：すぐ本登録
+						BlockGridManager::Instance().Register(landingPos, grabbable->GetBlockKind());
+					}
 					m_spCarriedBlock = nullptr;
 				}
 			}
 			// ---- 何も持っていない場合 → 「掴む」処理 ----
 			else
 			{
-				// プレイヤーの視線方向にレイ(見えない光線)を飛ばして、ブロックに当たるか調べる
-				KdCollider::RayInfo rayInfo;
-				rayInfo.m_pos = playerPos;
-				rayInfo.m_dir = playerRotMat.Backward(); // カメラの前方向
-				rayInfo.m_range = 30.0f; // これより遠いブロックは掴めない
-				rayInfo.m_type = KdCollider::TypeBump | KdCollider::TypeGround;
-
-				std::list<KdCollider::CollisionResult> resultList;
-				std::shared_ptr<KdGameObject> nearestObj = nullptr;
-				float minDist = rayInfo.m_range;
-
-				// 壁も含めて、レイが最初に当たったものを探す
-				for (auto& obj : SceneManager::Instance().GetObjList())
-				{
-					// 持ち運び中のブロックだけ、障害物としても数えない
-					auto grabbable = std::dynamic_pointer_cast<IGrabbable>(obj);
-					if (grabbable && grabbable->IsCarried()) continue;
-
-					std::list<KdCollider::CollisionResult> resultList;
-					if (!obj->Intersects(rayInfo, &resultList)) continue;
-
-					for (auto& ret : resultList)
-					{
-						float dist = (ret.m_hitPos - rayInfo.m_pos).Length();
-						if (dist < minDist)
-						{
-							minDist = dist;
-							nearestObj = obj;
-						}
-					}
-				}
-
-				// 一番手前に当たったものが、掴めるブロックのときだけ掴む
-				// (壁が手前にあれば、nearestObjは壁なので、掴まない)
-				std::shared_ptr<KdGameObject> targetBlock = nullptr;
-				if (nearestObj && std::dynamic_pointer_cast<IGrabbable>(nearestObj))
-				{
-					targetBlock = nearestObj;
-				}
+				// 視線の先にあるギミックブロックを探す(魔法ブロックや壁が手前にあれば見つからない)
+				std::shared_ptr<KdGameObject> targetBlock = FindGradTarget(playerPos, playerRotMat);
 
 				// 見つかったブロックを「持っている状態」にする
 				if (targetBlock)
@@ -224,10 +201,8 @@ void BlockGrabber::HandleGrabAndDrop(const Math::Vector3& playerPos, const Math:
 					auto grabbable = std::dynamic_pointer_cast<IGrabbable>(m_spCarriedBlock);
 					grabbable->SetCarried(true);
 
-					// 掴んだブロックの種類に応じてプレビューモデルを切り替え
-					m_spActivePreviewModel = (grabbable->GetBlockKind() == BlockGridManager::BlockKind::GimmickKey)
-						? m_spGimmickPreviewModel
-						: m_spNormalPreviewModel;
+					// 掴めるのはギミックブロックだけなので、プレビューも常にギミック用
+					m_spActivePreviewModel = m_spGimmickPreviewModel;
 				}
 			}
 		}
@@ -252,7 +227,7 @@ void BlockGrabber::UpdateCarriedPos(const Math::Vector3& playerPos, const Math::
 	Math::Vector3 snappedPreview = BlockGridManager::Instance().SnapToGrid(targetPos);
 	if (snappedPreview.y < minY) snappedPreview.y = minY;
 
-	m_previewPos = snappedPreview;
+	m_previewPos = FindLandingPos(snappedPreview);
 	// そのマスが空いているかどうかで、プレビューの色(緑/赤)を切り替える判定材料にする
 	m_previewValid = !BlockGridManager::Instance().IsOccupied(snappedPreview);
 
@@ -360,4 +335,107 @@ Math::Vector3 BlockGrabber::CalcTargetPos(const Math::Vector3& playerPos, const 
 	if (targetPos.y < minY) targetPos.y = minY;
 
 	return targetPos;
+}
+
+// 視線の先で、一番手前に当たったものが「ギミックブロック」のときだけ、それを返す
+// (壁や魔法ブロックが手前にあれば、その奥のギミックブロックは対象にならない)
+std::shared_ptr<KdGameObject> BlockGrabber::FindGradTarget(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat) const
+{
+	KdCollider::RayInfo rayInfo;
+	rayInfo.m_pos = playerPos;
+	rayInfo.m_dir = playerRotMat.Backward();
+	rayInfo.m_range = 30.0f;
+	rayInfo.m_type = KdCollider::TypeBump | KdCollider::TypeGround;
+
+	std::shared_ptr<KdGameObject> nearestObj = nullptr;
+	float minDist = rayInfo.m_range;
+
+	// 壁も含めて、レイが最初に当たったものを探す
+	for (auto& obj : SceneManager::Instance().GetObjList())
+	{
+		// 持ち運び中のブロックだけ、障害物としても数えない
+		auto grabbable = std::dynamic_pointer_cast<IGrabbable>(obj);
+		if (grabbable && grabbable->IsCarried()) continue;
+
+		std::list<KdCollider::CollisionResult> resultList;
+		if (!obj->Intersects(rayInfo, &resultList)) continue;
+
+		for (auto& ret : resultList)
+		{
+			float dist = (ret.m_hitPos - rayInfo.m_pos).Length();
+			if (dist < minDist)
+			{
+				minDist = dist;
+				nearestObj = obj;
+			}
+		}
+	}
+
+	// 一番手前のものが、ギミックブロックのときだけ掴める
+	auto grabbable = std::dynamic_pointer_cast<IGrabbable>(nearestObj);
+	if (!grabbable) return nullptr;
+	if (grabbable->GetBlockKind() != BlockGridManager::BlockKind::GimmickKey)return nullptr;
+
+	return nearestObj;
+}
+
+// 毎フレーム、「今、掴めるギミックブロックを狙っているか」を更新する
+void BlockGrabber::UpdateGrabTarget(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat)
+{
+	// 何かを持っている間は、探す必要がない
+	if (m_spCarriedBlock)
+	{
+		m_hasGrabTarget = false;
+		SetGrabHighlightTarget(nullptr);
+		return;
+	}
+
+	auto target = FindGradTarget(playerPos, playerRotMat);
+	m_hasGrabTarget = (target != nullptr);
+	SetGrabHighlightTarget(target);
+}
+
+void BlockGrabber::SetGrabHighlightTarget(const std::shared_ptr<KdGameObject>& target)
+{
+	auto prev = m_wpHighlighted.lock();
+	if (prev == target) return;	// 対象が変わっていなければ何もしない
+
+	if (prev)
+	{
+		if (auto grabbable = std::dynamic_pointer_cast<IGrabbable>(prev))
+		{
+			grabbable->SetGrabHighlight(false);
+		}
+	}
+
+	if (target)
+	{
+		if (auto grabbable = std::dynamic_pointer_cast<IGrabbable>(target))
+		{
+			grabbable->SetGrabHighlight(true);
+		}
+	}
+
+	m_wpHighlighted = target;
+
+}
+
+Math::Vector3 BlockGrabber::FindLandingPos(const Math::Vector3& snappedPos) const
+{
+	Math::Vector3 pos = snappedPos;
+	const float minY = GetMinY();
+
+	while (true)
+	{
+		Math::Vector3 below = pos;
+		below.y -= BlockGridManager::GridSize;
+
+		// 地面より下には行かない
+		if (below.y < minY - 0.01f) break;
+		// 下のマスが埋まっていたら、ここが着地するマス
+		if (BlockGridManager::Instance().IsOccupied(below)) break;
+
+		pos = below;
+	}
+	return pos;
 }

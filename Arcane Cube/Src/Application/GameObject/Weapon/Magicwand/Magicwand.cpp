@@ -248,6 +248,13 @@ void Magicwand::Update()
 		// ---------------------------------------------------
 		case WandState::Adjusting:
 		{
+			// ★視界からプレビューが外れたら、自動でキャンセルする(弾が飛んでいる間は除く)
+			if (!m_isFiring && !IsPreviewInView(muzzlePos, parentMat))
+			{
+				CancelAim();
+				break;
+			}
+
 			UpdateHighlight(muzzlePos, parentMat);	// 毎フレーム、狙っているプレビューを判定
 
 			// ----- 右クリックでキャンセル -----
@@ -399,12 +406,13 @@ void Magicwand::SingleShot(const Math::Vector3& muzzlePos, const Math::Matrix& p
 // エイムモード開始：段数・狙い情報をリセットする
 void Magicwand::EnterAimMode()
 {
-	m_state = WandState::Aiming;
-	m_stackCount = 1;
-	m_hasValidAim = false;
-	m_aimBaseCell = Math::Vector3::Zero;
-	m_aimDir = Math::Vector3::Up;
+	m_state			= WandState::Aiming;
+	m_stackCount	= 1;
+	m_hasValidAim	= false;
+	m_aimBaseCell	= Math::Vector3::Zero;
+	m_aimDir		= Math::Vector3::Up;
 	m_aimHoldFrames = 0;
+	m_isFiring		= false;
 }
 
 // ===================================================
@@ -686,6 +694,9 @@ void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix&
 
 	if (isTargetHit)
 	{
+		// 弾が着弾するまで、自動キャンセルを止める
+		m_isFiring = true;
+
 		// 命中：生成し、この時初めてプレビューを消してIdleに戻す
 		// (m_previewBlocksはコールバック内でself経由で触るため、ここではコピーを渡さない)	
 		bulletObj->Init(muzzlePos, bulletTargetPos, realHitNormal,
@@ -694,6 +705,8 @@ void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix&
 			{
 				if (auto self = weakSelf.lock())
 				{
+					self->m_isFiring = false;
+
 					for (auto& block : self->m_previewBlocks)block->Expire();
 					self->m_previewBlocks.clear();
 
@@ -760,9 +773,9 @@ void Magicwand::GenerateStackAt(const Math::Vector3& baseCell, const Math::Vecto
 	m_generatedStacks.push_back(newStack);   // スタックの履歴に追加
 }
 
-// ===================================================
+// ==================================================================
 // キャンセル操作：何も生成せず、プレビューだけ消して通常状態に戻る
-// ===================================================
+// ==================================================================
 void Magicwand::CancelAim()
 {
 	for (auto& block : m_previewBlocks)
@@ -772,6 +785,39 @@ void Magicwand::CancelAim()
 	m_previewBlocks.clear();
 
 	m_state = WandState::Idle;
+}
+
+// ====================================================================
+// プレビューが1つでも視界に入っているかを調べる
+// (方向を「右・上・正面」に分けて、正面に対するずれの大きさで判定する)
+// ====================================================================
+bool Magicwand::IsPreviewInView(const Math::Vector3& eyePos, const Math::Matrix& parentMat) const
+{
+	constexpr float tanHalfV = 0.577f;			// 縦の視野：FOV60度の半分(30度)のtan
+	constexpr float aspect   = 16.0f / 9.0f;	// 横の視野の広がり
+	constexpr float margin   = 1.25f;			// ブロックの大きさ分のゆとり(大きいほど消えにくい)
+
+	const Math::Vector3 forward = parentMat.Backward();
+	const Math::Vector3 right	= parentMat.Right();
+	const Math::Vector3 up		= parentMat.Up();
+
+	for (auto& block : m_previewBlocks)
+	{
+		Math::Vector3 v = block->GetPos() - eyePos;
+
+		float z = v.Dot(forward);
+		if (z <= 0.0f) continue;	// 背中側にあるものは、視界の外
+
+		float x = v.Dot(right);
+		float y = v.Dot(up);
+
+		if (fabsf(y) / z < tanHalfV * margin &&
+			fabsf(x) / z < tanHalfV * aspect * margin)
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 void Magicwand::DismissStack(const std::vector<std::weak_ptr<NormalBlock>>& stack)

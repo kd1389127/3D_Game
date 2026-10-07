@@ -22,6 +22,8 @@ private:
 
 	KdTexture m_texNormal; // 通常時(青)
 	KdTexture m_texDelete; // 削除モード中(赤)
+	KdTexture m_texGrab;   // ギミックブロックを運んでいる、または狙っている時(緑)
+
 	std::weak_ptr<Player> m_wpPlayer;
 
 	// 魔力切れ演出用

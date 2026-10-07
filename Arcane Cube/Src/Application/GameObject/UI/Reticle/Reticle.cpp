@@ -4,8 +4,9 @@
 
 void Reticle::Init()
 {
-	m_texNormal.Load("Asset/Textures/Reticle/Reticle1.png");
+	m_texNormal.Load("Asset/Textures/Reticle/Reticle_Blue.png");
 	m_texDelete.Load("Asset/Textures/Reticle/Reticle_Red.png");
+	m_texGrab.Load("Asset/Textures/Reticle/Reticle_Green.png");
 }
 
 void Reticle::Update()
@@ -42,21 +43,26 @@ void Reticle::Update()
 void Reticle::DrawSprite()
 {
 	bool isDeleteMode = false;
+	bool isGrabActive = false;
 	if (auto player = m_wpPlayer.lock())
 	{
 		isDeleteMode = player->HasDeleteTarget();
+		isGrabActive = player->IsGrabActive();
 	}
 
-	KdTexture& tex = isDeleteMode ? m_texDelete : m_texNormal;
+	KdTexture* tex = &m_texNormal;
+
+	if (isDeleteMode)		tex = &m_texDelete;
+	else if (isGrabActive)	tex = &m_texGrab;
 
 	float baseSize = 64.0f * m_shakeScale;
 	float centerAdj = -(baseSize - 64.0f) * 0.5f;	// 中心基準で拡縮させる補正
 
 	KdShaderManager::Instance().m_spriteShader.DrawTex(
-		&tex,
+		tex,
 		centerAdj + m_shakeOffset.x,
 		centerAdj + m_shakeOffset.y,
-		baseSize,baseSize);
+		baseSize, baseSize);
 }
 
 void Reticle::StartShake()

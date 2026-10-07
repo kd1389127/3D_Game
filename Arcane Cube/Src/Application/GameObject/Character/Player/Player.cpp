@@ -222,6 +222,11 @@ bool Player::IsCarryingBlock() const
 	return false;
 }
 
+bool Player::IsGrabActive() const
+{
+	return m_upBlockGrabber && m_upBlockGrabber->IsGrabActive();
+}
+
 bool Player::HasDeleteTarget() const
 {
 	return m_upBlockDestroyer && m_upBlockDestroyer->HasTarget();
