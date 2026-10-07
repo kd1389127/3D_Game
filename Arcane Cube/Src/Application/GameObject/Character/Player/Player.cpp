@@ -10,12 +10,15 @@ Player::Player() = default;
 Player::~Player() = default;
 
 // 初期化：ステージごとの開始位置(startPos)を受け取ってセットする
-void Player::Init(const Math::Vector3& startPos, float groundHeight)
+void Player::Init(const Math::Vector3& startPos, float groundHeight, float startYawDeg)
 {
 	m_pos = startPos;
 	m_pos.y += m_adjustHeight;
 
 	m_startPos = m_pos;
+
+	// 開始時の向きをセット(左右=Y軸回転のみ指定、上下の見上げは0度から始める)
+	m_degAng = Math::Vector3(0.0f, startYawDeg, 0.0f);
 
 	m_upBlockGrabber = std::make_unique<BlockGrabber>();
 	m_upBlockGrabber->Init(groundHeight); // ← groundHeightを渡す

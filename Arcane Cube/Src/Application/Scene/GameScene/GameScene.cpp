@@ -42,14 +42,23 @@ void GameScene::Event()
 	prevUp = nowUp;
 	prevDown = nowDown;
 
-	if (GetAsyncKeyState('1') & 0x8000)
+	// ステージを切り替え
+	static bool prev1 = false, prev2 = false;
+	bool now1 = (GetAsyncKeyState('1') & 0x8000) != 0;
+	bool now2 = (GetAsyncKeyState('2') & 0x8000) != 0;
+
+	if (now1 && !prev1)
 	{
-		SceneManager::Instance().SetCurrentStage(0); 
+		SceneManager::Instance().SetCurrentStage(0);
+		SceneManager::Instance().ReloadScene();
 	}
-	if (GetAsyncKeyState('2') & 0x8000)
+	if (now2 && !prev2)
 	{
 		SceneManager::Instance().SetCurrentStage(1);
+		SceneManager::Instance().ReloadScene();
 	}
+	prev1 = now1;
+	prev2 = now2;
 }
 
 void GameScene::Init()
@@ -80,32 +89,25 @@ void GameScene::Init()
 	m_objList.push_back(mapbackground);
 
 	// Map(地面)
+	// Groundは「空」のまま置いておく(デバッググリッドの描画や、FindGroundでの判定に使うため)
 	std::shared_ptr<Ground> ground;
 	ground = std::make_shared<Ground>();
-	if (data.mapCsvPath.empty())
-	{
-		// 従来のモデル方式(Map2など)
-		ground->Init(data.mapModelPath, data.mapScale);
-	}
-	else
-	{
-		// CSV方式：Groundは「空」のまま置いておく(デバッググリッドの描画に使うため)
-		MapLoader loader;
-		std::vector<std::shared_ptr<KdGameObject>> mapBlocks;
-		loader.Load(data.mapCsvPath, data.groundHeight, data.csvOriginCol, data.csvOriginRow, mapBlocks);
-
-		for (auto& block : mapBlocks)
-		{
-			m_objList.push_back(block);
-		}
-	}
 	m_objList.push_back(ground);
 
+	// CSVからMapのブロックを生成する
+	MapLoader loader;
+	std::vector<std::shared_ptr<KdGameObject>> mapBlocks;
+	loader.Load(data.mapCsvPath, data.groundHeight, data.csvOriginCol, data.csvOriginRow, mapBlocks);
+
+	for (auto& block : mapBlocks)
+	{
+		m_objList.push_back(block);
+	}
 
 	// Player
 	std::shared_ptr<Player> player;
 	player = std::make_shared<Player>();
-	player->Init(data.playerStartPos, data.groundHeight);
+	player->Init(data.playerStartPos, data.groundHeight, data.playerStartYaw);
 	m_objList.push_back(player);
 
 	// 魔法の杖
