@@ -16,6 +16,7 @@
 #include "../../GameObject/Map/Gimmick/Switch/Switch.h"
 #include "../../GameObject/Map/MapBackGround/MapBackGround.h"
 #include "../../GameObject/Map/MapLoader.h"
+#include "../../GameObject/UI/Mouse/Mouse.h"
 
 void GameScene::Event()
 {
@@ -63,6 +64,10 @@ void GameScene::Event()
 
 void GameScene::Init()
 {
+	// マウス関連
+	Mouse::Instance().ShowMouse(false);
+	Mouse::Instance().ResetCursorToCenter(); // 前回位置を中央にそろえる
+
 	// ステージ開始時は魔力を満タンにリセット
 	MagicManager::Instance().Reset();
 

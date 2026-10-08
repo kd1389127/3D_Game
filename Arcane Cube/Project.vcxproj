@@ -293,6 +293,7 @@
     <ClInclude Include="Src\Application\GameObject\Map\MapBlock\MapBlock.h" />
     <ClInclude Include="Src\Application\GameObject\Map\MapLoader.h" />
     <ClInclude Include="Src\Application\GameObject\UI\MagicGaugeUI\MagicGaugeUI.h" />
+    <ClInclude Include="Src\Application\GameObject\UI\Mouse\Mouse.h" />
     <ClInclude Include="Src\Application\GameObject\UI\Reticle\Reticle.h" />
     <ClInclude Include="Src\Application\GameObject\Weapon\Magicwand\Magicwand.h" />
     <ClInclude Include="Src\Application\GameObject\Weapon\WeaponBase.h" />
@@ -303,6 +304,7 @@
     <ClInclude Include="Src\Application\Scene\SceneManager.h" />
     <ClInclude Include="Src\Application\Scene\StageData.h" />
     <ClInclude Include="Src\Application\Scene\TitleScene\TitleScene.h" />
+    <ClInclude Include="Src\Application\Scene\TitleScene\TitleTexture\TitleTexture.h" />
     <ClInclude Include="Src\Framework\Direct3D\KdMaterial.h" />
     <ClInclude Include="Src\Framework\Direct3D\Polygon\KdPolygon.h" />
     <ClInclude Include="Src\Framework\Direct3D\Polygon\KdSquarePolygon.h" />
@@ -368,6 +370,7 @@
     <ClCompile Include="Src\Application\GameObject\Map\MapBlock\MapBlock.cpp" />
     <ClCompile Include="Src\Application\GameObject\Map\MapLoader.cpp" />
     <ClCompile Include="Src\Application\GameObject\UI\MagicGaugeUI\MagicGaugeUI.cpp" />
+    <ClCompile Include="Src\Application\GameObject\UI\Mouse\Mouse.cpp" />
     <ClCompile Include="Src\Application\GameObject\UI\Reticle\Reticle.cpp" />
     <ClCompile Include="Src\Application\GameObject\Weapon\Magicwand\Magicwand.cpp" />
     <ClCompile Include="Src\Application\GameObject\Weapon\WeaponBase.cpp" />
@@ -377,6 +380,7 @@
     <ClCompile Include="Src\Application\Scene\ResultScene\ResultScene.cpp" />
     <ClCompile Include="Src\Application\Scene\SceneManager.cpp" />
     <ClCompile Include="Src\Application\Scene\TitleScene\TitleScene.cpp" />
+    <ClCompile Include="Src\Application\Scene\TitleScene\TitleTexture\TitleTexture.cpp" />
     <ClCompile Include="Src\Framework\Direct3D\KdMaterial.cpp">
       <SubType>
       </SubType>

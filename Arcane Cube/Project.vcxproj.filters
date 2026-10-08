@@ -154,6 +154,12 @@
     <Filter Include="Src\Application\GameObject\Map\MapBlock">
       <UniqueIdentifier>{b7979630-2dbc-4ee2-b8c0-040d8c8c0f40}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Scene\TitleScene\TitleTexture">
+      <UniqueIdentifier>{399061c2-edae-4c06-ba53-3ef959c44569}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\GameObject\UI\Mouse">
+      <UniqueIdentifier>{5953bf9d-84a7-4b9f-b10c-f29073eae996}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -405,6 +411,12 @@
     <ClInclude Include="Src\Application\GameObject\Map\MapLoader.h">
       <Filter>Src\Application\GameObject\Map</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Scene\TitleScene\TitleTexture\TitleTexture.h">
+      <Filter>Src\Application\Scene\TitleScene\TitleTexture</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\UI\Mouse\Mouse.h">
+      <Filter>Src\Application\GameObject\UI\Mouse</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -613,6 +625,12 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\Map\MapLoader.cpp">
       <Filter>Src\Application\GameObject\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Scene\TitleScene\TitleTexture\TitleTexture.cpp">
+      <Filter>Src\Application\Scene\TitleScene\TitleTexture</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\UI\Mouse\Mouse.cpp">
+      <Filter>Src\Application\GameObject\UI\Mouse</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

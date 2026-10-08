@@ -5,6 +5,7 @@
 #include "Component/BlockGrabber.h"
 #include "../../Block/BlockGridManager.h"
 #include "Component/BlockDestroyer.h"
+#include "../../UI/Mouse/Mouse.h"
 
 Player::Player() = default;
 Player::~Player() = default;
@@ -51,9 +52,13 @@ void Player::Update()
 	{
 		m_jumpKeyFlg = false;
 	}
+	
+	// Shiftキーを押している間は視点回転を止め、マウスの固定も解いて自由に動かせるようにする
+	// (スクショ撮影などで使う)
+	bool isFreeMouse = (GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0;
+	Mouse::Instance().SetFreeMove(isFreeMouse);
 
-	// Shiftキーを押している間はマウスでの視点回転を止める(ブロック操作中などに使う想定)
-	if (!(GetAsyncKeyState(VK_LSHIFT) & 0x8000))
+	if (!isFreeMouse)
 	{
 		UpdateRotateByMouse();
 	}
@@ -405,22 +410,17 @@ void Player::ResolvePushOutFromCarriedBlock()
 }
 
 // マウスの移動量からカメラ(プレイヤーの向き)を回転させる処理
+// カーソルの固定(中央に戻す処理)はMouseクラスが担当するので、ここでは移動量を受け取るだけ
 void Player::UpdateRotateByMouse()
 {
-	POINT _nowPos;
-	GetCursorPos(&_nowPos); // 現在のマウスカーソル位置(画面座標)を取得
+	// Mouseのdeltaは「右が+、上が+」
+	Math::Vector2 delta = Mouse::Instance().GetDelta();
 
-	// 前フレームで固定した中心位置(m_fixMousePos)からの移動量を計算
-	POINT _mouseMove{};
-	_mouseMove.x = _nowPos.x - m_fixMousePos.x;
-	_mouseMove.y = _nowPos.y - m_fixMousePos.y;
+	// 左右(ヨー)：右に動かしたら右を向く
+	m_degAng.y += delta.x * 0.15f;
 
-	// カーソルを毎フレーム中心位置に戻す(FPSゲームでよくある「無限にマウスを動かせる」仕組み)
-	SetCursorPos(m_fixMousePos.x, m_fixMousePos.y);
-
-	// マウスの移動量を回転角度に変換して加算する(0.15は感度調整用の係数)
-	m_degAng.x += _mouseMove.y * 0.15f; // 上下(ピッチ)
-	m_degAng.y += _mouseMove.x * 0.15f; // 左右(ヨー)
+	// 上下(ピッチ)：元のコードは「下が+」だったので、上が+のdeltaは符号を反転する
+	m_degAng.x -= delta.y * 0.15f;
 
 	// 上下の見上げ/見下ろし角度が真上/真下を超えないよう制限する
 	m_degAng.x = std::clamp(m_degAng.x, -75.f, 75.f);

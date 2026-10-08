@@ -51,8 +51,6 @@ private:
 	}
 
 	Math::Vector3 m_degAng = Math::Vector3::Zero;
-	// カメラ回転用マウス座標の差分
-	POINT m_fixMousePos = { 640,360 };
 
 	// ブロック操作コンポーネント（所有権管理）
 	std::unique_ptr<BlockGrabber> m_upBlockGrabber = nullptr;

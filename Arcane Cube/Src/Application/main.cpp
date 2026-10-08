@@ -1,6 +1,7 @@
 ﻿#include "main.h"
 
 #include "Scene/SceneManager.h"
+#include "GameObject/UI/Mouse/Mouse.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // エントリーポイント
@@ -67,6 +68,7 @@ void Application::PreUpdate()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void Application::Update()
 {
+	Mouse::Instance().Update();
 	SceneManager::Instance().Update();
 }
 
@@ -137,6 +139,7 @@ void Application::PostDraw()
 void Application::DrawSprite()
 {
 	SceneManager::Instance().DrawSprite();
+	Mouse::Instance().Draw();
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -198,6 +201,11 @@ bool Application::Init(int w, int h)
 	// シェーダー初期化
 	//===================================================================
 	KdShaderManager::Instance().Init();
+
+	//===================================================================
+	// マウス初期化
+	//===================================================================
+	Mouse::Instance().Init();
 
 	//===================================================================
 	// オーディオ初期化
