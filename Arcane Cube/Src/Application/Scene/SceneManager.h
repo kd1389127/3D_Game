@@ -23,12 +23,6 @@ public :
 	void DrawSprite();
 	void DrawDebug();
 
-	// 次のシーンをセット (次のフレームから切り替わる)
-	void SetNextScene(SceneType _nextScene)
-	{
-		m_nextSceneType = _nextScene;
-	}
-
 	// 現在のシーンのオブジェクトリストを取得
 	const std::list<std::shared_ptr<KdGameObject>>& GetObjList();
 
@@ -39,6 +33,13 @@ public :
 	void SetCurrentStage(int stage) { m_currentStage = stage; }
 
 	void ReloadScene() { m_forceReload = true; } // 同じ種類のシーンでも強制的に作り直す
+
+	// フェード付きでシーンを切り替える(暗転してから切り替わり、明るくなる)
+	// _nextStageを0以上にすると、切り替える瞬間にステージ番号も変更する
+	// フェード中に呼ばれた要求は無視する(ゴールが毎フレーム呼んでも1回だけ処理される)
+	void RequestChangeScene(SceneType _nextScene, int _nextStage = -1);
+
+	bool IsFading() const { return m_fadeState != FadeState::None; }
 
 private :
 
@@ -65,6 +66,31 @@ private :
 	int m_currentStage = 0;
 
 	bool m_forceReload = false;
+
+	// ===== フェード =====
+	enum class FadeState
+	{
+		None,	// フェードしていない
+		Out,	// だんだん暗くなる
+		Hold,	// 真っ暗のまま少し待つ(この間にシーンを切り替え済み)
+		In,		// だんだん明るくなる
+	};
+
+	void UpdateFade();
+	void DrawFade();
+
+	// 起動直後はフェードインから始める
+	FadeState m_fadeState = FadeState::In;
+	float m_fadeAlpha = 1.0f;	// 0=透明 1=真っ暗
+
+	int m_holdTimer = 0;
+
+	// フェード完了時に切り替える予定のシーンとステージ
+	SceneType m_pendingScene = SceneType::Title;
+	int m_pendingStage = -1;
+
+	static constexpr float kFadeSpeed = 1.0f / 30.0f;	// 約0.5秒(60FPS時)で暗転
+	static constexpr int kHoldFrames = 15;				// 真っ暗で待つフレーム数
 
 private:
 

@@ -160,6 +160,9 @@
     <Filter Include="Src\Application\GameObject\UI\Mouse">
       <UniqueIdentifier>{5953bf9d-84a7-4b9f-b10c-f29073eae996}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\GameObject\Particle">
+      <UniqueIdentifier>{fd4b4f7a-3478-471c-8572-38e4e5fc6c34}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -417,6 +420,9 @@
     <ClInclude Include="Src\Application\GameObject\UI\Mouse\Mouse.h">
       <Filter>Src\Application\GameObject\UI\Mouse</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Particle\ParticleManager.h">
+      <Filter>Src\Application\GameObject\Particle</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -631,6 +637,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\UI\Mouse\Mouse.cpp">
       <Filter>Src\Application\GameObject\UI\Mouse</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Particle\ParticleManager.cpp">
+      <Filter>Src\Application\GameObject\Particle</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -22,8 +22,7 @@ void GameScene::Event()
 {
 	if (GetAsyncKeyState('T') & 0x8000)
 	{
-		SceneManager::Instance().SetCurrentStage(0); // タイトルに戻る＝進行状況をリセット
-		SceneManager::Instance().SetNextScene(SceneManager::SceneType::Title);
+		SceneManager::Instance().RequestChangeScene(SceneManager::SceneType::Title, 0);
 	}
 	// Gキーでデバッググリッドの表示切り替え
 	static bool prevG = false;

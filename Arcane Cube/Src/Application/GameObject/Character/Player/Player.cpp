@@ -356,14 +356,12 @@ void Player::CheckGoal()
 
 		if (nextStage < g_stageCount)
 		{
-			SceneManager::Instance().SetCurrentStage(nextStage);
-			SceneManager::Instance().SetNextScene(SceneManager::SceneType::Game);
-			SceneManager::Instance().ReloadScene();		// 型がGameのままでも強制的に作り直す
+			SceneManager::Instance().RequestChangeScene(SceneManager::SceneType::Game, nextStage);
 		}
 		else
 		{
-			SceneManager::Instance().SetCurrentStage(0); // 全ステージクリア→次は最初からなのでリセット
-			SceneManager::Instance().SetNextScene(SceneManager::SceneType::Result);
+			// 全ステージクリア→リザルトへ(ステージ番号は0に戻す)
+			SceneManager::Instance().RequestChangeScene(SceneManager::SceneType::Result, 0);
 		}
 	}
 }
