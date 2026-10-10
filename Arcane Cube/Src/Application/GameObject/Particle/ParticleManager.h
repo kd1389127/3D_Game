@@ -35,6 +35,7 @@ private:
 		float size = 1.0f;
 		int life = 0;				// 残りフレーム
 		int maxLife = 1;			// 最初の寿命(透明度の計算用)
+		float stretch = 1.0f;		// 進行方向への引き伸ばし倍率(1.0で丸のまま、大きいほど細長い火花)
 	};
 
 	std::vector<Particle> m_particles;

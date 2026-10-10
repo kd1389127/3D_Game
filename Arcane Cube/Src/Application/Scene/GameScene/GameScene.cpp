@@ -17,6 +17,7 @@
 #include "../../GameObject/Map/MapBackGround/MapBackGround.h"
 #include "../../GameObject/Map/MapLoader.h"
 #include "../../GameObject/UI/Mouse/Mouse.h"
+#include "../../GameObject/Particle/ParticleManager.h"
 
 void GameScene::Event()
 {
@@ -66,6 +67,10 @@ void GameScene::Init()
 	// マウス関連
 	Mouse::Instance().ShowMouse(false);
 	Mouse::Instance().ResetCursorToCenter(); // 前回位置を中央にそろえる
+
+	// パーティクル関連
+	ParticleManager::Instance().Clear();
+	m_objList.push_back(std::make_shared<ParticleDrawer>());
 
 	// ステージ開始時は魔力を満タンにリセット
 	MagicManager::Instance().Reset();

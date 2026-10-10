@@ -10,6 +10,7 @@ public:
 	virtual void Update() override;
 
 	void DrawLit() override;
+	void DrawBright() override;
 
 	// 弾発射関数 … 純粋仮想関数なのでオーバライド必須！！！
 	//virtual void ShotBullet(const bool _rayFlg = false) = 0;
@@ -44,4 +45,16 @@ protected:
 
 	// 武器モデル自体の非等方スケール(振りの回転より先に適用する)
 	Math::Matrix m_scaleMat = Math::Matrix::Identity;
+
+	// 発光の強さ(0で消灯、1で最大)。杖などの派生クラスが毎フレーム設定する
+	float m_emissiveLevel = 1.0f;
+
+	// 光のゆらぎ用の時間
+	float m_glowTime = 0.0f;
+
+	// 光のゆらぎ倍率(0.5〜1.0)。Updateで毎フレーム計算される
+	float m_flicker = 1.0f;
+
+	// 光のゆらぎの速さ(1.0で通常、大きいほど速く揺れる)。杖などの派生クラスが設定する
+	float m_flickerSpeed = 1.0f;
 };

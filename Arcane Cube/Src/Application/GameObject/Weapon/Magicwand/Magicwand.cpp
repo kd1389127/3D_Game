@@ -8,6 +8,7 @@
 #include "../../Block/NormalBlock/NormalBlock.h" 
 #include "../../Map/Ground/Ground.h"
 #include "../../Magic/MagicManager.h"
+#include "../../Particle/ParticleManager.h"
 
 namespace
 {
@@ -88,6 +89,19 @@ namespace
 		else						n.z = (local.z >= 0.0f) ? 1.0f : -1.0f;
 		return n;
 	}
+
+	// 弾かれた演出を出す
+	// 着弾点が階段の中の判定板などで見た目の内側にあっても見えるよう、
+	// 撃ってきた方向(手前)へ戻した位置から出す
+	void EmitBounce(const Math::Vector3& pos, const Math::Vector3& axisNormal, const Math::Vector3& shotDir)
+	{
+		// 法線は、必ず撃った側を向くようにそろえる(内側を向いていたら反転)
+		Math::Vector3 n = axisNormal;
+		if (n.Dot(shotDir) > 0.0f) n = -n;
+
+		const float kBackOff = 4.0f;	// 手前に戻す距離(階段の中に隠れるなら大きくする)
+		ParticleManager::Instance().EmitReflect(pos - shotDir * kBackOff, n);
+	}
 }
 
 // 初期化：モデルの読み込みと、親(プレイヤー)から見た相対位置を設定する
@@ -96,7 +110,7 @@ void Magicwand::Init()
 	if (!m_spModel)
 	{
 		m_spModel = std::make_shared<KdModelWork>();
-		m_spModel->SetModelData("Asset/Models/Weapon/Magicwand/MagicwandBlue.gltf");
+		m_spModel->SetModelData("Asset/Models/Weapon/NewMagicwand/NewMagicwandBlue.gltf");
 
 		if (!m_pDebugWire)
 		{
@@ -303,6 +317,19 @@ void Magicwand::Update()
 	m_rightDownPrev = rightDownNow;
 	m_leftDownPrev = leftDownNow;
 
+	// 魔力の残りに合わせて、魔法石の明るさを変える(0個で消灯、1個で控えめ、5個で最大)
+	const int remain = MagicManager::Instance().GetRemainingCasts();
+
+	float target = 0.0f;
+	if (remain > 0)
+	{
+		// 1個でもはっきり光り(0.4)、5個で最大(1.0)になる。0個だけが消灯
+		target = 0.4f + 0.6f * (std::min(remain, 5) - 1) / 4.0f;
+	}
+
+	m_emissiveLevel += (target - m_emissiveLevel) * 0.1f;	// 毎フレーム、目標に1割ずつ近づく
+	m_flickerSpeed = 1.0f + 1.5f * (5 - std::min(remain, 5)) / 4.0f;
+
 	UpdateSwingAnim();
 
 	// 基底クラス(WeaponBase)の更新処理を呼んで、ワールド行列などを確定させる
@@ -356,47 +383,48 @@ void Magicwand::SingleShot(const Math::Vector3& muzzlePos, const Math::Matrix& p
 	rayInfo.m_range = 1000.0f;
 	rayInfo.m_type = KdCollider::TypeGround | KdCollider::TypeBump;
 
-	std::list<KdCollider::CollisionResult> resultList;
+	bool  isHit = false;
+	float minDistSqr = FLT_MAX;
+	Math::Vector3 hitPos = Math::Vector3::Zero;
+	Math::Vector3 hitNormal = Math::Vector3::Up;
+	std::shared_ptr<KdGameObject> hitObj = nullptr;
+
 	for (auto& obj : SceneManager::Instance().GetObjList())
 	{
-		obj->Intersects(rayInfo, &resultList);
-	}
+		std::list<KdCollider::CollisionResult> localResult;
+		if (!obj->Intersects(rayInfo, &localResult)) continue;
 
-	bool  isHit		 = false;
-	float minDistSqr = FLT_MAX;
-	Math::Vector3 hitPos    = Math::Vector3::Zero;
-	Math::Vector3 hitNormal = Math::Vector3::Up;
-
-	for (auto& ret : resultList)
-	{
-		float distSqr = (ret.m_hitPos - muzzlePos).LengthSquared();
-		if (distSqr < minDistSqr)
+		for (auto& ret : localResult)
 		{
-			minDistSqr = distSqr;
-			hitPos	   = ret.m_hitPos;
-			hitNormal  = ret.m_hitNDir;
-			isHit      = true;
+			float distSqr = (ret.m_hitPos - muzzlePos).LengthSquared();
+			if (distSqr < minDistSqr)
+			{
+				minDistSqr = distSqr;
+				hitPos = ret.m_hitPos;
+				hitNormal = ret.m_hitNDir;
+				hitObj = obj;
+				isHit = true;
+			}
 		}
 	}
+
+	// BOX判定の法線を、面の法線に直す(粒を壁の向きに散らすため)
+	if (isHit) hitNormal = CorrectBoxNormal(hitNormal, rayInfo.m_dir, hitPos, hitObj);
 
 	// 何にも当たらなかった場合は、レイの最大距離まで飛んだ先を仮の着弾点にする
 	Math::Vector3 targetPos = isHit ? hitPos : (muzzlePos + rayInfo.m_dir * rayInfo.m_range);
 
 	auto bullet = std::make_shared<Bullet>();
 
-	if (isHit)
-	{
-		// パーティクルが作れたらパーティクルを呼ぶように
-		// 何にも当たらなかった：弾は飛ぶが何も生成しない
-		bullet->Init(muzzlePos, targetPos, hitNormal,
-			[](const Math::Vector3&, const Math::Vector3&) {/* 何もしない */});
-	}
-	else
-	{
-		// 何にも当たらなかった：弾は飛ぶが何も生成しない
-		bullet->Init(muzzlePos, targetPos, hitNormal,
-			[](const Math::Vector3&, const Math::Vector3&) {/* 何もしない */});
-	}
+	// 左クリック単発は生成しないので、何かに当たったら必ず「弾かれた」演出を出す
+	// (何にも当たらず遠くへ飛んだ時は、見えない所なので出さない)
+	const Math::Vector3 shotDir = rayInfo.m_dir;
+
+	bullet->Init(muzzlePos, targetPos, hitNormal,
+		[isHit, shotDir](const Math::Vector3& pos, const Math::Vector3& axisNormal)
+		{
+			if (isHit) EmitBounce(pos, axisNormal, shotDir);
+		});
 
 	SceneManager::Instance().AddObject(bullet);
 
@@ -635,28 +663,33 @@ void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix&
 	rayInfo.m_range = 1000.0f;
 	rayInfo.m_type  = KdCollider::TypeGround | KdCollider::TypeBump;
 
-	std::list <KdCollider::CollisionResult> resultList;
-	for (auto& obj : SceneManager::Instance().GetObjList())
-	{
-		obj->Intersects(rayInfo, &resultList);
-	}
-
 	bool  isHit		 = false;
 	float minDistSqr = FLT_MAX;
 	Math::Vector3 realHitPos	= Math::Vector3::Zero;
 	Math::Vector3 realHitNormal = Math::Vector3::Up;
+	std::shared_ptr<KdGameObject> realHitObj = nullptr;
 
-	for (auto& ret : resultList)
+	for (auto& obj : SceneManager::Instance().GetObjList())
 	{
-		float distSqr = (ret.m_hitPos - muzzlePos).LengthSquared();
-		if (distSqr < minDistSqr)
+		std::list<KdCollider::CollisionResult> localResult;
+		if (!obj->Intersects(rayInfo, &localResult))continue;
+
+		for (auto& ret : localResult)
 		{
-			minDistSqr    = distSqr;
-			realHitPos    = ret.m_hitPos;
-			realHitNormal = ret.m_hitNDir;
-			isHit = true;
+			float distSqr = (ret.m_hitPos - muzzlePos).LengthSquared();
+			if (distSqr < minDistSqr)
+			{
+				minDistSqr = distSqr;
+				realHitPos = ret.m_hitPos;
+				realHitNormal = ret.m_hitNDir;
+				realHitObj = obj;
+				isHit = true;
+			}
 		}
 	}
+
+	// BOX判定の法線を、面の法線に直す
+	if (isHit) realHitNormal = CorrectBoxNormal(realHitNormal, rayInfo.m_dir, realHitPos, realHitObj);
 
 	// 何にも当たらなかった場合は、レイの最大距離まで飛んだ先を仮の着弾点にする
 	Math::Vector3 realTargetPos = isHit ? realHitPos : (muzzlePos + rayInfo.m_dir * rayInfo.m_range);
@@ -719,10 +752,15 @@ void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix&
 	}
 	else
 	{
-	    // ハズレ：プレビューには一切触らない。状態もAdjustingのまま維持する
-	    // (右クリックでの明示的なキャンセル、または再度の左クリックでの命中を待つ)
+		// ハズレ：プレビューには一切触らない。状態もAdjustingのまま維持する
+		// 弾かれた演出だけ出す(何にも当たらず遠くへ飛んだ時は出さない)
+		const Math::Vector3 shotDir = rayInfo.m_dir;
+
 		bulletObj->Init(muzzlePos, bulletTargetPos, realHitNormal,
-			[](const Math::Vector3&, const Math::Vector3&) {/* 何もしない */});
+			[isHit, shotDir](const Math::Vector3& pos, const Math::Vector3& axisNormal)
+			{
+				if (isHit) EmitBounce(pos, axisNormal, shotDir);
+			});
 	}
 
 	SceneManager::Instance().AddObject(bulletObj);

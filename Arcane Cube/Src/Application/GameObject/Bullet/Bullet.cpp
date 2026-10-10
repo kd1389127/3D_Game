@@ -41,8 +41,8 @@ void Bullet::Update()
 
 		if (m_onImpact)
 		{
-			// ★コールバックが渡されている場合：ブロック生成はこちらに任せる
-			//   (Magicwandの調整モードへ処理を引き継ぐ)
+			// コールバックが渡されている場合：ブロック生成はこちらに任せる
+			// (Magicwandの調整モードへ処理を引き継ぐ)
 			m_onImpact(m_targetPos, axisNormal);
 		}
 		else
