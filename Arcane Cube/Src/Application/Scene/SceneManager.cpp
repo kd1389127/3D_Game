@@ -64,6 +64,9 @@ void SceneManager::AddObject(const std::shared_ptr<KdGameObject>& _obj)
 
 void SceneManager::ChangeScene(SceneType _sceneType)
 {
+	// シーンが変わる時は、前のシーンのエフェクトを全部止める
+	KdEffekseerManager::GetInstance().StopAllEffect();
+
 	// 次のシーンを作成し、現在のシーンにする
 	switch (_sceneType)
 	{

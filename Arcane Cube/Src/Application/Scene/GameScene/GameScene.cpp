@@ -69,6 +69,8 @@ void GameScene::Init()
 	Mouse::Instance().ResetCursorToCenter(); // 前回位置を中央にそろえる
 
 	// パーティクル関連
+	KdEffekseerManager::GetInstance().Reset();
+
 	ParticleManager::Instance().Clear();
 	m_objList.push_back(std::make_shared<ParticleDrawer>());
 
@@ -148,6 +150,7 @@ void GameScene::Init()
 	std::shared_ptr<Goal> goal;
 	goal = std::make_shared<Goal>();
 	goal->Init(data.goalPos);
+	goal->SetTarget(player);
 	m_objList.push_back(goal);
 
 	// スイッチ・檻・ギミックブロックは、このステージで必要な場合のみ生成する
@@ -180,5 +183,6 @@ void GameScene::Init()
 	magicwand->SetParent(player);
 	mapbackground->SetTarget(player);
 	fpscamera->SetMagicwand(magicwand);
+	KdEffekseerManager::GetInstance().SetCamera(fpscamera->WorkCamera());
 
 }

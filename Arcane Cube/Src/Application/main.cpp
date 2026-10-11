@@ -111,6 +111,7 @@ void Application::KdPostDraw()
 void Application::PreDraw()
 {
 	SceneManager::Instance().PreDraw();
+	KdEffekseerManager::GetInstance().Update();
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -119,6 +120,7 @@ void Application::PreDraw()
 void Application::Draw()
 {
 	SceneManager::Instance().Draw();
+	KdEffekseerManager::GetInstance().Draw();
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -201,6 +203,11 @@ bool Application::Init(int w, int h)
 	// シェーダー初期化
 	//===================================================================
 	KdShaderManager::Instance().Init();
+
+	//===================================================================
+	// エフェクシア初期化
+	//===================================================================
+	KdEffekseerManager::GetInstance().Create(w, h);
 
 	//===================================================================
 	// マウス初期化
@@ -339,6 +346,8 @@ void Application::Execute()
 // アプリケーション終了
 void Application::Release()
 {
+	KdEffekseerManager::GetInstance().Release();
+
 	KdInputManager::Instance().Release();
 
 	KdShaderManager::Instance().Release();

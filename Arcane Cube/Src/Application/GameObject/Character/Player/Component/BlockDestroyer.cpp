@@ -56,6 +56,9 @@ bool BlockDestroyer::TryDeleteTarget()
 	auto target = m_wpTarget.lock();
 	if (!target) return false;
 
+	// 削除の演出(ブロックの中心に出す。ディゾルブと同時に再生される)
+	KdEffekseerManager::GetInstance().Play("Delete.efkefc", target->GetPos(), 3.0f);
+
 	BlockGridManager::Instance().Unregister(BlockGridManager::Instance().SnapToGrid(target->GetPos()));
 	target->SetDeleteHighlight(false);
 	target->StartDismiss(0);

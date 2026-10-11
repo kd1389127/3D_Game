@@ -8,7 +8,6 @@
 #include "../../Block/NormalBlock/NormalBlock.h" 
 #include "../../Map/Ground/Ground.h"
 #include "../../Magic/MagicManager.h"
-#include "../../Particle/ParticleManager.h"
 
 namespace
 {
@@ -99,8 +98,11 @@ namespace
 		Math::Vector3 n = axisNormal;
 		if (n.Dot(shotDir) > 0.0f) n = -n;
 
-		const float kBackOff = 4.0f;	// 手前に戻す距離(階段の中に隠れるなら大きくする)
-		ParticleManager::Instance().EmitReflect(pos - shotDir * kBackOff, n);
+		const float kBackOff = 4.0f;		// 手前に戻す距離(階段の中に隠れるなら大きくする)
+		const float kEffectSize = 3.5f;		// エフェクトの大きさ(小さい・大きいを見て調整)
+
+		KdEffekseerManager::GetInstance().Play(
+			"BulletHit.efkefc", pos - shotDir * kBackOff, kEffectSize);
 	}
 }
 
@@ -734,10 +736,13 @@ void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix&
 		// (m_previewBlocksはコールバック内でself経由で触るため、ここではコピーを渡さない)	
 		bulletObj->Init(muzzlePos, bulletTargetPos, realHitNormal,
 			[weakSelf, confirmedBaseCell, confirmedDir, confirmedCount]
-			(const Math::Vector3&, const Math::Vector3&)
+			(const Math::Vector3& hitPos, const Math::Vector3&)
 			{
 				if (auto self = weakSelf.lock())
 				{
+					// 着弾位置に「当たった」演出を出す
+					KdEffekseerManager::GetInstance().Play("Blue.efkefc", hitPos, 3.5f);
+
 					self->m_isFiring = false;
 
 					for (auto& block : self->m_previewBlocks)block->Expire();
