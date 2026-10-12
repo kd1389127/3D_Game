@@ -12,7 +12,6 @@ public:
 
 	void Init(const Math::Vector3& startPos, float groundHeight = 0.0f, float startYawDeg = 0.0f);	void Update()	  override;
 	void PostUpdate() override;
-	void DrawLit()	  override;
 
 	// ブロックを保持しているかチェックする関数
 	bool IsCarryingBlock() const;

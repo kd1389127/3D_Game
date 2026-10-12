@@ -172,9 +172,7 @@ void GameScene::Init()
 		std::shared_ptr<GimmickBlock> gimmickBlock;
 		gimmickBlock = std::make_shared<GimmickBlock>();
 		gimmickBlock->Init(data.gimmickBlockPos);
-		BlockGridManager::Instance().Register(
-			BlockGridManager::Instance().SnapToGrid(data.gimmickBlockPos),
-			BlockGridManager::BlockKind::GimmickKey);
+		BlockGridManager::Instance().RegisterFreeBlock(gimmickBlock);
 		m_objList.push_back(gimmickBlock);
 	}
 

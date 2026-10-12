@@ -14,7 +14,6 @@ public:
 
 	void Init(const Math::Vector3& pos);
 	void Update()		override;
-	void PostUpdate()	override;
 	void DrawLit()		override;
 
 	void SetCarried(bool isCarried) override;
@@ -27,7 +26,6 @@ public:
 	// 掴める対象として狙われる間、緑に点滅させる
 	void SetGrabHighlight(bool enable) override { m_isGrabTargeted = enable; }
 
-	void StartFall(const Math::Vector3& landingPos) override;
 
 private:
 
@@ -37,7 +35,6 @@ private:
 	bool m_isGrabTargeted = false;
 	int  m_blinkTimer = 0;
 
-	bool m_isFalling = false;
-	Math::Vector3 m_fallTarget = Math::Vector3::Zero;
 	float m_fallSpeed = 0.0f;
+	Math::Vector3 m_startPos = Math::Vector3::Zero;
 };

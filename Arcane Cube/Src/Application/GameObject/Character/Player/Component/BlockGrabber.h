@@ -19,7 +19,7 @@ public:
 	// 現在ブロックを持っているか？
 	bool IsCarrying() const { return m_spCarriedBlock != nullptr; }
 
-	float GetMinY() const;   // ← 中身は書かず、宣言だけにする
+	float GetMinY() const;
 
 	// 現在持っているブロックの座標を取得（持っていなければ判定不要なので呼び出し側でIsCarrying()チェック）
 	Math::Vector3 GetCarriedBlockPos() const;
@@ -27,12 +27,9 @@ public:
 	// レティクルを緑にするか(ギミックブロックを運んでいる、または狙っている)
 	bool IsGrabActive() const { return m_spCarriedBlock != nullptr || m_hasGrabTarget; }
 
-	void DrawPreview();
-
 private:
 	void HandleGrabAndDrop(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
 	void UpdateCarriedPos(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
-	void HandleDistanceControl(); // ホイール入力で距離を変更する処理
 
 	Math::Vector3 CalcTargetPos(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat) const;
 
@@ -44,16 +41,6 @@ private:
 	void SetGrabHighlightTarget(const std::shared_ptr<KdGameObject>& target);
 	// 今ハイライト中のブロック
 	std::weak_ptr<KdGameObject> m_wpHighlighted;
-
-	// 離した位置から真下へ進み、最初に埋まっているマスの1つ上(着地するマス)を返す
-	Math::Vector3 FindLandingPos(const Math::Vector3& snappedPos) const;
-
-	// 設置プレビュー用
-	Math::Vector3 m_previewPos = Math::Vector3::Zero;
-	bool m_previewValid = false; // その位置に置けるか(占有されていないか)
-	std::shared_ptr<KdModelWork> m_spNormalPreviewModel;  // 通常ブロック用プレビュー
-	std::shared_ptr<KdModelWork> m_spGimmickPreviewModel; // ギミックブロック用プレビュー
-	std::shared_ptr<KdModelWork> m_spActivePreviewModel;  // 今表示すべきプレビュー(どちらかを指す)
 
 	std::shared_ptr<KdGameObject> m_spCarriedBlock = nullptr;
 

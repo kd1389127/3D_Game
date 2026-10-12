@@ -211,15 +211,6 @@ void Player::PostUpdate()
 	}
 }
 
-// ブロック持ち上げ中のプレビュー描画をコンポーネントに委譲
-void Player::DrawLit()
-{
-	if (m_upBlockGrabber)
-	{
-		m_upBlockGrabber->DrawPreview();
-	}
-}
-
 // 今ブロックを持っているかどうかを他クラス(Magicwandなど)に伝えるための関数
 bool Player::IsCarryingBlock() const
 {

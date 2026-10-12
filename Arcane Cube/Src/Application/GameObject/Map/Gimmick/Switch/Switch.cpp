@@ -1,6 +1,15 @@
 ﻿#include "Switch.h"
 
-#include "../../../Block/BlockGridManager.h"
+#include "../../../Block/Grabbable.h"
+#include "../../../../Scene/SceneManager.h"
+
+namespace
+{
+	// スイッチの踏み板の大きさ(半分)。見た目に合わせてここを調整する
+	constexpr float kPadHalfSize = 3.5f;
+	// ブロックが踏み板の上に「乗っている」とみなす高さの許容範囲
+	constexpr float kPressHeight = 3.0f;
+}
 
 void Switch::Init(const Math::Vector3& pos)
 {
@@ -16,13 +25,34 @@ void Switch::Init(const Math::Vector3& pos)
 
 void Switch::Update()
 {
-	// 自分の真上のマスをチェックし、GimmickBlockが乗っているかどうかで
-	// オン/オフを毎フレーム切り替える(乗せている間だけオン)
-	// 地面に置かれたブロックが実際に収まるセル(半マス分上)をチェックする
-	Math::Vector3 checkPos = GetPos() + Math::Vector3(0.0f, BlockGridManager::GridSize * 0.5f, 0.0f);
-	Math::Vector3 snapped = BlockGridManager::Instance().SnapToGrid(checkPos);
+	m_isActive = false;
 
-	m_isActive = BlockGridManager::Instance().IsGimmickBlockAt(snapped);
+	constexpr float blockHalf = BlockGridManager::GridSize * 0.5f;
+	const Math::Vector3 padPos = GetPos();
+
+	// ギミックブロックが1つでも、踏み板に少しでも重なって乗っていればオン
+	for (auto& obj : SceneManager::Instance().GetObjList())
+	{
+		auto grabbable = std::dynamic_pointer_cast<IGrabbable>(obj);
+		if (!grabbable) continue;
+		if (grabbable->GetBlockKind() != BlockGridManager::BlockKind::GimmickKey) continue;
+		if (grabbable->IsCarried()) continue; // 手に持っている間は押さない(置いたら作動)
+
+		Math::Vector3 d = obj->GetPos() - padPos;
+
+		// 横方向：踏み板とブロックが少しでも重なっているか
+		bool overlapXZ = fabsf(d.x) < kPadHalfSize + blockHalf
+			&& fabsf(d.z) < kPadHalfSize + blockHalf;
+
+		// 縦方向：ブロックが踏み板の上(床の上)に乗っているか
+		bool onPad = fabsf(d.y - blockHalf) < kPressHeight;
+
+		if (overlapXZ && onPad)
+		{
+			m_isActive = true;
+			break;
+		}
+	}
 }
 
 void Switch::DrawLit()

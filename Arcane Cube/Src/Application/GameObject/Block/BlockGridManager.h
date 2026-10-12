@@ -101,6 +101,7 @@ public:
 	// ※groundObjのIntersects()を使うことで、Groundの実際のワールド行列(スケール込み)が自動的に反映される
 	bool CanPlaceBlockAt(const Math::Vector3& snappedPos, KdGameObject& groundObj) const
 	{
+		if (IsOverlapingFreeBlock(snappedPos)) return false;
 		constexpr float checkMargin = 0.4f;
 		Math::Vector3 halfExtents(GridSize * 0.5f * checkMargin, GridSize * 0.5f * checkMargin, GridSize * 0.5f * checkMargin);
 
@@ -153,10 +154,32 @@ public:
 		m_occupied.erase(ToKey(snappedPos));
 	}
 	
+	// グリッドに登録しない「自由に動くブロック」(ギミックブロック)を覚えておく
+	void RegisterFreeBlock(const std::shared_ptr<KdGameObject>& block)
+	{
+		m_freeBlocks.push_back(block);
+	}
+
+	// 指定したマスに、自由に動くブロックが重なっているか(魔法ブロックの生成を防ぐために使う)
+	bool IsOverlapingFreeBlock(const Math::Vector3& snappedPos) const
+	{
+		constexpr float limit = GridSize - 0.5f;
+		for (auto& wp : m_freeBlocks)
+		{
+			auto sp = wp.lock();
+			if (!sp) continue;
+
+			Math::Vector3 d = sp->GetPos() - snappedPos;
+			if (fabsf(d.x) < limit && fabsf(d.y) < limit && fabsf(d.z) < limit) return true;
+		}
+		return false;
+	}
+
 	// ステージを読み込む際に前回置いたblockを無くす
 	void Clear()
 	{
 		m_occupied.clear();
+		m_freeBlocks.clear();
 	}
 
 	// 法線ベクトル(斜めを含む)を、一番近いXYZ軸方向(±1方向のどれか)に丸める
@@ -269,6 +292,7 @@ private:
 
 	// 「使用中のマス」を全部記録しておくコンテナ
 	std::unordered_map<std::tuple<int, int, int>, BlockKind, KeyHash> m_occupied;
+	std::vector<std::weak_ptr<KdGameObject>> m_freeBlocks;
 	float m_groundHeight = 0.0f;
 	bool  m_showDebugGrid = false;
 	int   m_debugLayer = 0;
