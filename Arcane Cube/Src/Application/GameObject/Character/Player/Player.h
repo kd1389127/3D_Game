@@ -14,8 +14,10 @@ public:
 	void PostUpdate() override;
 
 	// ブロックを保持しているかチェックする関数
-	bool IsCarryingBlock() const;
-	bool IsGrabActive() const;
+	bool IsCarryingBlock()  const;
+	bool IsGrabActive()		const;
+	bool IsGrabTargetFar()  const;
+	int  GetDropBlockedId() const;
 
 	// ブロック削除関連
 	bool HasDeleteTarget() const;

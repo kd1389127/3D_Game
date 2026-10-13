@@ -19,6 +19,17 @@ void Reticle::Update()
 		StartShake();
 	}
 
+	// 「離せなかった」時も、魔力切れと同じ振動で知らせる
+	if (auto player = m_wpPlayer.lock())
+	{
+		const int dropId = player->GetDropBlockedId();
+		if (dropId != m_lastSeenDropBlockedId)
+		{
+			m_lastSeenDropBlockedId = dropId;
+			StartShake();
+		}
+	}
+
 	if (!m_isShaking) return;
 
 	m_shakeFrame++;
@@ -44,16 +55,24 @@ void Reticle::DrawSprite()
 {
 	bool isDeleteMode = false;
 	bool isGrabActive = false;
+	bool isGrabFar = false;
 	if (auto player = m_wpPlayer.lock())
 	{
 		isDeleteMode = player->HasDeleteTarget();
 		isGrabActive = player->IsGrabActive();
+		isGrabFar    = player->IsGrabTargetFar();
 	}
 
 	KdTexture* tex = &m_texNormal;
+	Math::Color color = { 1.0f,1.0f,1.0f,1.0f };
 
 	if (isDeleteMode)		tex = &m_texDelete;
 	else if (isGrabActive)	tex = &m_texGrab;
+	else if (isGrabFar)
+	{
+		tex = &m_texGrab;	// 狙ってはいるので緑だが、薄くして「まだ届かない」を表す
+		color.w = 0.4f;
+	}
 
 	float baseSize = 64.0f * m_shakeScale;
 	float centerAdj = -(baseSize - 64.0f) * 0.5f;	// 中心基準で拡縮させる補正
@@ -62,7 +81,8 @@ void Reticle::DrawSprite()
 		tex,
 		centerAdj + m_shakeOffset.x,
 		centerAdj + m_shakeOffset.y,
-		baseSize, baseSize);
+		baseSize, baseSize,
+		nullptr, &color);
 }
 
 void Reticle::StartShake()

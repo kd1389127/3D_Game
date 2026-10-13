@@ -13,7 +13,7 @@ void Goal::Init(const Math::Vector3& pos)
 		m_pCollider->RegisterCollisionShape("Goal", m_spModel, KdCollider::TypeEvent);
 	}
 
-	SetScale(10.0f);
+	SetScale(18.0f);
 	SetPos(pos);
 }
 
@@ -26,7 +26,7 @@ void Goal::Update()
 	const float kEnterRadius	= 40.0f;	// この距離に入ったら起動
 	const float kExitRadius		= 48.0f;	// この距離より離れたら消し始める
 	const float kMaxHeightDiff	= 30.0f;
-	const float kFloorOffsetY	= -10.0f;	// 魔法陣の高さの調整
+	const float kFloorOffsetY	= -3.0f;	// 魔法陣の高さの調整
 	const float kCircleSize		= 4.0f;		// 魔法陣の最大の大きさ
 	const float kFadeInStep		= 1.0f / 20.0f;	// 約0.3秒で大きくなる
 	const float kFadeOutStep	= 1.0f / 30.0f;	// 約0.5秒で小さくなって消える
@@ -87,5 +87,5 @@ void Goal::DrawBright()
 {
 	if (!m_spModel) return;
 
-	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
+	//KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
 }

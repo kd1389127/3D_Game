@@ -32,14 +32,14 @@ static const StageData g_stageTable[] =
 	// プレイヤー開始位置、ゴールの位置、ステージの下限、プレイヤーの向き
 	// ギミックを使うか、ギミックの各配置、CSVデータ、CSVの列、CSVの行
 	{ 
-		Math::Vector3(80, 0, 10), Math::Vector3(-100, 25, 10), 0.0f,-90.0f,
+		Math::Vector3(80, 0, 10), Math::Vector3(-100, 13.5, 10), 0.0f,-90.0f,
 		false, Math::Vector3::Zero, Math::Vector3::Zero, Math::Vector3::Zero,
 		"Asset/Data/MapData/Map1.csv", 14, 4 
 	},
 
 	// ステージ2(スイッチ・檻・ギミックブロックの座標)
 	{
-		Math::Vector3(48, 0, 0), Math::Vector3(-64, 33, 0), 0.0f,-90.0f,
+		Math::Vector3(48, 0, 0), Math::Vector3(-60, 21.5, 0), 0.0f,-90.0f,
 		true,
 		Math::Vector3(0, 0, -16),			// switchPos
 		Math::Vector3(-48, 24.0f, 0),		// cageBasePos

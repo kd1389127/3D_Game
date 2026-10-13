@@ -87,13 +87,6 @@ void GimmickBlock::Update()
 		}
 	}
 
-	static int s_frame = 0;
-	if (++s_frame % 20 == 0)
-	{
-		KdDebugGUI::Instance().AddLog("[Gimmick] y=%.2f speed=%.2f landed=%d landY=%.2f carried=%d\n",
-			pos.y, m_fallSpeed, landed, landY, m_isCarried);
-	}
-
 	if (landed)
 	{
 		// 地面の上にぴったり乗せて、落下速度をリセット

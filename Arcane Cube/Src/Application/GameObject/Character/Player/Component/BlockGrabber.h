@@ -1,15 +1,13 @@
 ﻿#pragma once
-#include <wrl/client.h>
 
-class NormalBlock;
-class BlockGridManager;
 class IGrabbable;
+class KdEffekseerObject;
 
 class BlockGrabber
 {
 public:
 	BlockGrabber() = default;
-	~BlockGrabber() = default;
+	~BlockGrabber();
 
 	void Init(float groundHeight = 0.0f);
 
@@ -18,38 +16,47 @@ public:
 
 	// 現在ブロックを持っているか？
 	bool IsCarrying() const { return m_spCarriedBlock != nullptr; }
-
 	float GetMinY() const;
 
 	// 現在持っているブロックの座標を取得（持っていなければ判定不要なので呼び出し側でIsCarrying()チェック）
 	Math::Vector3 GetCarriedBlockPos() const;
 	
-	// レティクルを緑にするか(ギミックブロックを運んでいる、または狙っている)
+	// 届く距離で狙っている
 	bool IsGrabActive() const { return m_spCarriedBlock != nullptr || m_hasGrabTarget; }
+
+	// ギミックブロックを狙っているが、遠くて届かない
+	bool IsGrabTargetFar() const { return m_isTargetFar; }
+
+	//「離せなかった」回数。増えたらレティクルが震える(MagicManagerの失敗IDと同じ発想)
+	int GetDropBlockedId() const { return m_dropBlockedId; }
+
+	// 掴んでいるブロック(プレイヤーの足場にしないために使う。持っていなければnullptr)
+	const KdGameObject* GetCarriedBlock() const { return m_spCarriedBlock.get(); }
 
 private:
 	void HandleGrabAndDrop(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
 	void UpdateCarriedPos(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
-
 	Math::Vector3 CalcTargetPos(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat) const;
 
-	// 視線の先にある、掴めるギミックブロックを探す(無ければnullptr)
-	std::shared_ptr<KdGameObject> FindGradTarget(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat)const;
+	//毎フレーム、狙っているギミックブロックの状態(届く / 遠い)を更新する
 	void UpdateGrabTarget(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
-	
 	// ハイライトの対象を切り替える(前の対象は消し、新しい対象を光らせる)
 	void SetGrabHighlightTarget(const std::shared_ptr<KdGameObject>& target);
 	// 今ハイライト中のブロック
 	std::weak_ptr<KdGameObject> m_wpHighlighted;
 
+	// 掴んでいる間のエフェクト
+	void StartGrabEffect();
+	void UpdateGrabEffect();
+	void StopGrabEffect();
+	std::weak_ptr<KdEffekseerObject> m_wpGrabEffect;
+
 	std::shared_ptr<KdGameObject> m_spCarriedBlock = nullptr;
-
 	bool m_eKeyFlg = false;
-
-	// ブロックとの保持距離（初期値 30.0f）
-	float m_holdDistance = 30.0f;
-
+	float m_holdDistance = 30.0f;	// ブロックとの保持距離（初期値 30.0f）
 	float m_groundHeight = 0.0f;
 
-	bool m_hasGrabTarget = false;
+	bool m_hasGrabTarget = false;	// 届く距離で狙っている
+	bool m_isTargetFar = false;		// 狙っているが遠い
+	int  m_dropBlockedId = 0;		// 離せなかった回数
 };

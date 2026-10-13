@@ -14,8 +14,6 @@ public:
 		Normal,		// 弾で生成する通常ブロック
 		GimmickKey,	// スイッチ用のギミック専用ブロック
 		Map,		// CSVでのMapブロック用
-		Reserved,	// 落下中のブロックの着地予約(他のブロックは置けないが、スイッチなどには反応しない)
-
 	};
 
 	// 1マスのサイズ(ブロック1個分の大きさに合わせてある)
@@ -58,8 +56,8 @@ public:
 
 	// ===================================================
 	// baseCellを起点に、stepDir方向へrequestCount段分の設置予定座標を計算する
-	// ★変更点：groundObjを受け取り、ブロック同士の重なりだけでなく
-	//   壁・天井などのCOLとの衝突もチェックするようにした
+	// groundObjを受け取り、ブロック同士の重なりだけでなく
+	// 壁・天井などのCOLとの衝突もチェックするようにした
 	// ===================================================
 	std::vector<Math::Vector3> TryStack(const Math::Vector3& baseCell, const Math::Vector3& stepDir,
 		int requestCount, KdGameObject& groundObj) const
@@ -82,14 +80,6 @@ public:
 		return result;
 	}
 
-	// そのマスに置かれているブロックがGimmickKeyかどうかチェック
-	// (Switchが自分の真上のマスを毎フレーム調べるために使う)
-	bool IsGimmickBlockAt(const Math::Vector3& snappedPos) const
-	{
-		auto it = m_occupied.find(ToKey(snappedPos));
-		return it != m_occupied.end() && it->second == BlockKind::GimmickKey;
-	}
-
 	// そのマスを「使用中」として記録する(ブロックを置いた時に呼ぶ)
 	// kindを省略した場合は従来通りNormalとして扱われる
 	void Register(const Math::Vector3& snappedPos, BlockKind kind = BlockKind::Normal)
@@ -101,7 +91,7 @@ public:
 	// ※groundObjのIntersects()を使うことで、Groundの実際のワールド行列(スケール込み)が自動的に反映される
 	bool CanPlaceBlockAt(const Math::Vector3& snappedPos, KdGameObject& groundObj) const
 	{
-		if (IsOverlapingFreeBlock(snappedPos)) return false;
+		if (IsOverlappingFreeBlock(snappedPos)) return false;
 		constexpr float checkMargin = 0.4f;
 		Math::Vector3 halfExtents(GridSize * 0.5f * checkMargin, GridSize * 0.5f * checkMargin, GridSize * 0.5f * checkMargin);
 
@@ -160,16 +150,16 @@ public:
 		m_freeBlocks.push_back(block);
 	}
 
-	// 指定したマスに、自由に動くブロックが重なっているか(魔法ブロックの生成を防ぐために使う)
-	bool IsOverlapingFreeBlock(const Math::Vector3& snappedPos) const
+	// 指定したマスに、自由に動くブロックが重なっているか、ignoreを渡すと自分自身は数えない(魔法ブロックの生成を防ぐために使う)
+	bool IsOverlappingFreeBlock(const Math::Vector3& pos,const KdGameObject* ignore = nullptr) const
 	{
 		constexpr float limit = GridSize - 0.5f;
 		for (auto& wp : m_freeBlocks)
 		{
 			auto sp = wp.lock();
-			if (!sp) continue;
+			if (!sp || sp.get() == ignore) continue;
 
-			Math::Vector3 d = sp->GetPos() - snappedPos;
+			Math::Vector3 d = sp->GetPos() - pos;
 			if (fabsf(d.x) < limit && fabsf(d.y) < limit && fabsf(d.z) < limit) return true;
 		}
 		return false;

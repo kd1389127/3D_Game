@@ -171,10 +171,13 @@ void Player::PostUpdate()
 	ray.m_range = m_gravity + enableStepHight; // 落下速度が速いほど、判定範囲も伸ばす
 	ray.m_type = KdCollider::TypeGround;
 
+	const KdGameObject* pCarried = m_upBlockGrabber ? m_upBlockGrabber->GetCarriedBlock() : nullptr;
+
 	std::list <KdCollider::CollisionResult> resultList;
 
 	for (auto& obj : SceneManager::Instance().GetObjList())
 	{
+		if (obj.get() == pCarried) continue;	// 掴んでいるブロックは足場にしない
 		obj->Intersects(ray, &resultList);
 	}
 
@@ -224,6 +227,16 @@ bool Player::IsCarryingBlock() const
 bool Player::IsGrabActive() const
 {
 	return m_upBlockGrabber && m_upBlockGrabber->IsGrabActive();
+}
+
+bool Player::IsGrabTargetFar() const
+{
+	return m_upBlockGrabber && m_upBlockGrabber->IsGrabTargetFar();
+}
+
+int Player::GetDropBlockedId() const
+{
+	return m_upBlockGrabber ? m_upBlockGrabber->GetDropBlockedId() : 0;
 }
 
 bool Player::HasDeleteTarget() const
@@ -365,28 +378,30 @@ void Player::ResolvePushOutFromCarriedBlock()
 {
 	if (!m_upBlockGrabber || !m_upBlockGrabber->IsCarrying()) return;
 
-	Math::Vector3 blockPos = m_upBlockGrabber->GetCarriedBlockPos();
+	const Math::Vector3 blockPos = m_upBlockGrabber->GetCarriedBlockPos();
 
 	constexpr float blockHalfSize = BlockGridManager::GridSize * 0.5f; // ブロックの半サイズ(4.0f)
-	const float playerRadius = 3.0f;      // ResolveWallCollsionのbodyRadiusと同じ値
-	const float playerHalfHeight = 5.0f;  // ResolveWallCollsionのbodyHeight(10.0f)の半分
+	constexpr float playerRadius  = 3.0f;	// ResolveWallCollsionのbodyRadiusと同じ値
+	constexpr float jumpReach     = 15.0f;	// ジャンプで届く高さ(約12.5)+余裕
 
-	// プレイヤーの当たり判定の中心座標(足元基準のm_posから、体の中心分だけ持ち上げる)
-	Math::Vector3 playerCenter = m_pos;
-	playerCenter.y += (-m_adjustHeight + playerHalfHeight);
+	// m_posは頭の高さ(足元は m_adjustHeight だけ下)
+	const float headY = m_pos.y;
+	const float feetY = m_pos.y - m_adjustHeight;
 
-	Math::Vector3 diff = playerCenter - blockPos;
+	// 高さの条件:
+	//  ・頭がブロックの底より上にある(頭の上に浮いているブロックの下は通れる)
+	//  ・足がブロックの上面+ジャンプの届く高さより下にある(=ブロックの上にも柱が伸びている扱い)
+	const bool inColumnHeight = headY > blockPos.y - blockHalfSize
+								&& feetY < blockPos.y + blockHalfSize + jumpReach;
+	if (!inColumnHeight) return;
 
-	// XYZそれぞれの軸で「どれだけ重なっているか」を計算(マイナスなら重なっていない)
-	float overlapX = (blockHalfSize + playerRadius) - fabsf(diff.x);
-	float overlapY = (blockHalfSize + playerHalfHeight) - fabsf(diff.y);
-	float overlapZ = (blockHalfSize + playerRadius) - fabsf(diff.z);
+	const Math::Vector3 diff = m_pos - blockPos;
+	const float overlapX = (blockHalfSize + playerRadius) - fabsf(diff.x);
+	const float overlapZ = (blockHalfSize + playerRadius) - fabsf(diff.z);
 
-	// 3軸すべてで重なっていて、初めて実際に箱同士が重なっていると言える
-	if (overlapX > 0.0f && overlapY > 0.0f && overlapZ > 0.0f)
+	// 横(X・Z)で重なっていたら、浅い方向へ押し出す。Yは押し出さない
+	if (overlapX > 0.0f && overlapZ > 0.0f)
 	{
-		// 重なりが浅い方の軸(X or Z)だけ押し出す
-		// Yは押し出さない＝ブロックに押されて浮いたり沈んだりしないようにする
 		if (overlapX <= overlapZ)
 		{
 			m_pos.x += (diff.x >= 0.0f ? overlapX : -overlapX);

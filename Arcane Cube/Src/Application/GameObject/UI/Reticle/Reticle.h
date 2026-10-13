@@ -34,4 +34,5 @@ private:
 	Math::Vector2 m_shakeOffset = Math::Vector2::Zero;
 	float m_shakeScale   = 1.0f;
 
+	int m_lastSeenDropBlockedId = 0;	// 前回見た「離せなかった回数」
 };

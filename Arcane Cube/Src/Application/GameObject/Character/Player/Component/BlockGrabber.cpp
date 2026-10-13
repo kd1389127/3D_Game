@@ -1,11 +1,44 @@
 ﻿#include "BlockGrabber.h"
 #include "../../../Block/NormalBlock/NormalBlock.h"
 #include "../../../Block/BlockGridManager.h"
+#include "../../../Map/MapBlock/MapBlock.h"
 #include "../../../../Scene/SceneManager.h"
 #include "../../../../main.h"
 
 namespace
 {
+	constexpr float kGrabRange		= 30.0f; // 掴める距離
+	constexpr float kGrabSenseRange = 45.0f; //「遠い」と教えるために探す距離
+	constexpr float kSweepStep      = 2.0f;  // 1回に動かす距離
+	constexpr float kCullMargin     = 16.0f; // MapBlockを近くに絞る時の余裕
+	constexpr float kGrabEffectSize = 6.0f;  // 掴み中エフェクトの大きさ
+
+	using ColliderList = std::vector<KdGameObject*>;
+
+	// 判定の相手(壁・檻・階段など)の一覧を作る。1フレームに1回だけ呼んで、あとは使い回す
+	//  ・自分自身とギミックブロックは入れない(ブロック同士は IsOverlappingFreeBlock で見る)
+	//  ・MapBlockは約650個あるので、動く範囲(from→to)の近くにあるものだけ入れる
+	ColliderList BuildColliderList(const KdGameObject* self, const Math::Vector3& from, const Math::Vector3& to)
+	{
+		const Math::Vector3 center = (from + to) * 0.5f;				// 動く線の真ん中
+		const float radius = (to - from).Length() * 0.5f + kCullMargin;	// 線の半分の長さ+余裕
+		const float radiusSq = radius * radius;
+
+		ColliderList list;
+		for (auto& obj : SceneManager::Instance().GetObjList())
+		{
+			if (obj.get() == self) continue;
+			if (dynamic_cast<IGrabbable*>(obj.get()))continue;
+
+			if (dynamic_cast<MapBlock*>(obj.get()))
+			{
+				if (Math::Vector3::DistanceSquared(obj->GetPos(), center) > radiusSq) continue;
+			}
+			list.push_back(obj.get());
+		}
+		return list;
+	}
+
 	// 指定した座標にブロック(8x8x8)を置いた時、グリッド上のブロック(Map・魔法ブロック)にめり込むか
 	// ブロックの8つの角が、埋まっているマスの中に入っていないかを調べる
 	bool OverlapsGridBlock(const Math::Vector3& pos)
@@ -28,7 +61,7 @@ namespace
 	}
 
 	// 指定位置のブロックが、壁・階段・檻などのコライダーに重なっているか
-	bool OverlapsColliders(const Math::Vector3& pos, const KdGameObject* self)
+	bool OverlapsColliders(const Math::Vector3& pos, const ColliderList& colliders)
 	{
 		constexpr float half = BlockGridManager::GridSize * 0.5f - 0.05f; // ぴったり接するだけなら重なり扱いにしない
 
@@ -37,48 +70,31 @@ namespace
 		box.Extents = DirectX::XMFLOAT3(half, half, half);
 		KdCollider::BoxInfo info(KdCollider::TypeBump, box);
 
-		for (auto& obj : SceneManager::Instance().GetObjList())
+		// 全オブジェクトではなく、作っておいた一覧だけを見る
+		for (KdGameObject* obj : colliders)
 		{
-			if (obj.get() == self) continue;
-			if (std::dynamic_pointer_cast<IGrabbable>(obj)) continue; // ブロック同士は別の関数で見る
-
-			std::list<KdCollider::CollisionResult> results;
-			if (obj->Intersects(info, &results)) return true;
+			// 重なっているかだけ知りたいので結果リストは不要
+			if (obj->Intersects(info, nullptr)) return true;
 		}
 		return false;
 	}
 
-	// 指定した座標(pos)に置くと、何かに重なるかチェックする
-	// ① グリッドに登録されたブロック ② 他のギミックブロック ③ 壁・階段・檻のコライダー
-	bool OverlapsAnyBlock(const Math::Vector3& pos, const std::shared_ptr<KdGameObject>& ignoreBlock)
+	// ① グリッド上のブロック ② 他のギミックブロック ③ 壁・階段・檻のコライダー
+	bool OverlapsAnyBlock(const Math::Vector3& pos, const KdGameObject* self, const ColliderList& colliders)
 	{
 		if (OverlapsGridBlock(pos)) return true;
-
-		constexpr float blockSize = BlockGridManager::GridSize;
-
-		for (auto& obj : SceneManager::Instance().GetObjList())
-		{
-			auto grabbable = std::dynamic_pointer_cast<IGrabbable>(obj);
-			if (!grabbable || obj == ignoreBlock || grabbable->IsCarried()) continue;
-
-			Math::Vector3 diff = pos - obj->GetPos();
-			if (fabsf(diff.x) < blockSize && fabsf(diff.y) < blockSize && fabsf(diff.z) < blockSize)
-				return true;
-		}
-
-		return OverlapsColliders(pos, ignoreBlock.get());
+		if (BlockGridManager::Instance().IsOverlappingFreeBlock(pos, self)) return true;
+		return OverlapsColliders(pos, colliders);
 	}
 
 	// 現在位置から、1つの軸だけ目標値へ少しずつ動かし、何かに重なる直前で止める
 	// (一気に飛ぶと、格子や薄い壁をすり抜けてしまうため)
 	Math::Vector3 SweepAxis(const Math::Vector3& from, int axis, float target,
-		const std::shared_ptr<KdGameObject>& ignoreBlock)
+		const KdGameObject* self, const ColliderList& colliders)
 	{
-		constexpr float stepSize = 2.0f;
-
 		const float start = (&from.x)[axis];
 		const float diff = target - start;
-		const int steps = std::max(1, (int)std::ceil(fabsf(diff) / stepSize));
+		const int steps = std::max(1, (int)std::ceil(fabsf(diff) / kSweepStep));
 
 		Math::Vector3 result = from;
 		for (int i = 1; i <= steps; ++i)
@@ -86,7 +102,7 @@ namespace
 			Math::Vector3 p = from;
 			(&p.x)[axis] = start + diff * ((float)i / steps);
 
-			if (OverlapsAnyBlock(p, ignoreBlock)) break; // ここから先は重なるので、手前で止める
+			if (OverlapsAnyBlock(p, self, colliders)) break; // ここから先は重なるので、手前で止める
 			result = p;
 		}
 		return result;
@@ -95,16 +111,22 @@ namespace
 	// 持っているブロックを「安全な位置(oldPos)」から「目標位置(desiredPos)」へ移動させる
 	// X→Z→Yの順に1軸ずつ動かすので、壁際を滑るように動ける
 	Math::Vector3 SlideMove(const Math::Vector3& oldPos, const Math::Vector3& desiredPos,
-		const std::shared_ptr<KdGameObject>& ignoreBlock)
+		const KdGameObject* self, const ColliderList& colliders)
 	{
-		// 今の位置がすでに埋まっている時は動きを制限しない(後のPushOutFromCollidersで押し出される)
-		// 制限すると、埋まったまま動かせず、離せもしない状態になるため
-		if (OverlapsAnyBlock(oldPos, ignoreBlock)) return desiredPos;
+		// すでに埋まっている時：目標へ丸ごと動かすと壁の向こう側へ飛べてしまうので、
+		// 1フレームに動ける距離だけ制限する(止めると埋まったまま動かせなくなる)
+		if (OverlapsAnyBlock(oldPos, self, colliders))
+		{
+			Math::Vector3 move = desiredPos - oldPos;
+			const float len = move.Length();
+			if (len > kSweepStep) move *= kSweepStep / len;
+			return oldPos + move;
+		}
 
 		Math::Vector3 result = oldPos;
-		result = SweepAxis(result, 0, desiredPos.x, ignoreBlock); // X
-		result = SweepAxis(result, 2, desiredPos.z, ignoreBlock); // Z
-		result = SweepAxis(result, 1, desiredPos.y, ignoreBlock); // Y
+		result = SweepAxis(result, 0, desiredPos.x, self, colliders); // X
+		result = SweepAxis(result, 2, desiredPos.z, self, colliders); // Z
+		result = SweepAxis(result, 1, desiredPos.y, self, colliders); // Y
 		return result;
 	}
 
@@ -142,7 +164,7 @@ namespace
 
 	// 持っているブロックが、壁・階段・檻などのコライダーにめり込んでいたら押し戻す
 	// グリッドに登録されていないもの(檻・外枠など)や、斜めの階段にも効く最後の安全網
-	Math::Vector3 PushOutFromColliders(Math::Vector3 pos, const KdGameObject* self)
+	Math::Vector3 PushOutFromColliders(Math::Vector3 pos, const ColliderList& colliders)	// 引数を変更
 	{
 		// 少し小さめの箱で調べる(壁にぴったり接しているだけでは、当たり扱いにしないため)
 		constexpr float half = BlockGridManager::GridSize * 0.5f - 0.05f;
@@ -156,13 +178,9 @@ namespace
 		{
 			bool pushed = false;
 
-			for (auto& obj : SceneManager::Instance().GetObjList())
+			for (KdGameObject* obj : colliders)
 			{
-				if (obj.get() == self) continue;                         // 自分自身
-				if (std::dynamic_pointer_cast<IGrabbable>(obj)) continue; // 他のギミックブロックは対象外
-
 				info.m_Abox.Center = pos;
-
 				std::list<KdCollider::CollisionResult> results;
 				if (!obj->Intersects(info, &results)) continue;
 
@@ -180,19 +198,75 @@ namespace
 		}
 		return pos;
 	}
+
+	struct GrabCandidate
+	{
+		std::shared_ptr<KdGameObject> obj;	// 視線の先に見えているギミックブロック(無ければnullptr)
+		float dist = 0.0f;					// 目からその距離
+	};
+
+	// 遠くても(kGrabSenseRangeまで)見つけて返す。「届くか」は呼び出し側が距離で決める
+	GrabCandidate FindGrabCandidate(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat)
+	{
+		KdCollider::RayInfo rayInfo;
+		rayInfo.m_pos = playerPos;
+		rayInfo.m_dir = playerRotMat.Backward();
+		rayInfo.m_range = kGrabSenseRange;
+		rayInfo.m_type = KdCollider::TypeBump | KdCollider::TypeGround;
+
+		float minDist = rayInfo.m_range;		// 何であれ一番手前に当たったものまでの距離
+		float gimmickDist = rayInfo.m_range;	// 一番手前のギミックブロックまでの距離
+		GrabCandidate candidate;
+
+		for (auto& obj : SceneManager::Instance().GetObjList())
+		{
+			auto grabbable = std::dynamic_pointer_cast<IGrabbable>(obj);
+			if (grabbable && grabbable->IsCarried()) continue;
+
+			std::list<KdCollider::CollisionResult> resultList;
+			if (!obj->Intersects(rayInfo, &resultList)) continue;
+
+			const bool isGimmick = grabbable &&
+				grabbable->GetBlockKind() == BlockGridManager::BlockKind::GimmickKey;
+
+			for (auto& ret : resultList)
+			{
+				const float dist = (ret.m_hitPos - rayInfo.m_pos).Length();
+				if (dist < minDist) minDist = dist;
+				if (isGimmick && dist < gimmickDist)
+				{
+					gimmickDist = dist;
+					candidate.obj = obj;
+				}
+			}
+		}
+
+		// 手前に壁があれば壁越しには狙えない(ほぼ同じ距離=0.5以内の時だけ有効)
+		if (candidate.obj && gimmickDist <= minDist + 0.5f)
+		{
+			candidate.dist = gimmickDist;
+			return candidate;
+		}
+		return GrabCandidate{};
+	}
+
 }
 
-// 初期化：プレビュー用モデルの読み込みと、半透明描画のための設定(ブレンドステート)を準備
+BlockGrabber::~BlockGrabber()
+{
+	StopGrabEffect();	// 持ったままゴールに入っても、エフェクトが次のシーンに残らないように
+}
+
 void BlockGrabber::Init(float groundHeight)
 {
-	m_groundHeight = groundHeight;
+	m_groundHeight = groundHeight;		// ブロックが地面に潜らない下限(GetMinY)に使う
 }
 
-// 毎フレームの更新：「掴む/離す」「持っているブロックの位置更新」「ホイールでの距離調整」をまとめて呼ぶ
 void BlockGrabber::Update(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat)
 {
 	HandleGrabAndDrop(playerPos, playerRotMat);
 	UpdateCarriedPos(playerPos, playerRotMat);
+	UpdateGrabEffect();	
 	UpdateGrabTarget(playerPos, playerRotMat);
 }
 
@@ -223,25 +297,32 @@ void BlockGrabber::HandleGrabAndDrop(const Math::Vector3& playerPos, const Math:
 			// 位置はその場のまま。グリッドには固定せず、離した後はブロック側の重力で落ちる
 			if (m_spCarriedBlock)
 			{
-				// めり込んだまま離すと、落下処理が押し上げて壁の上に出てしまうので、
-				// 重なっている間は離せないようにする
-				if (OverlapsAnyBlock(m_spCarriedBlock->GetPos(), m_spCarriedBlock)) return;
+				const KdGameObject* self = m_spCarriedBlock.get();
+				const Math::Vector3 pos = m_spCarriedBlock->GetPos();
+				const ColliderList colliders = BuildColliderList(self, pos, pos);	// 動かさないので from=to
+
+				// めり込んだまま離すと落下処理が押し上げるので、重なっている間は離せない
+				if (OverlapsAnyBlock(pos, self, colliders))
+				{
+					++m_dropBlockedId;	// 「離せなかった」ことをレティクルに知らせる
+					return;
+				}
 
 				auto grabbable = std::dynamic_pointer_cast<IGrabbable>(m_spCarriedBlock);
 				if (grabbable) grabbable->SetCarried(false);
 				m_spCarriedBlock = nullptr;
+				StopGrabEffect();
 			}
 			// ---- 何も持っていない場合 → 「掴む」処理 ----
 			else
 			{
-				// 視線の先にあるギミックブロックを探す(魔法ブロックや壁が手前にあれば見つからない)
-				std::shared_ptr<KdGameObject> targetBlock = FindGradTarget(playerPos, playerRotMat);
+				const GrabCandidate candidate = FindGrabCandidate(playerPos, playerRotMat);
 
-				// 見つかったブロックを「持っている状態」にする
-				if (targetBlock)
+				// 届く距離にある時だけ掴める
+				if (candidate.obj && candidate.dist <= kGrabRange)
 				{
-					m_spCarriedBlock = targetBlock;
-					m_holdDistance = 30.0f;
+					m_spCarriedBlock = candidate.obj;
+					m_holdDistance = kGrabRange;
 
 					auto grabbable = std::dynamic_pointer_cast<IGrabbable>(m_spCarriedBlock);
 					if (grabbable) grabbable->SetCarried(true);
@@ -336,58 +417,60 @@ Math::Vector3 BlockGrabber::CalcTargetPos(const Math::Vector3& playerPos, const 
 	const float minY = GetMinY();
 	if (targetPos.y < minY) targetPos.y = minY;
 
-	// 他のブロックや壁・床に重ならないようスライド移動で調整する
-	Math::Vector3 oldPos = m_spCarriedBlock->GetPos();
-	targetPos = SlideMove(oldPos, targetPos, m_spCarriedBlock);
+	// ---- そこへ安全に動かす ----
+	const KdGameObject* self = m_spCarriedBlock.get();
+	const Math::Vector3 oldPos = m_spCarriedBlock->GetPos();
+	const ColliderList colliders = BuildColliderList(self, oldPos, targetPos);	// 以降の判定で使い回す
 
-	// 最後の安全網：グリッド外の壁・檻・階段にめり込んでいたら押し戻す
-	targetPos = PushOutFromColliders(targetPos, m_spCarriedBlock.get());
+	targetPos = SlideMove(oldPos, targetPos, self, colliders);
+
+	// ---- 保険 ----
+	targetPos = PushOutFromColliders(targetPos, colliders);
 	if (targetPos.y < minY) targetPos.y = minY;
 
-	return targetPos;
-}
-
-// 視線の先で、一番手前に当たったものが「ギミックブロック」のときだけ、それを返す
-std::shared_ptr<KdGameObject> BlockGrabber::FindGradTarget(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat) const
-{
-	KdCollider::RayInfo rayInfo;
-	rayInfo.m_pos = playerPos;
-	rayInfo.m_dir = playerRotMat.Backward();
-	rayInfo.m_range = 30.0f;
-	rayInfo.m_type = KdCollider::TypeBump | KdCollider::TypeGround;
-
-	float minDist = rayInfo.m_range;                        // 何であれ一番手前のもの
-	std::shared_ptr<KdGameObject> gimmickObj = nullptr;     // 一番手前のギミックブロック
-	float gimmickDist = rayInfo.m_range;
-
-	// 壁も含めて、レイが最初に当たったものを探す
-	for (auto& obj : SceneManager::Instance().GetObjList())
+	// 最終確認：ここまでやっても重なっているなら、前フレームの安全な位置のままにする
+	// (押し戻しで、薄い壁の向こう側に出てしまうのを防ぐ)
+	if (OverlapsAnyBlock(targetPos, self, colliders) && !OverlapsAnyBlock(oldPos, self, colliders))
 	{
-		auto grabbable = std::dynamic_pointer_cast<IGrabbable>(obj);
-		if (grabbable && grabbable->IsCarried()) continue;
+		targetPos = oldPos;
+	}
 
-		std::list<KdCollider::CollisionResult> resultList;
-		if (!obj->Intersects(rayInfo, &resultList)) continue;
+	// 壁沿いに滑った結果、プレイヤーに近づきすぎていたら、前の位置のままにする
+	auto distSq = [&](const Math::Vector3& p)
+	{
+		const float dx = p.x - eyePos.x;
+		const float dz = p.z - eyePos.z;
+		return dx * dx + dz * dz;
+	};
+	constexpr float minDist = BlockGridManager::GridSize;	// ClampMinDistanceFromPlayerと同じ距離
 
-		bool isGimmick = grabbable && grabbable->GetBlockKind() == BlockGridManager::BlockKind::GimmickKey;
+	// 頭の上にあるブロックが、視点を下げた時にプレイヤーの体の高さへ下りてこないようにする
+	if (distSq(targetPos) < minDist * minDist) // 横方向でプレイヤーの真上・真下あたりにいる時だけ
+	{
+		constexpr float blockHalf    = BlockGridManager::GridSize * 0.5f;
+		constexpr float playerHeight = 10.0f;  // Player::m_adjustHeight と同じ値(目線から足元まで)
 
-		for (auto& ret : resultList)
+		// ブロックが、プレイヤーの体の高さ(足元〜頭)に重なっているか
+		auto overlapBodyY = [&](float y)
 		{
-			float dist = (ret.m_hitPos - rayInfo.m_pos).Length();
-			if (dist < minDist) minDist = dist;
-			if (isGimmick && dist < gimmickDist)
-			{
-				gimmickDist = dist;
-				gimmickObj = obj;
-			}
+			return y - blockHalf < eyePos.y && y + blockHalf > eyePos.y - playerHeight;
+		};
+
+		// 今までは体に重なっていなかったのに、今回の動きで重なるなら、高さは動かさない
+		if (overlapBodyY(targetPos.y) && !overlapBodyY(oldPos.y))
+		{
+			targetPos.y = oldPos.y;
 		}
 	}
 
-	// ギミックブロックが、一番手前のものから1マス以内にあれば掴める
-	// (檻などにめり込んだブロックを、取り出せるようにするため)
-	if (gimmickObj && gimmickDist <= minDist + BlockGridManager::GridSize) return gimmickObj;
 
-	return nullptr;
+
+	if (distSq(targetPos) < minDist * minDist && distSq(targetPos) < distSq(oldPos))
+	{
+		targetPos = oldPos;
+	}
+
+	return targetPos;
 }
 
 // 毎フレーム、「今、掴めるギミックブロックを狙っているか」を更新する
@@ -397,13 +480,17 @@ void BlockGrabber::UpdateGrabTarget(const Math::Vector3& playerPos, const Math::
 	if (m_spCarriedBlock)
 	{
 		m_hasGrabTarget = false;
-		SetGrabHighlightTarget(nullptr);
+		m_isTargetFar = false;
+		SetGrabHighlightTarget(m_spCarriedBlock);
 		return;
 	}
 
-	auto target = FindGradTarget(playerPos, playerRotMat);
-	m_hasGrabTarget = (target != nullptr);
-	SetGrabHighlightTarget(target);
+	const GrabCandidate candidate = FindGrabCandidate(playerPos, playerRotMat);
+	const bool reachable = candidate.obj && candidate.dist <= kGrabRange;
+
+	m_hasGrabTarget = reachable;					// 緑にするのは、届く時だけ
+	m_isTargetFar = candidate.obj && !reachable;	// 見えているが遠い
+	SetGrabHighlightTarget(reachable ? candidate.obj : nullptr);
 }
 
 void BlockGrabber::SetGrabHighlightTarget(const std::shared_ptr<KdGameObject>& target)
@@ -429,4 +516,37 @@ void BlockGrabber::SetGrabHighlightTarget(const std::shared_ptr<KdGameObject>& t
 
 	m_wpHighlighted = target;
 
+}
+
+void BlockGrabber::StartGrabEffect()
+{
+	StopGrabEffect();	// 念のため、前のが残っていたら止める
+	if (!m_spCarriedBlock) return;
+
+	// ファイル名だけ渡せばよい(Asset/Data/Effect/ はフレームワークが自動で前に付ける)
+	// isLoopは使わない：ループだと終わった時にハンドルが変わり、SetPosで追従できなくなるため
+	m_wpGrabEffect = KdEffekseerManager::GetInstance().Play(
+		"Grab.efkefc", m_spCarriedBlock->GetPos(), kGrabEffectSize);
+}
+
+void BlockGrabber::UpdateGrabEffect()
+{
+	if (!m_spCarriedBlock) return;
+
+	const std::shared_ptr<KdEffekseerObject> spEffect = m_wpGrabEffect.lock();
+	if (spEffect && spEffect->IsPlaying())
+	{
+		spEffect->SetPos(m_spCarriedBlock->GetPos());	// ブロックの動きについていく
+	}
+	else
+	{
+		// 再生が終わっていたら、もう一度再生する
+		StartGrabEffect();
+	}
+}
+
+void BlockGrabber::StopGrabEffect()
+{
+	if (const auto spEffect = m_wpGrabEffect.lock()) spEffect->StopEffect();
+	m_wpGrabEffect.reset();
 }
