@@ -31,8 +31,11 @@ void Switch::Update()
 	const Math::Vector3 padPos = GetPos();
 
 	// ギミックブロックが1つでも、踏み板に少しでも重なって乗っていればオン
-	for (auto& obj : SceneManager::Instance().GetObjList())
+	for (auto& wp : BlockGridManager::Instance().GetFreeBlocks())
 	{
+		auto obj = wp.lock();
+		if (!obj) continue;
+
 		auto grabbable = std::dynamic_pointer_cast<IGrabbable>(obj);
 		if (!grabbable) continue;
 		if (grabbable->GetBlockKind() != BlockGridManager::BlockKind::GimmickKey) continue;

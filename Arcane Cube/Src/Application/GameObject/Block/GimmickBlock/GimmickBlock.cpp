@@ -61,6 +61,24 @@ void GimmickBlock::Update()
 
 	std::list<KdCollider::CollisionResult> resultList;
 
+	// 近くのオブジェクトだけ先に絞る(全オブジェクト×5本のレイ=約8000回の判定を避ける)
+	// 横：足元レイのずれ3 + ブロックの半分4 より余裕を見て10
+	// 縦：レイの長さ(最大7) + ブロック1個分より余裕を見て16
+	constexpr float nearXZ = 10.0f;
+	constexpr float nearY = 16.0f;
+
+	std::vector<KdGameObject*> nearObjs;
+	nearObjs.reserve(32);
+	for (auto& obj : SceneManager::Instance().GetObjList())
+	{
+		if (obj.get() == this) continue;
+
+		const Math::Vector3 d = obj->GetPos() - pos;
+		if (fabsf(d.x) > nearXZ || fabsf(d.z) > nearXZ || fabsf(d.y) > nearY) continue;
+
+		nearObjs.push_back(obj.get());
+	}
+
 	for (int i = 0; i < 5; ++i)
 	{
 		KdCollider::RayInfo ray;
@@ -69,10 +87,8 @@ void GimmickBlock::Update()
 		ray.m_range = halfSize + m_fallSpeed; // 中心から足元までの長さ＋今フレームに落ちる分
 		ray.m_type = KdCollider::TypeGround;
 
-		for (auto& obj : SceneManager::Instance().GetObjList())
+		for (KdGameObject* obj : nearObjs)
 		{
-			if (obj.get() == this) continue; // 自分自身には当たらない
-
 			resultList.clear();
 			if (!obj->Intersects(ray, &resultList)) continue;
 

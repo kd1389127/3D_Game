@@ -44,9 +44,11 @@ void GameScene::Event()
 	prevDown = nowDown;
 
 	// ステージを切り替え
-	static bool prev1 = false, prev2 = false;
+	static bool prev1 = false, prev2 = false, prev3 = false, prev4 = false; 
 	bool now1 = (GetAsyncKeyState('1') & 0x8000) != 0;
 	bool now2 = (GetAsyncKeyState('2') & 0x8000) != 0;
+	bool now3 = (GetAsyncKeyState('3') & 0x8000) != 0;
+	bool now4 = (GetAsyncKeyState('4') & 0x8000) != 0;
 
 	if (now1 && !prev1)
 	{
@@ -58,8 +60,20 @@ void GameScene::Event()
 		SceneManager::Instance().SetCurrentStage(1);
 		SceneManager::Instance().ReloadScene();
 	}
+	if (now3 && !prev3)
+	{
+		SceneManager::Instance().SetCurrentStage(2);
+		SceneManager::Instance().ReloadScene();
+	}
+	if (now4 && !prev4)
+	{
+		SceneManager::Instance().SetCurrentStage(3);
+		SceneManager::Instance().ReloadScene();
+	}
 	prev1 = now1;
 	prev2 = now2;
+	prev3 = now3;
+	prev4 = now4;
 }
 
 void GameScene::Init()
@@ -85,6 +99,9 @@ void GameScene::Init()
 	// MapLoader::Loadはこの後に呼ぶこと(順番が重要)	
 	BlockGridManager::Instance().Clear();
 	BlockGridManager::Instance().SetGroundHeight(data.groundHeight);
+	BlockGridManager::Instance().SetBuildLimitLayers(data.buildLimitLayers);
+	BlockGridManager::Instance().SetTallBuildZone(
+		data.tallBuildLimitLayers, data.tallZoneMin, data.tallZoneMax);
 
 	// ステージ開始時は必ずグリッド非表示から始める
 	if (BlockGridManager::Instance().IsDebugGridVisible())
@@ -156,24 +173,32 @@ void GameScene::Init()
 	// スイッチ・檻・ギミックブロックは、このステージで必要な場合のみ生成する
 	if (data.hasGimmickCage)
 	{
-		// スイッチ
-		std::shared_ptr<Switch> sw;
-		sw = std::make_shared<Switch>();
-		sw->Init(data.switchPos);
-		m_objList.push_back(sw);
+		// スイッチ(座標の数だけ生成)
+		std::vector<std::shared_ptr<Switch>> switches;
+		for (const auto& pos : data.switchPositions)
+		{
+			std::shared_ptr<Switch> sw;
+			sw = std::make_shared<Switch>();
+			sw->Init(pos);
+			m_objList.push_back(sw);
+			switches.push_back(sw);
+		}
 
 		// 檻(鉄格子)：スイッチと紐付けて生成
 		std::shared_ptr<Cage> cage;
 		cage = std::make_shared<Cage>();
-		cage->Init(sw, data.cageBasePos, 32.0f, 0.2f);  //数値はmaxHeight,speed
+		cage->Init(switches, data.cageBasePos, data.cageScale, data.cageHeight, 0.2f);  // 高さはStageDataから
 		m_objList.push_back(cage);
 
 		// ギミック専用ブロック(スイッチに置くための鍵ブロック)
-		std::shared_ptr<GimmickBlock> gimmickBlock;
-		gimmickBlock = std::make_shared<GimmickBlock>();
-		gimmickBlock->Init(data.gimmickBlockPos);
-		BlockGridManager::Instance().RegisterFreeBlock(gimmickBlock);
-		m_objList.push_back(gimmickBlock);
+		for (const auto& pos : data.gimmickBlockPositions)
+		{
+			std::shared_ptr<GimmickBlock> gimmickBlock;
+			gimmickBlock = std::make_shared<GimmickBlock>();
+			gimmickBlock->Init(pos);
+			BlockGridManager::Instance().RegisterFreeBlock(gimmickBlock);
+			m_objList.push_back(gimmickBlock);
+		}
 	}
 
 	// 各オブジェクトに必要なデータを渡しておく

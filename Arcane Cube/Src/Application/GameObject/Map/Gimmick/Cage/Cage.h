@@ -10,8 +10,10 @@ public:
 	Cage() {}
 	~Cage() override {}
 
-	void Init(const std::shared_ptr<Switch>& targetSwitch,
+	// 全部のスイッチがオンの間だけ開く(スイッチ1個なら { sw } と渡す)
+	void Init(const std::vector<std::shared_ptr<Switch>>& switches,
 		const Math::Vector3& basePos,
+		const Math::Vector3& scale,
 		float maxHeight,
 		float speed);
 
@@ -21,7 +23,7 @@ public:
 private:
 
 	std::shared_ptr<KdModelWork> m_spModel = nullptr;
-	std::shared_ptr<Switch> m_pSwitch = nullptr;
+	std::vector<std::shared_ptr<Switch>> m_switches;
 
 	Math::Vector3 m_basePos = {};
 	float m_maxHeight		= 0.0f;

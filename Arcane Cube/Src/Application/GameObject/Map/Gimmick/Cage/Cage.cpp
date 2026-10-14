@@ -1,12 +1,14 @@
 ﻿#include "Cage.h"
 #include "../Switch/Switch.h"
 
-void Cage::Init(const std::shared_ptr<Switch>& targetSwitch,
-	const Math::Vector3& basePos,
-	float maxHeight,
+// 全部のスイッチがオンの間だけ開く(スイッチ1個なら { sw } と渡す)
+void Cage::Init(const std::vector<std::shared_ptr<Switch>>& switches, 
+	const Math::Vector3& basePos, 
+	const Math::Vector3& scale, 
+	float maxHeight, 
 	float speed)
 {
-	m_pSwitch = targetSwitch;
+	m_switches = switches;
 	m_basePos = basePos;
 	m_maxHeight = maxHeight;
 	m_speed = speed;
@@ -28,7 +30,7 @@ void Cage::Init(const std::shared_ptr<Switch>& targetSwitch,
 		m_pCollider->RegisterCollisionShape("CageWall", wallBox, KdCollider::TypeBump);
 	}
 
-	Math::Matrix scaleMat = Math::Matrix::CreateScale(Math::Vector3(55.0f, 45.0f, 45.0f));
+	Math::Matrix scaleMat = Math::Matrix::CreateScale(scale);
 	Math::Matrix rotMat   = Math::Matrix::CreateRotationY(DirectX::XMConvertToRadians(90));
 	Math::Matrix transMat = Math::Matrix::CreateTranslation(basePos);
 
@@ -37,7 +39,17 @@ void Cage::Init(const std::shared_ptr<Switch>& targetSwitch,
 
 void Cage::Update()
 {
-	bool active = m_pSwitch && m_pSwitch->IsActive();
+	// 全部のスイッチがオンのときだけ開く
+	// 最初は「開く」と仮定して、1つでもオフのスイッチがあれば「閉じる」に変える
+	bool active = !m_switches.empty();
+	for (auto& sw : m_switches)
+	{
+		if (!sw || !sw->IsActive())
+		{
+			active = false;
+			break;
+		}
+	}
 	float target = active ? m_maxHeight : 0.0f;
 
 	// 1フレームごとにm_speed分だけ近づける(DeltaTimeは使わない、他クラスと同じ固定フレーム前提の書き方)

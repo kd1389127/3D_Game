@@ -93,6 +93,22 @@ public:
 	bool CanPlaceBlockAt(const Math::Vector3& snappedPos, KdGameObject& groundObj) const
 	{
 		if (IsOverlappingFreeBlock(snappedPos)) return false;
+
+		// 高く積めるエリアの中なら、そのエリア用の層数を使う
+		int limitLayers = m_buildLimitLayers;
+		if (m_tallLimitLayers > 0 &&
+			snappedPos.x >= m_tallZoneMin.x && snappedPos.x <= m_tallZoneMax.x &&
+			snappedPos.z >= m_tallZoneMin.y && snappedPos.z <= m_tallZoneMax.y)
+		{
+			limitLayers = m_tallLimitLayers;
+		}
+
+		if (limitLayers > 0)
+		{
+			const float cellTop = snappedPos.y + GridSize * 0.5f;
+			if (cellTop > m_groundHeight + GridSize * limitLayers + 0.01f) return false;
+		}
+
 		constexpr float checkMargin = 0.4f;
 		Math::Vector3 halfExtents(GridSize * 0.5f * checkMargin, GridSize * 0.5f * checkMargin, GridSize * 0.5f * checkMargin);
 
@@ -304,6 +320,18 @@ public:
 	{
 		return OverlapsPlayerBody(cellPos) && !IsPlayerAboveCell(cellPos);
 	}
+	
+	void SetBuildLimitLayers(int layers) { m_buildLimitLayers = layers; }
+
+	void SetTallBuildZone(int layers, const Math::Vector2& minXZ, const Math::Vector2& maxXZ)
+	{
+		m_tallLimitLayers = layers;
+		m_tallZoneMin = minXZ;
+		m_tallZoneMax = maxXZ;
+	}
+
+	// 自由に動くブロック(ギミックブロック)の一覧。スイッチが「誰が乗っているか」を調べるために使う
+	const std::vector<std::weak_ptr<KdGameObject>>& GetFreeBlocks() const { return m_freeBlocks; }
 
 private:
 	// 座標(小数)を、マス目上の「整数の住所」に変換する(重複チェック用のキー)
@@ -337,8 +365,13 @@ private:
 	float m_groundHeight = 0.0f;
 	bool  m_showDebugGrid = false;
 	int   m_debugLayer = 0;
+	int	  m_buildLimitLayers = 0;
 
 	Math::Vector3 m_playerBodyCenter = Math::Vector3::Zero;
 	Math::Vector3 m_playerBodyHalf = Math::Vector3::Zero;
 	bool          m_hasPlayerBody = false;
+
+	int           m_tallLimitLayers = 0;
+	Math::Vector2 m_tallZoneMin = Math::Vector2::Zero;
+	Math::Vector2 m_tallZoneMax = Math::Vector2::Zero;
 };

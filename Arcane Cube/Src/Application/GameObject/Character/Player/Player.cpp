@@ -206,11 +206,12 @@ void Player::PostUpdate()
 
 	// ----- 奈落判定 -----
 	// スタート地点のY座標を基準に、そこから大きく下に落ちたらリスポーン
-	constexpr float fallLimitOffset = -100.0f;
+	constexpr float fallLimitOffset = -50.0f;
 	if (m_pos.y < m_startPos.y + fallLimitOffset)
 	{
-		m_pos = m_startPos;
-		m_gravity = 0.0f;	//	落下速度もリセットしないと復帰した瞬間また落ち続ける
+		SceneManager::Instance().RequestChangeScene(
+			SceneManager::SceneType::Game, SceneManager::Instance().GetCurrentStage());
+		return;
 	}
 }
 
