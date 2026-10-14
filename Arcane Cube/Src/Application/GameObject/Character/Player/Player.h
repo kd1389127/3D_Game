@@ -80,7 +80,7 @@ private:
 	bool m_jumpKeyFlg = false;
 
 	// ジャンプ力
-	const float m_jumpPow = 1.0f;
+	const float m_jumpPow = 0.9f;
 
 	bool m_isAimBlocking = false;
 };

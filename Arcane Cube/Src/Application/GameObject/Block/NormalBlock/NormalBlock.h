@@ -77,6 +77,11 @@ private:
 
 	float m_dissolveProgress = 1.0f;				  // 0=出現前、1=完全に実体化済み(通常時は1で固定)
 
+	// せり出しが終わったが、プレイヤーの体と重なっていて、コライダーを有効にするのを待っている状態か
+	bool m_isWaitingEnable = false;
+
+	// 体と重なっていなければコライダーを有効にする(重なっていたら次のフレームに持ち越す)
+	void TryEnableCollider();
 
 	// ----- 消滅アニメーション用のパラメータ(StartEmergeと対になる仕組み) -----
 	bool m_isDismissing = false;

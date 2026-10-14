@@ -45,6 +45,12 @@ void NormalBlock::Init(const Math::Vector3& pos)
 // ===================================================
 void NormalBlock::Update()
 {
+	// 体と重なって有効化を待っている間は、出現演出の最中でも毎フレーム確認する
+	if (m_isWaitingEnable)
+	{
+		TryEnableCollider();
+	}
+
 	if (m_isEmerging)
 	{
 		m_emergeFrame++;
@@ -67,13 +73,6 @@ void NormalBlock::Update()
 		{
 			m_isEmerging = false;
 			m_dissolveProgress = 0.0f;	// 完全に見える状態に
-
-			if (m_pCollider)
-			{
-				// せり出し切ってから当たり判定を有効にする
-				// (アニメ中に当たり判定が効くと、途中の浮いた状態でプレイヤーを押し出してしまうため)
-				m_pCollider->SetEnableAll(true);
-			}
 		}
 		return;
 	}
@@ -94,7 +93,6 @@ void NormalBlock::Update()
 		}
 		return;
 	}
-
 }
 
 void NormalBlock::PostUpdate()
@@ -198,8 +196,14 @@ void NormalBlock::StartEmerge(int delayFrames, const Math::Vector3& dir)
 
 	if (m_pCollider)
 	{
-		// アニメーション中は当たり判定を切っておく(浮いた/埋まった状態で干渉させないため)
+		// いったん全部切ってから、条件に合うものだけを有効にし直す
 		m_pCollider->SetEnableAll(false);
+
+		// 着弾した時点で体との重なりは確認済み(GenerateStackAtのTryStack)なので、
+		// 出現演出の最初から当たり判定を有効にして、歩いて入れないようにする
+		m_isWaitingEnable = true;
+		TryEnableCollider();	// 重なっていなければ、壁も地面も今すぐ有効になる
+
 	}
 }
 
@@ -215,8 +219,9 @@ void NormalBlock::SetPreview(bool isPreview)
 
 void NormalBlock::StartDismiss(int delayFrames)
 {
-	m_isDismissing = true;
-	m_dismissFrame = -delayFrames;
+	m_isDismissing   = true;
+	m_isWaitingEnable = false;
+	m_dismissFrame	 = -delayFrames;
 	m_dissolveProgress = 0.0f;		// 完全に見えている状態からスタート
 
 	if (m_pCollider)
@@ -224,6 +229,26 @@ void NormalBlock::StartDismiss(int delayFrames)
 		// 消滅演出中は当たり判定を切っておく(消えかけの状態で干渉させないため)
 		m_pCollider->SetEnableAll(false);
 	}
+}
+
+void NormalBlock::TryEnableCollider()
+{
+	if (!m_pCollider)
+	{
+		m_isWaitingEnable = false;
+		return;
+	}
+	
+	// 壁(横の押し出し)は先に有効にする
+	// → 体が中にいても、Player側の壁判定が横へ押し出してくれる(縦には押さない)
+	m_pCollider->SetEnable("BlockWall", true);
+
+	// 地面(上に乗る判定)は、体と重なっていない時だけ有効にする
+	// → 重なったまま有効にすると、足元のレイが内部の面を拾って上に持ち上げてしまうため
+	if (BlockGridManager::Instance().IsBlockedByPlayer(m_finalPos)) return;
+
+	m_pCollider->SetEnable("BlockGround", true);
+	m_isWaitingEnable = false;
 }
 
 void NormalBlock::DrawFaceHighlight()

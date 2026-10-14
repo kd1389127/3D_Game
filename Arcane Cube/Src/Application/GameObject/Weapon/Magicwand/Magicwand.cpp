@@ -104,6 +104,11 @@ namespace
 		KdEffekseerManager::GetInstance().Play(
 			"BulletHit.efkefc", pos - shotDir * kBackOff, kEffectSize);
 	}
+
+	// プレイヤーの体の大きさ(Player::ResolveWallCollsionの半径3・Player::m_adjustHeightの10に合わせる)
+	constexpr float kBodyRadius = 3.0f;
+	constexpr float kBodyHeight = 10.0f;	// 足元から頭(m_pos)までの高さ
+	constexpr float kBodyHalfHeight = kBodyHeight * 0.5f;
 }
 
 // 初期化：モデルの読み込みと、親(プレイヤー)から見た相対位置を設定する
@@ -181,6 +186,15 @@ void Magicwand::Update()
 
 	// 銃口(発射位置)のワールド座標を計算する
 	Math::Vector3 muzzlePos = (m_localMuzzleMat * parentMat).Translation();
+
+	// m_posは頭の高さ。足元は kBodyHeight だけ下
+	if (spParent)
+	{
+		const Math::Vector3 feet = parentMat.Translation() - Math::Vector3(0.0f, kBodyHeight, 0.0f);
+		BlockGridManager::Instance().SetPlayerBody(
+			feet + Math::Vector3(0.0f, kBodyHalfHeight, 0.0f),
+			Math::Vector3(kBodyRadius, kBodyHalfHeight, kBodyRadius));
+	}
 
 	// ----- 今フレームのボタン状態と、押した/離した瞬間の判定 -----
 	bool rightDownNow = (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0;
@@ -745,11 +759,17 @@ void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix&
 
 					self->m_isFiring = false;
 
+					// ①先に生成を試す。失敗(体と重なる・魔力不足)ならプレビューを消さずに戻る
+					if (!self->GenerateStackAt(confirmedBaseCell, confirmedDir, confirmedCount))
+					{
+						MagicManager::Instance().MarkAttemptFailed();	// レティクルを振動させて失敗を知らせる
+						return;											// Adjustingのまま=もう一度確定できる
+					}
+
+					// ②生成に成功してからプレビューを消す
 					for (auto& block : self->m_previewBlocks)block->Expire();
 					self->m_previewBlocks.clear();
 
-					self->GenerateStackAt(confirmedBaseCell, confirmedDir, confirmedCount);
-				
 					self->m_hasValidAim = false;
 					self->m_state = WandState::Idle;
 				}
@@ -776,25 +796,24 @@ void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix&
 // ===================================================
 // 弾が着弾した瞬間に呼ばれる：実際にブロックを生成する
 // ===================================================
-void Magicwand::GenerateStackAt(const Math::Vector3& baseCell, const Math::Vector3& dir, int stackCount)
+bool Magicwand::GenerateStackAt(const Math::Vector3& baseCell, const Math::Vector3& dir, int stackCount)
 {
 	auto spGround = FindGround();
-	if (!spGround) return;
+	if (!spGround) return false;
 
-	// 弾が飛んでいる間に状況が変わっている可能性があるため、着弾した瞬間にもう一度計算し直す
-	auto positions = BlockGridManager::Instance().TryStack(baseCell, dir, stackCount, *spGround);
-	if (positions.empty()) return;
+	// 着弾した瞬間にもう一度計算し直す。ここだけプレイヤーとの重なりも見る(true)
+	auto positions = BlockGridManager::Instance().TryStack(baseCell, dir, stackCount, *spGround, true);
+	if (positions.empty()) return false;
 
 	// 段数(生成される実際のブロック数)ぶんだけ消費する
 	int needCasts = (int)positions.size();
 	if (!MagicManager::Instance().TryConsumeCast(needCasts))
 	{
-		return;
+		return false;
 	}
 
-	// 1段ごとにアニメーション開始をずらし、根元から順に生えて見せる
 	constexpr int staggerFrames = 6;
-	std::vector<std::weak_ptr<NormalBlock>> newStack;	// このスタックの一員を記録するリスト
+	std::vector<std::weak_ptr<NormalBlock>> newStack;
 
 	int stackId = m_nextStackId++;
 
@@ -807,13 +826,13 @@ void Magicwand::GenerateStackAt(const Math::Vector3& baseCell, const Math::Vecto
 
 		SceneManager::Instance().AddObject(block);
 
-		// 見た目が完成する前でも、別の弾が同じマスに重ねて生成されないよう先に登録しておく
 		BlockGridManager::Instance().Register(positions[i]);
 
 		newStack.push_back(block);
 	}
 
-	m_generatedStacks.push_back(newStack);   // スタックの履歴に追加
+	m_generatedStacks.push_back(newStack);
+	return true;
 }
 
 // ==================================================================

@@ -60,7 +60,7 @@ public:
 	// 壁・天井などのCOLとの衝突もチェックするようにした
 	// ===================================================
 	std::vector<Math::Vector3> TryStack(const Math::Vector3& baseCell, const Math::Vector3& stepDir,
-		int requestCount, KdGameObject& groundObj) const
+		int requestCount, KdGameObject& groundObj, bool checkPlayer = false) const
 	{
 		std::vector<Math::Vector3> result;
 		result.reserve(requestCount);
@@ -72,6 +72,7 @@ public:
 		{
 			if (IsOccupied(pos)) break;
 			if (!CanPlaceBlockAt(pos, groundObj)) break;
+			if (checkPlayer && IsBlockedByPlayer(pos)) break;		// 体に重なる段で打ち切る
 
 			result.push_back(pos);
 			pos += step;
@@ -170,6 +171,8 @@ public:
 	{
 		m_occupied.clear();
 		m_freeBlocks.clear();
+		m_hasPlayerBody = false;	// ステージ切替で前のプレイヤー位置を引きずらない
+
 	}
 
 	// 法線ベクトル(斜めを含む)を、一番近いXYZ軸方向(±1方向のどれか)に丸める
@@ -235,6 +238,12 @@ public:
 			Math::Matrix mat = Math::Matrix::CreateTranslation(cellPos);
 			wire.AddDebugBox(mat, Math::Vector3(half, half, half), Math::Vector3::Zero, false,c);
 		}
+
+		if (m_hasPlayerBody)
+		{
+			wire.AddDebugBox(Math::Matrix::CreateTranslation(m_playerBodyCenter),
+				m_playerBodyHalf, Math::Vector3::Zero, false, Math::Color(1.0f, 1.0f, 1.0f, 1.0f));
+		}
 	}
 
 	// 表示する高さの段を切り替える(0=地面の高さ)
@@ -252,6 +261,48 @@ public:
 	bool IsDebugGridVisible() const
 	{
 		return m_showDebugGrid;
+	}
+
+	// プレイヤーの体(箱)を毎フレーム教えてもらう。Magicwand::Updateから呼ぶ
+	// center=箱の中心、halfExtents=箱の半分のサイズ(幅・高さ・奥行き)
+	void SetPlayerBody(const Math::Vector3& center, const Math::Vector3& halfExtents)
+	{
+		m_playerBodyCenter = center;
+		m_playerBodyHalf = halfExtents;
+		m_hasPlayerBody = true;
+	}
+
+	// そのマスが、プレイヤーの体と重なっているか(箱と箱の重なり判定)
+	bool OverlapsPlayerBody(const Math::Vector3& cellPos) const
+	{
+		if (!m_hasPlayerBody) return false;		// 体の情報が無いうちは「重なっていない」扱い
+
+		constexpr float half = GridSize * 0.5f; // マスの半分のサイズ
+		constexpr float eps = 0.5f;				// 触れているだけは「重なり」にしない
+
+		// マスの中心とプレイヤーの中心のずれ
+		const Math::Vector3 d = cellPos - m_playerBodyCenter;
+
+		// 3軸すべてで「ずれ < マスの半分 + 体の半分 - eps」なら重なっている
+		// (1軸でも離れていれば重ならない)
+		return fabsf(d.x) < half + m_playerBodyHalf.x - eps &&
+			fabsf(d.y) < half + m_playerBodyHalf.y - eps &&
+			fabsf(d.z) < half + m_playerBodyHalf.z - eps;
+	}
+
+	// プレイヤーの足元が「そのマスの上面」以上にいるか(=ブロックを足の下に置ける状態か)
+	bool IsPlayerAboveCell(const Math::Vector3& cellPos) const
+	{
+		constexpr float tolerance = 1.0f;	// 上面より少し下でも許す(跳ぶ途中でも置ける余裕)
+		const float cellTop = cellPos.y + GridSize * 0.5f;
+		const float feetY = m_playerBodyCenter.y - m_playerBodyHalf.y;
+		return feetY >= cellTop - tolerance;
+	}
+
+	// 体と重なっていて、かつ足の下に置ける状態でもない = 置けない
+	bool IsBlockedByPlayer(const Math::Vector3& cellPos) const
+	{
+		return OverlapsPlayerBody(cellPos) && !IsPlayerAboveCell(cellPos);
 	}
 
 private:
@@ -286,4 +337,8 @@ private:
 	float m_groundHeight = 0.0f;
 	bool  m_showDebugGrid = false;
 	int   m_debugLayer = 0;
+
+	Math::Vector3 m_playerBodyCenter = Math::Vector3::Zero;
+	Math::Vector3 m_playerBodyHalf = Math::Vector3::Zero;
+	bool          m_hasPlayerBody = false;
 };

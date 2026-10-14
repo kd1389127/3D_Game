@@ -82,7 +82,7 @@ private:
 	void ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix& parentMat);
 
 	// 弾が着弾した瞬間に呼ばれる：実際にせり出しアニメーション付きでブロックを生成する
-	void GenerateStackAt(const Math::Vector3& baseCell, const Math::Vector3& dir, int stackCount);
+	bool GenerateStackAt(const Math::Vector3& baseCell, const Math::Vector3& dir, int stackCount);
 
 	// キャンセル操作：何も生成せず、プレビューだけ消してIdleに戻る
 	void CancelAim();
