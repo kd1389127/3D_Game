@@ -6,6 +6,7 @@
 #include "../../Block/BlockGridManager.h"
 #include "Component/BlockDestroyer.h"
 #include "../../UI/Mouse/Mouse.h"
+#include "../../Collision/Collision.h"
 
 Player::Player() = default;
 Player::~Player() = default;
@@ -118,9 +119,12 @@ void Player::Update()
 		ceilRay.m_type = KdCollider::TypeGround | KdCollider::TypeBump;
 
 		std::list<KdCollider::CollisionResult> ceilResults;
-		for (auto& obj : SceneManager::Instance().GetObjList())
+
+		std::vector<KdGameObject*> nearObjs;
+		CollisionFilter::CollectAround(m_pos, 20.0f, nearObjs, this);
+
+		for (KdGameObject* obj : nearObjs)
 		{
-			if (obj.get() == this) continue; // 自分自身とは判定しない
 			obj->Intersects(ceilRay, &ceilResults);
 		}
 
@@ -175,9 +179,12 @@ void Player::PostUpdate()
 
 	std::list <KdCollider::CollisionResult> resultList;
 
-	for (auto& obj : SceneManager::Instance().GetObjList())
+	std::vector<KdGameObject*> nearObjs;
+	CollisionFilter::CollectAround(m_pos, 20.0f, nearObjs, this);
+
+	for (KdGameObject* obj : nearObjs)
 	{
-		if (obj.get() == pCarried) continue;	// 掴んでいるブロックは足場にしない
+		if (obj == pCarried) continue;	// 掴んでいるブロックは足場にしない
 		obj->Intersects(ray, &resultList);
 	}
 
@@ -270,6 +277,10 @@ void Player::ResolveWallCollsion()
 	// 複数回(4回)繰り返して少しずつ正しい位置に収束させる
 	const int resolveIteration = 4;
 
+	// 体の半径3 + 押し出しの余裕を見て20(ブロックの大きさ7は関数側で足される)
+	std::vector<KdGameObject*> nearObjs;
+	CollisionFilter::CollectAround(m_pos, 20.0f, nearObjs, this);
+
 	for (int iteration = 0; iteration < resolveIteration; ++iteration)
 	{
 		Math::Vector3 totalPush = Math::Vector3::Zero;
@@ -285,9 +296,8 @@ void Player::ResolveWallCollsion()
 		KdCollider::BoxInfo boxInfo(KdCollider::TypeBump, boxMat, boxOffset, boxHalfExtents, false);
 
 		std::list<KdCollider::CollisionResult> resultList;
-		for (auto& obj : SceneManager::Instance().GetObjList())
+		for (KdGameObject* obj : nearObjs)
 		{
-			if (obj.get() == this) continue;
 			obj->Intersects(boxInfo, &resultList);
 		}
 
@@ -347,10 +357,13 @@ void Player::CheckGoal()
 	// TypeEvent(ゴールなどのイベント用当たり判定)とだけ判定する球を作成
 	KdCollider::SphereInfo sphereInfo(KdCollider::TypeEvent, center, checkRadius);
 
+	// 球で判定するので、中心と半径で絞る
+	std::vector<KdGameObject*> nearObjs;
+	CollisionFilter::CollectAround(center, checkRadius, nearObjs, this);
+
 	std::list<KdCollider::CollisionResult> resultList;
-	for (auto& obj : SceneManager::Instance().GetObjList())
+	for (KdGameObject* obj : nearObjs)
 	{
-		if (obj.get() == this) continue;
 		obj->Intersects(sphereInfo, &resultList);
 	}
 

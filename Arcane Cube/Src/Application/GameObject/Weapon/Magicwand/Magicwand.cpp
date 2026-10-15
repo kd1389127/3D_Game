@@ -8,7 +8,7 @@
 #include "../../Block/NormalBlock/NormalBlock.h" 
 #include "../../Map/Ground/Ground.h"
 #include "../../Magic/MagicManager.h"
-
+#include "../../Collision/Collision.h"
 namespace
 {
 	// ===================================================
@@ -465,11 +465,16 @@ void Magicwand::EnterAimMode()
 // ===================================================
 std::shared_ptr<Ground> Magicwand::FindGround() const
 {
+	// 前回見つけたものが残っていれば、それを使う(全オブジェクトを探さない)
+	if (auto cached = m_wpGround.lock()) return cached;
+
+	// 初回と、ステージ移動で消えた後だけ探す
 	for (auto& obj : SceneManager::Instance().GetObjList())
 	{
 		auto ground = std::dynamic_pointer_cast<Ground>(obj);
 		if (ground)
 		{
+			m_wpGround = ground;
 			return ground;
 		}
 	}
@@ -488,44 +493,52 @@ void Magicwand::UpdateAimMode(const Math::Vector3& muzzlePos, const Math::Matrix
 	rayInfo.m_range = 1000.0f;            // 十分に遠くまで判定する
 	rayInfo.m_type = KdCollider::TypeGround | KdCollider::TypeBump;
 
-	std::list<KdCollider::CollisionResult> resultList;
+	// レイの道の近くのものだけ集める(射程1000でも、筒に入るブロックだけになる)
+	std::vector<KdGameObject*> candidates;
+	CollisionFilter::CollectAlongRay(rayInfo.m_pos, rayInfo.m_dir, rayInfo.m_range, candidates);
 
 	// 当たった候補の中から一番近いものを選ぶ
 	bool isHit = false;
 	float minDistSqr = FLT_MAX;
 	Math::Vector3 hitPos = Math::Vector3::Zero;
 	Math::Vector3 hitNormal = Math::Vector3::Up;
-	std::shared_ptr<KdGameObject> hitObj = nullptr;		//当たったオブジェクトを覚える
+	KdGameObject* hitRaw = nullptr;		// 当たった物は生ポインタで覚える
 
-	for (auto& obj : SceneManager::Instance().GetObjList())
+	// ループの外で1回だけ作る
+	std::list<KdCollider::CollisionResult> localResult;
+
+	for(KdGameObject* obj : candidates)
 	{
-		// オブジェクトごとに分けて判定
-		std::list<KdCollider::CollisionResult> localResult;
+		localResult.clear();
 		if (!obj->Intersects(rayInfo, &localResult)) continue;
 
 		for (auto& ret : localResult)
 		{
 			float distSqr = (ret.m_hitPos - muzzlePos).LengthSquared(); // 平方根計算を省いて軽量化
-
 			if (distSqr < minDistSqr)
 			{
 				minDistSqr = distSqr;
 				hitPos = ret.m_hitPos;
 				hitNormal = ret.m_hitNDir;
-				hitObj = obj;
+				hitRaw = obj;
 				isHit = true;
 			}
 		}
 	}
+
+	// ③ 以降の処理はshared_ptrが必要なので、最後に1回だけ戻す
+	std::shared_ptr<KdGameObject> hitObj = hitRaw ? hitRaw->shared_from_this() : nullptr;
+
+
 	if (isHit)
 	{
 		hitNormal = CorrectBoxNormal(hitNormal, rayInfo.m_dir, hitPos, hitObj);	
 
-		KdDebugGUI::Instance().AddLog(
+		/*KdDebugGUI::Instance().AddLog(
 			"[Wand] hitPos: X=%.2f Y=%.2f Z=%.2f / hitNormal: X=%.2f Y=%.2f Z=%.2f\n",
 			hitPos.x, hitPos.y, hitPos.z,
 			hitNormal.x, hitNormal.y, hitNormal.z
-		);
+		);*/
 
 		// 斜めの角に当たっても扱いやすいよう、法線を軸方向(±X/±Y/±Z)に丸める
 		Math::Vector3 axisNormal = BlockGridManager::SnapNormalToAxis(hitNormal);
@@ -650,7 +663,7 @@ void Magicwand::RebuildPreview()
 // ===================================================
 void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix& parentMat)
 {
-	// ① Expireで消す前に、プレビューブロックの座標だけ先に保存しておく
+	// Expireで消す前に、プレビューブロックの座標だけ先に保存しておく
 	std::vector<Math::Vector3> previewPositions;
 	previewPositions.reserve(m_previewBlocks.size());
 	for (auto& block : m_previewBlocks)
@@ -672,7 +685,7 @@ void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix&
 	Math::Vector3 confirmedDir		= m_aimDir;
 	int confirmedCount				= m_stackCount;
 
-	// ② 今のカメラ向きで改めてレイキャストする(UpdateAimModeと同じロジック)
+	// 今のカメラ向きで改めてレイキャストする(UpdateAimModeと同じロジック)
 	KdCollider::RayInfo rayInfo;
 	rayInfo.m_pos	= muzzlePos;
 	rayInfo.m_dir   = parentMat.Backward();
@@ -710,8 +723,8 @@ void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix&
 	// 何にも当たらなかった場合は、レイの最大距離まで飛んだ先を仮の着弾点にする
 	Math::Vector3 realTargetPos = isHit ? realHitPos : (muzzlePos + rayInfo.m_dir * rayInfo.m_range);
 
-	// ③ 今の照準の着弾点が、確定済みプレビュー(緑ブロック)のどれかと重なっているか判定
-	//    (地面のヒット点との座標比較ではなく、レイ×箱の交差判定で直接調べる)
+	// 今の照準の着弾点が、確定済みプレビュー(緑ブロック)のどれかと重なっているか判定
+	// (地面のヒット点との座標比較ではなく、レイ×箱の交差判定で直接調べる)
 	Math::Vector3 halfExtent(BlockGridManager::GridSize * 0.5f, BlockGridManager::GridSize * 0.5f, BlockGridManager::GridSize * 0.5f);
 	
 	// 何かに当たった位置までしか判定しない(壁の向こう側のブロックを誤検出しないため)
@@ -759,14 +772,14 @@ void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix&
 
 					self->m_isFiring = false;
 
-					// ①先に生成を試す。失敗(体と重なる・魔力不足)ならプレビューを消さずに戻る
+					// 先に生成を試す。失敗(体と重なる・魔力不足)ならプレビューを消さずに戻る
 					if (!self->GenerateStackAt(confirmedBaseCell, confirmedDir, confirmedCount))
 					{
 						MagicManager::Instance().MarkAttemptFailed();	// レティクルを振動させて失敗を知らせる
 						return;											// Adjustingのまま=もう一度確定できる
 					}
 
-					// ②生成に成功してからプレビューを消す
+					// 生成に成功してからプレビューを消す
 					for (auto& block : self->m_previewBlocks)block->Expire();
 					self->m_previewBlocks.clear();
 

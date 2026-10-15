@@ -163,6 +163,9 @@
     <Filter Include="Src\Application\GameObject\Particle">
       <UniqueIdentifier>{fd4b4f7a-3478-471c-8572-38e4e5fc6c34}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\GameObject\Collision">
+      <UniqueIdentifier>{1520de43-a01c-4ad8-a95d-0b7a8cf54a3b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -423,6 +426,9 @@
     <ClInclude Include="Src\Application\GameObject\Particle\ParticleManager.h">
       <Filter>Src\Application\GameObject\Particle</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Collision\Collision.h">
+      <Filter>Src\Application\GameObject\Collision</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -640,6 +646,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\Particle\ParticleManager.cpp">
       <Filter>Src\Application\GameObject\Particle</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Collision\Collision.cpp">
+      <Filter>Src\Application\GameObject\Collision</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

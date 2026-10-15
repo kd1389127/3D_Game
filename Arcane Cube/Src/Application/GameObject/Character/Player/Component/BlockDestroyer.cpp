@@ -3,6 +3,7 @@
 #include "../../../Block/BlockGridManager.h"
 #include "../../../Magic/MagicManager.h"
 #include "../../../../Scene/SceneManager.h"
+#include "../../../Collision/Collision.h"
 
 void BlockDestroyer::Update(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat)
 {
@@ -17,17 +18,24 @@ void BlockDestroyer::UpdateTargeting(const Math::Vector3 & playerPos, const Math
 	rayInfo.m_range = 50.0f;
 	rayInfo.m_type  = KdCollider::TypeBump | KdCollider::TypeGround;
 
-	std::shared_ptr<KdGameObject> nearestObj = nullptr;
+	// レイの道の近くのものだけ集める
+	std::vector<KdGameObject*> candidates;
+	CollisionFilter::CollectAlongRay(rayInfo.m_pos, rayInfo.m_dir, rayInfo.m_range, candidates);
+
+	KdGameObject* nearestObj = nullptr;	// 生ポインタで持つ(最後にshared_ptrへ戻す)
 	float minDist = rayInfo.m_range;
 
-	for (auto& obj : SceneManager::Instance().GetObjList())
-	{
-		// プレビュー中(まだ確定していない見本)や持ち運び中のブロックだけ、障害物としても数えない
-		auto block = std::dynamic_pointer_cast<NormalBlock>(obj);
-		if (block && (block->IsPreview() || block->IsCarried())) continue;
+	// listはループの外で1回だけ作り、使うたびにclear()する
+	std::list<KdCollider::CollisionResult> resultList;
 
-		std::list<KdCollider::CollisionResult> resultList;
-		if (!obj->Intersects(rayInfo, &resultList)) continue;
+	for (KdGameObject* obj : candidates)
+	{
+		resultList.clear();
+		if (!obj->Intersects(rayInfo, &resultList))continue;
+
+		// キャストは「当たった後」だけ(今までは全オブジェクトにかけていた)
+		auto* block = dynamic_cast<NormalBlock*>(obj);
+		if (block && (block->IsPreview() || block->IsCarried())) continue;
 
 		for (auto& ret : resultList)
 		{
@@ -40,7 +48,12 @@ void BlockDestroyer::UpdateTargeting(const Math::Vector3 & playerPos, const Math
 		}
 	}
 
-	std::shared_ptr<NormalBlock> targetBlock = std::dynamic_pointer_cast<NormalBlock>(nearestObj);
+	// 生ポインタから、管理側のshared_ptrを取り出す
+	std::shared_ptr<NormalBlock> targetBlock;
+	if (nearestObj)
+	{
+		targetBlock = std::dynamic_pointer_cast<NormalBlock>(nearestObj->shared_from_this());
+	}
 
 	auto prevTarget = m_wpTarget.lock();
 	if (prevTarget == targetBlock) return; // 対象が変わっていなければ何もしない

@@ -69,7 +69,7 @@ void MapBlock::Init(const Math::Vector3& pos, Shape shape, StairDir dir)
 	SetScale(8.0f);
 }
 
-void MapBlock::DrawLit()
+void MapBlock::DrawUnLit()
 {
 	if (!m_spModel)return;
 	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);

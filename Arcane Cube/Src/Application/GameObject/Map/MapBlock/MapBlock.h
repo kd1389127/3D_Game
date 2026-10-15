@@ -12,7 +12,7 @@ public:
 	~MapBlock() override{}
 
 	void Init(const Math::Vector3& pos, Shape shape,StairDir dir = StairDir::PosX);
-	void DrawLit() override;
+	void DrawUnLit() override;
 
 private:
 	std::shared_ptr<KdModelData> m_spModel = nullptr;

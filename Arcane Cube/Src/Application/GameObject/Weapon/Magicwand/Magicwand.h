@@ -67,6 +67,7 @@ private:
 
 	// 現在のシーンからGroundインスタンスを探して壁コライダーを取得する
 	std::shared_ptr<Ground> FindGround() const;
+	mutable std::weak_ptr<Ground> m_wpGround;	// constの関数の中で書き換えるのでmutable
 
 	// Aiming中、毎フレーム呼ばれる：レイキャストで狙いを更新し、
 	// (ボタン判定は行わない。Update側で状態遷移を管理する)

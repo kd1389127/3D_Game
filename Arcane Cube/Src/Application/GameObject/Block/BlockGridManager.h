@@ -132,8 +132,8 @@ public:
 
 		bool baseOccupied = IsOccupied(baseCell);
 		bool baseCanPlace = CanPlaceBlockAt(baseCell, groundObj);
-		KdDebugGUI::Instance().AddLog("[Grid] baseCell(%.1f,%.1f,%.1f) occupied=%d canPlace=%d\n",
-			baseCell.x, baseCell.y, baseCell.z, baseOccupied, baseCanPlace);
+		/*KdDebugGUI::Instance().AddLog("[Grid] baseCell(%.1f,%.1f,%.1f) occupied=%d canPlace=%d\n",
+			baseCell.x, baseCell.y, baseCell.z, baseOccupied, baseCanPlace);*/
 
 		if (!IsOccupied(baseCell) && CanPlaceBlockAt(baseCell, groundObj))
 		{

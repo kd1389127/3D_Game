@@ -3,7 +3,7 @@
 #include "../../../Block/BlockGridManager.h"
 #include "../../../Map/MapBlock/MapBlock.h"
 #include "../../../../Scene/SceneManager.h"
-#include "../../../../main.h"
+#include "../../../Collision/Collision.h"
 
 namespace
 {
@@ -214,17 +214,21 @@ namespace
 		rayInfo.m_range = kGrabSenseRange;
 		rayInfo.m_type = KdCollider::TypeBump | KdCollider::TypeGround;
 
+		std::vector<KdGameObject*> candidates;
+		CollisionFilter::CollectAlongRay(rayInfo.m_pos, rayInfo.m_dir, rayInfo.m_range, candidates);
+
 		float minDist = rayInfo.m_range;		// 何であれ一番手前に当たったものまでの距離
 		float gimmickDist = rayInfo.m_range;	// 一番手前のギミックブロックまでの距離
 		GrabCandidate candidate;
 
-		for (auto& obj : SceneManager::Instance().GetObjList())
+		std::list<KdCollider::CollisionResult> resultList;
+		for(KdGameObject* obj : candidates)
 		{
-			auto grabbable = std::dynamic_pointer_cast<IGrabbable>(obj);
-			if (grabbable && grabbable->IsCarried()) continue;
-
-			std::list<KdCollider::CollisionResult> resultList;
+			resultList.clear();
 			if (!obj->Intersects(rayInfo, &resultList)) continue;
+
+			auto grabbable = dynamic_cast<IGrabbable*>(obj);
+			if (grabbable && grabbable->IsCarried()) continue;
 
 			const bool isGimmick = grabbable &&
 				grabbable->GetBlockKind() == BlockGridManager::BlockKind::GimmickKey;
@@ -236,7 +240,7 @@ namespace
 				if (isGimmick && dist < gimmickDist)
 				{
 					gimmickDist = dist;
-					candidate.obj = obj;
+					candidate.obj = obj->shared_from_this();	// 生ポインタ→shared_ptrへ
 				}
 			}
 		}
@@ -380,10 +384,12 @@ Math::Vector3 BlockGrabber::CalcTargetPos(const Math::Vector3& playerPos, const 
 	float closestDist = m_holdDistance;
 	bool isHit = false;
 
-	for (auto& obj : SceneManager::Instance().GetObjList())
-	{
-		if (obj == m_spCarriedBlock) continue; // 自分自身(持っているブロック)には当たらないようにする
+	std::vector<KdGameObject*> candidates;
+	CollisionFilter::CollectAlongRay(rayInfo.m_pos, rayInfo.m_dir, rayInfo.m_range, candidates,
+		m_spCarriedBlock.get());	// 持っているブロック自身は最初から除く
 
+	for (KdGameObject* obj : candidates)
+	{
 		if (obj->Intersects(rayInfo, &resultList))
 		{
 			for (auto& ret : resultList)
