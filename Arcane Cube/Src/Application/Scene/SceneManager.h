@@ -41,6 +41,11 @@ public :
 
 	bool IsFading() const { return m_fadeState != FadeState::None; }
 
+	// 暗転だけ行う(シーンは作り直さない)。真っ暗になった瞬間にConsumeBlackoutEvent()がtrueを返す
+	void RequestFadeOnly();
+
+	// 「真っ暗になった瞬間」を1回だけ受け取る。trueを返したらフラグは自動で下りる
+	bool ConsumeBlackoutEvent();
 private :
 
 	// マネージャーの初期化
@@ -88,6 +93,9 @@ private :
 	// フェード完了時に切り替える予定のシーンとステージ
 	SceneType m_pendingScene = SceneType::Title;
 	int m_pendingStage = -1;
+
+	bool m_fadeOnly = false;		// 今回のフェードはシーン切り替えなし
+	bool m_blackoutEvent = false;	// 真っ暗になった瞬間に立つフラグ
 
 	static constexpr float kFadeSpeed = 1.0f / 30.0f;	// 約0.5秒(60FPS時)で暗転
 	static constexpr int kHoldFrames = 15;				// 真っ暗で待つフレーム数

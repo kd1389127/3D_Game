@@ -25,6 +25,9 @@ public:
 
 	// エイム中/プレビュー配置中かどうかをMagicwand側から知らせてもらう
 	void SetAimBlocking(bool isBlocking) { m_isAimBlocking = isBlocking; }
+
+	void Respawn();	// スタート位置・向きに戻る
+
 private:
 
 	// 当たり判定
@@ -62,6 +65,7 @@ private:
 
 	// スポーン地点
 	Math::Vector3 m_startPos = Math::Vector3::Zero;
+	Math::Vector3 m_startDegAng = Math::Vector3::Zero;	// スタート時の向き
 
 	// 進行方向(ベクトルの向き)
 	Math::Vector3 m_moveDir = Math::Vector3::Zero;

@@ -96,6 +96,22 @@ void SceneManager::RequestChangeScene(SceneType _nextScene, int _nextStage)
 	m_fadeState = FadeState::Out;
 }
 
+void SceneManager::RequestFadeOnly()
+{
+	// すでにフェード中なら何もしない(落下中は毎フレーム呼ばれるので、これで1回だけになる)
+	if (m_fadeState != FadeState::None) return;
+
+	m_fadeOnly = true;
+	m_fadeState = FadeState::Out;
+}
+
+bool SceneManager::ConsumeBlackoutEvent()
+{
+	const bool result = m_blackoutEvent;
+	m_blackoutEvent = false;				// 読んだら下ろす(同じ暗転で2回リスポーンしないため)
+	return result;
+}
+
 void SceneManager::UpdateFade()
 {
 	switch (m_fadeState)
@@ -109,13 +125,22 @@ void SceneManager::UpdateFade()
 		{
 			m_fadeAlpha = 1.0f;
 
-			// 真っ暗になった瞬間にシーンを切り替える(切り替わりが見えない)
-			if (m_pendingStage >= 0)
+			if (m_fadeOnly)
 			{
-				m_currentStage = m_pendingStage;
+				// シーンはそのまま。「今、真っ暗」という事実だけ知らせる
+				m_fadeOnly = false;
+				m_blackoutEvent = true;
 			}
-			m_nextSceneType = m_pendingScene;
-			ChangeScene(m_pendingScene);	// 同じ種類でも必ず作り直す
+			else
+			{
+				// 真っ暗になった瞬間にシーンを切り替える(切り替わりが見えない)
+				if (m_pendingStage >= 0)
+				{
+					m_currentStage = m_pendingStage;
+				}
+				m_nextSceneType = m_pendingScene;
+				ChangeScene(m_pendingScene);
+			}
 
 			m_holdTimer = kHoldFrames;
 			m_fadeState = FadeState::Hold;

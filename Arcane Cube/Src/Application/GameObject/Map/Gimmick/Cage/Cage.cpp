@@ -70,8 +70,14 @@ void Cage::Update()
 	// 下がっている間(閉じている間)は有効化する
 	if (m_pCollider)
 	{
-		bool fullyOpen = (m_currentHeight >= m_maxHeight - 0.001f);
-		m_pCollider->SetEnableAll(!fullyOpen);
+		// プレイヤーが下をくぐれる高さ(身長10＋余裕2)。全開まで待たずに判定を消す
+		static constexpr float kPassHeight = 12.0f;
+
+		// maxHeightがそれより低いMapでも消えるように、小さい方を使う
+		const float passHeight = std::min(kPassHeight, m_maxHeight);
+
+		const bool canPass = (m_currentHeight >= passHeight);
+		m_pCollider->SetEnableAll(!canPass);
 	}
 }
 

@@ -21,6 +21,7 @@ void Player::Init(const Math::Vector3& startPos, float groundHeight, float start
 
 	// 開始時の向きをセット(左右=Y軸回転のみ指定、上下の見上げは0度から始める)
 	m_degAng = Math::Vector3(0.0f, startYawDeg, 0.0f);
+	m_startDegAng = m_degAng;
 
 	m_upBlockGrabber = std::make_unique<BlockGrabber>();
 	m_upBlockGrabber->Init(groundHeight); // ← groundHeightを渡す
@@ -159,6 +160,12 @@ void Player::Update()
 // 毎フレームの後処理：壁の押し出しと、地面へのスナップ(足元合わせ)を行う
 void Player::PostUpdate()
 {
+	// 奈落の暗転で真っ暗になった瞬間なら、スタート位置に戻る
+	if (SceneManager::Instance().ConsumeBlackoutEvent())
+	{
+		Respawn();
+	}
+
 	// 壁にめり込んでいたら押し出す(貫通防止)
 	ResolveWallCollsion();
 
@@ -216,8 +223,7 @@ void Player::PostUpdate()
 	constexpr float fallLimitOffset = -50.0f;
 	if (m_pos.y < m_startPos.y + fallLimitOffset)
 	{
-		SceneManager::Instance().RequestChangeScene(
-			SceneManager::SceneType::Game, SceneManager::Instance().GetCurrentStage());
+		SceneManager::Instance().RequestFadeOnly();
 		return;
 	}
 }
@@ -256,6 +262,13 @@ bool Player::TryDeleteTarget()
 {
 	if (!m_upBlockDestroyer) return false;
 	return m_upBlockDestroyer->TryDeleteTarget();
+}
+
+void Player::Respawn()
+{
+	m_pos = m_startPos;
+	m_degAng = m_startDegAng;	// 向きも戻す(落ちた方向を向いたままだと分かりにくい)
+	m_gravity = 0.0f;			// 落下で溜まった勢いを捨てる。これを忘れると着地で突き抜ける
 }
 
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
