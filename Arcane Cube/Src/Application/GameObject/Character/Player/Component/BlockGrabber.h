@@ -33,6 +33,9 @@ public:
 	// 掴んでいるブロック(プレイヤーの足場にしないために使う。持っていなければnullptr)
 	const KdGameObject* GetCarriedBlock() const { return m_spCarriedBlock.get(); }
 
+	// 持っているブロックを手放して、元の場所に戻す(奈落に落ちた時用)。持っていなければ何もしない
+	void ReleaseAndReturn();
+
 private:
 	void HandleGrabAndDrop(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);
 	void UpdateCarriedPos(const Math::Vector3& playerPos, const Math::Matrix& playerRotMat);

@@ -2,6 +2,7 @@
 #include "../../../Block/NormalBlock/NormalBlock.h"
 #include "../../../Block/BlockGridManager.h"
 #include "../../../Map/MapBlock/MapBlock.h"
+#include "../../../Block/GimmickBlock/GimmickBlock.h"
 #include "../../../../Scene/SceneManager.h"
 #include "../../../Collision/Collision.h"
 
@@ -283,6 +284,30 @@ float BlockGrabber::GetMinY() const
 Math::Vector3 BlockGrabber::GetCarriedBlockPos() const
 {
 	return m_spCarriedBlock ? m_spCarriedBlock->GetPos() : Math::Vector3::Zero;
+}
+
+void BlockGrabber::ReleaseAndReturn()
+{
+	if (!m_spCarriedBlock) return;	// 何も持っていなければ、やることはない
+
+	// 持っている状態を解除する(当たり判定も、ここで復活する)
+	if (auto grabbable = std::dynamic_pointer_cast<IGrabbable>(m_spCarriedBlock))
+	{
+		grabbable->SetCarried(false);
+	}
+
+	// 元の場所に戻す(判定を復活させた後に動かす)
+	if (auto gimmick = std::dynamic_pointer_cast<GimmickBlock>(m_spCarriedBlock))
+	{
+		gimmick->ResetToStartPos();
+	}
+
+	// こちらの持っている状態を全部クリアする
+	SetGrabHighlightTarget(nullptr);	// 緑の点滅を消す
+	StopGrabEffect();					// 掴み中のエフェクトを止める
+	m_spCarriedBlock = nullptr;			// 持っている変数を空に
+	m_hasGrabTarget  = false;			// 狙っている状態も戻す
+	m_isTargetFar    = false;
 }
 
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====

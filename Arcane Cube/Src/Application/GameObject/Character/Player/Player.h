@@ -28,6 +28,14 @@ public:
 
 	void Respawn();	// スタート位置・向きに戻る
 
+	// リスポーンが起きたことを、他のクラス(Magicwand)に1回だけ伝える
+	bool ConsumeRespawnedEvent()
+	{
+		const bool result = m_respawnedEvent;
+		m_respawnedEvent = false;	// 読んだら下ろす(1回だけ伝えるため)
+		return result;
+	}
+
 private:
 
 	// 当たり判定
@@ -87,4 +95,5 @@ private:
 	const float m_jumpPow = 0.9f;
 
 	bool m_isAimBlocking = false;
+	bool m_respawnedEvent = false;
 };

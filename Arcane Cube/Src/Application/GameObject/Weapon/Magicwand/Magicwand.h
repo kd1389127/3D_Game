@@ -104,6 +104,8 @@ private:
 	void UpadateFaceHighlight(const std::shared_ptr<KdGameObject>& hitObj, const Math::Vector3& axisNormal);
 	void ClearFaceHighlight();
 
+	void ClearAllStacks();
+
 	// 生成するたびに発行するスタックID
 	int m_nextStackId = 0;
 };

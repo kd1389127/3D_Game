@@ -117,8 +117,8 @@ void GimmickBlock::Update()
 	// 奈落に落ちたら初期位置に戻す(詰み防止)
 	if (pos.y < m_startPos.y - 200.0f)
 	{
-		pos = m_startPos;
-		m_fallSpeed = 0.0f;
+		ResetToStartPos();
+		return;	// 位置はもう決まっているので、下のSetPos(pos)には進まない
 	}
 
 	SetPos(pos);
@@ -151,4 +151,10 @@ void GimmickBlock::SetCarried(bool isCarried)
 	{
 		m_pCollider->SetEnableAll(!isCarried);
 	}
+}
+
+void GimmickBlock::ResetToStartPos()
+{
+	SetPos(m_startPos);
+	m_fallSpeed = 0.0f;	// 落下の勢いを残すと、戻った瞬間に落ち始めてしまう
 }

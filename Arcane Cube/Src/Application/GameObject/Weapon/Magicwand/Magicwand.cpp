@@ -161,6 +161,11 @@ void Magicwand::Update()
 		player = std::dynamic_pointer_cast<Player>(spParentMutable);
 	}
 
+	if (player && player->ConsumeRespawnedEvent())
+	{
+		ClearAllStacks();
+	}
+
 	// 毎フレーム、Aiming/Adjusting中かどうかをPlayerに伝える(Idleの時だけ削除判定を許可する)
 	if (player)
 	{
@@ -947,4 +952,19 @@ void Magicwand::ClearFaceHighlight()
 		prev->SetHighlightFace(false);
 	}
 	m_wpFaceHighlightBlock.reset();
+}
+
+void Magicwand::ClearAllStacks()
+{
+	if (m_state != WandState::Idle) CancelAim();	// エイム中なら、プレビューを消してIdleに戻す
+	ClearFaceHighlight();
+	m_isFiring = false;
+
+	for (auto& stack : m_generatedStacks)
+	{
+		DismissStack(stack);						// 占有情報の解除も、この中でやる想定
+	}
+	m_generatedStacks.clear();
+
+	MagicManager::Instance().Reset();				// 魔力を満タンに
 }

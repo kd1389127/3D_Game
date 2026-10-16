@@ -115,6 +115,30 @@ bool MapLoader::Load(const std::string& csvPath, float groundHeight, int originC
 			}
 		}
 	}
+
+	// ------------------------------------------------------------
+	// ③ 魔法ブロックを置ける範囲を、CSVの広さに合わせる(Map外には置けない)
+	// ------------------------------------------------------------
+	int maxRows = 0, maxCols = 0;
+	for (const auto& layer : m_grid)
+	{
+		maxRows = std::max(maxRows, (int)layer.size());
+		for (const auto& row : layer)
+		{
+			maxCols = std::max(maxCols, (int)row.size());
+		}
+	}
+
+	// セル中心の座標は、(列 - originCol) * G、(行 - originRow) * G。両端の列・行の中心が範囲の端
+	BlockGridManager::Instance().SetBuildBounds(
+		(0 - originCol) * G, (maxCols - 1 - originCol) * G,
+		(0 - originRow) * G, (maxRows - 1 - originRow) * G);
+
+	KdDebugGUI::Instance().AddLog("[MapLoader] 置ける範囲 X=%.0f〜%.0f Z=%.0f〜%.0f\n",
+		(0 - originCol) * G, (maxCols - 1 - originCol) * G,
+		(0 - originRow) * G, (maxRows - 1 - originRow) * G);
+
+
 	KdDebugGUI::Instance().AddLog("[MapLoader] spawned=%d skipped(buried)=%d unknown=%d\n", spawned, skipped, unknown);
 	return true;
 }

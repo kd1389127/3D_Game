@@ -26,6 +26,8 @@ public:
 	// 掴める対象として狙われる間、緑に点滅させる
 	void SetGrabHighlight(bool enable) override { m_isGrabTargeted = enable; }
 
+	// 最初に置かれた場所に戻す(奈落に落ちた時などに使う)
+	void ResetToStartPos();
 
 private:
 

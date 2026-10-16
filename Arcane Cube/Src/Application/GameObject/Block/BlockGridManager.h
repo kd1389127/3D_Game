@@ -92,6 +92,10 @@ public:
 	// ※groundObjのIntersects()を使うことで、Groundの実際のワールド行列(スケール込み)が自動的に反映される
 	bool CanPlaceBlockAt(const Math::Vector3& snappedPos, KdGameObject& groundObj) const
 	{
+		// 一番軽い判定を先に。ここで落とせば、下の当たり判定まで進まなくて済む
+		if (!IsInsideBuildBounds(snappedPos)) return false;	// Map外には置けない
+		if (IsInForbiddenZone(snappedPos)) return false;	// 禁止エリアには置けない
+
 		if (IsOverlappingFreeBlock(snappedPos)) return false;
 
 		// 高く積めるエリアの中なら、そのエリア用の層数を使う
@@ -188,6 +192,8 @@ public:
 		m_occupied.clear();
 		m_freeBlocks.clear();
 		m_hasPlayerBody = false;	// ステージ切替で前のプレイヤー位置を引きずらない
+		m_forbiddenZones.clear();	// ステージが変わったら、前のステージの禁止エリアを持ち越さない
+		m_hasBounds = false;
 
 	}
 
@@ -330,6 +336,40 @@ public:
 		m_tallZoneMax = maxXZ;
 	}
 
+	// 魔法ブロックを置ける範囲(XZ)を決める。MapLoaderがCSVの広さから自動で呼ぶ
+	void SetBuildBounds(float minX, float maxX, float minZ, float maxZ)
+	{
+		m_boundsMin = Math::Vector2(minX, minZ);
+		m_boundsMax = Math::Vector2(maxX, maxZ);
+		m_hasBounds = true;
+	}
+
+	// 位置が、置ける範囲の中か。margin分だけ外側まで許す(プレイヤーのMap外判定にも使う)
+	bool IsInsideBuildBounds(const Math::Vector3& pos, float margin = 0.0f) const
+	{
+		if (!m_hasBounds) return true;	// 範囲が未設定なら、何も制限しない
+		constexpr float eps = 0.01f;	// 小数の誤差で、端のマスが外れないように
+		return pos.x >= m_boundsMin.x - margin - eps && pos.x <= m_boundsMax.x + margin + eps &&
+			pos.z >= m_boundsMin.y - margin - eps && pos.z <= m_boundsMax.y + margin + eps;
+	}
+
+	// 「ここには置けない」箱を足す。StageDataの禁止エリアを、GameSceneから登録する
+	void AddForbiddenZone(const Math::Vector3& minPos, const Math::Vector3& maxPos)
+	{
+		m_forbiddenZones.push_back({ minPos, maxPos });
+	}
+
+	bool IsInForbiddenZone(const Math::Vector3& pos) const
+	{
+		for (const auto& zone : m_forbiddenZones)
+		{
+			if (pos.x >= zone.min.x && pos.x <= zone.max.x &&
+				pos.y >= zone.min.y && pos.y <= zone.max.y &&
+				pos.z >= zone.min.z && pos.z <= zone.max.z) return true;
+		}
+		return false;
+	}
+
 	// 自由に動くブロック(ギミックブロック)の一覧。スイッチが「誰が乗っているか」を調べるために使う
 	const std::vector<std::weak_ptr<KdGameObject>>& GetFreeBlocks() const { return m_freeBlocks; }
 
@@ -374,4 +414,13 @@ private:
 	int           m_tallLimitLayers = 0;
 	Math::Vector2 m_tallZoneMin = Math::Vector2::Zero;
 	Math::Vector2 m_tallZoneMax = Math::Vector2::Zero;
+
+	// 置ける範囲(XZ)。yにはZが入る(m_tallZoneMinと同じ使い方)
+	Math::Vector2 m_boundsMin = Math::Vector2::Zero;
+	Math::Vector2 m_boundsMax = Math::Vector2::Zero;
+	bool          m_hasBounds = false;
+
+	// 置けない箱
+	struct ForbiddenZoneBox { Math::Vector3 min; Math::Vector3 max; };
+	std::vector<ForbiddenZoneBox> m_forbiddenZones;
 };

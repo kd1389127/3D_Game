@@ -258,6 +258,15 @@ void Player::PostUpdate()
 		SceneManager::Instance().RequestFadeOnly();
 		return;
 	}
+
+	// ----- Map外判定 -----
+	// 外壁を越えてMapの外に出てしまったら、奈落と同じようにスタートへ戻す
+	// (外壁のマス自体は範囲の中なので、1マス分の余裕を持たせれば、壁際を歩いても引っかからない)
+	if (!BlockGridManager::Instance().IsInsideBuildBounds(m_pos, BlockGridManager::GridSize))
+	{
+		SceneManager::Instance().RequestFadeOnly();
+		return;
+	}
 }
 
 // 今ブロックを持っているかどうかを他クラス(Magicwandなど)に伝えるための関数
@@ -301,6 +310,15 @@ void Player::Respawn()
 	m_pos = m_startPos;
 	m_degAng = m_startDegAng;	// 向きも戻す(落ちた方向を向いたままだと分かりにくい)
 	m_gravity = 0.0f;			// 落下で溜まった勢いを捨てる。これを忘れると着地で突き抜ける
+
+	// 持っているブロックは、手放して元の場所に戻す
+	if (m_upBlockGrabber)
+	{
+		m_upBlockGrabber->ReleaseAndReturn();
+	}
+
+	// 魔法で作ったブロックの片付けは、Magicwandの担当。ここでは知らせるだけにする
+	m_respawnedEvent = true;
 }
 
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====

@@ -15,6 +15,13 @@ struct CageData
 	float yaw = 90.0f;
 };
 
+// 魔法ブロックを置けない箱(ワールド座標)。奈落の上など、抜け道をふさぐのに使う
+struct ForbiddenZone
+{
+	Math::Vector3 min = Math::Vector3::Zero;
+	Math::Vector3 max = Math::Vector3::Zero;
+};
+
 // 1ステージ分の配置情報
 struct StageData
 {
@@ -48,6 +55,7 @@ struct StageData
 	Math::Vector3 cageScale = Math::Vector3(55.0f, 45.0f, 45.0f);	// 檻の大きさ
 	std::vector<LiftData> lifts;									// リフト(なければ空)
 	std::vector<CageData> extraCages;
+	std::vector<ForbiddenZone> forbiddenZones;						// 魔法ブロックを置けない場所(なければ空)
 };
 
 // ステージテーブル(ステージを増やす場合はここに追加していくだけでOK)
@@ -88,7 +96,12 @@ static const StageData g_stageTable[] =
 		{
 		// 奈落は X=36〜148。リフトの横幅が24なら、始点=36+12、終点=148-12
 		{ Math::Vector3(48, 0, 0), Math::Vector3(136, 0, 0), 8.0f }
-	}
+		},
+		{},
+		{
+			// 奈落の上は、高さも奥行きも全部、魔法ブロックを置けない(リフトを使わせる)
+			{ Math::Vector3(36, -1000, -1000), Math::Vector3(148, 1000, 1000) }
+		}
 },
 
 	// ステージ4：A側は魔法の橋、B側は階段で高台へ。ブロック2個を両スイッチに置くと檻が開く

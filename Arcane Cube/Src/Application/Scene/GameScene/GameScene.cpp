@@ -110,6 +110,10 @@ void GameScene::Init()
 	BlockGridManager::Instance().SetBuildLimitLayers(data.buildLimitLayers);
 	BlockGridManager::Instance().SetTallBuildZone(
 		data.tallBuildLimitLayers, data.tallZoneMin, data.tallZoneMax);
+	for (const auto& zone : data.forbiddenZones)
+	{
+		BlockGridManager::Instance().AddForbiddenZone(zone.min, zone.max);
+	}
 
 	// ステージ開始時は必ずグリッド非表示から始める
 	if (BlockGridManager::Instance().IsDebugGridVisible())
