@@ -1,5 +1,13 @@
 ﻿#pragma once
 
+// 1台のリフトの配置情報
+struct LiftData
+{
+	Math::Vector3 startPos = Math::Vector3::Zero;	// 始点(リフトの原点の位置)
+	Math::Vector3 endPos = Math::Vector3::Zero;	// 終点
+	float         seconds = 8.0f;					// 止まらず動いている時間(秒)
+};
+
 // 1ステージ分の配置情報
 struct StageData
 {
@@ -31,6 +39,7 @@ struct StageData
 	Math::Vector2 tallZoneMax = Math::Vector2::Zero;				// エリアのXZ最大
 
 	Math::Vector3 cageScale = Math::Vector3(55.0f, 45.0f, 45.0f);	// 檻の大きさ
+	std::vector<LiftData> lifts;									// リフト(なければ空)
 };
 
 // ステージテーブル(ステージを増やす場合はここに追加していくだけでOK)
@@ -56,11 +65,23 @@ static const StageData g_stageTable[] =
 	},
 	
 	// ステージ3：奈落を橋で渡り、塔の壁に柱を積んで登ってゴールへ
+	// ステージ3：リフトの紹介。ブロックを持ってリフトで奈落を渡り、スイッチに置いて檻を開ける
 	{
-		Math::Vector3(0, 0, 15.5), Math::Vector3(110.5, 53.5f, 15.5), 0.0f, 90.0f,
-		false, {}, Math::Vector3::Zero, {},
-		"Asset/Data/MapData/Map3.csv", 2, 2, 7,
-	},
+		Math::Vector3(0, 0, 0), Math::Vector3(208, -2.5f, 0), 0.0f, 90.0f,
+		true,
+		{ Math::Vector3(176, 0, 0) },					// switchPositions
+		Math::Vector3(192, 0, 0),						// cageBasePos
+		{ Math::Vector3(8, 4, 16) },					// gimmickBlockPositions
+		"Asset/Data/MapData/Map3.csv", 2, 4,			// originCol=2, originRow=4
+		2,												// buildLimitLayers
+		32.0f,											// cageHeight
+		0, Math::Vector2::Zero, Math::Vector2::Zero,	// 高く積めるエリアなし
+		Math::Vector3(55.0f, 40.0f, 45.0f),				// cageScale
+		{
+		// 奈落は X=36〜148。リフトの横幅が24なら、始点=36+12、終点=148-12
+		{ Math::Vector3(48, 0, 0), Math::Vector3(136, 0, 0), 8.0f }
+	}
+},
 
 	// ステージ4：A側は魔法の橋、B側は階段で高台へ。ブロック2個を両スイッチに置くと檻が開く
 	{

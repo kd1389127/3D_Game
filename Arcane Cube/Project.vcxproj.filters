@@ -166,6 +166,9 @@
     <Filter Include="Src\Application\GameObject\Collision">
       <UniqueIdentifier>{1520de43-a01c-4ad8-a95d-0b7a8cf54a3b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\GameObject\Map\Gimmick\Lift">
+      <UniqueIdentifier>{5982ac7b-b9b3-42c5-a70b-f56d56f2731d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -429,6 +432,9 @@
     <ClInclude Include="Src\Application\GameObject\Collision\Collision.h">
       <Filter>Src\Application\GameObject\Collision</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Map\Gimmick\Lift\Lift.h">
+      <Filter>Src\Application\GameObject\Map\Gimmick\Lift</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -649,6 +655,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\Collision\Collision.cpp">
       <Filter>Src\Application\GameObject\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Map\Gimmick\Lift\Lift.cpp">
+      <Filter>Src\Application\GameObject\Map\Gimmick\Lift</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

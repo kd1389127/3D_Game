@@ -3,10 +3,11 @@
 #include "../../../Scene/SceneManager.h"
 #include "../../../Scene/StageData.h"
 #include "Component/BlockGrabber.h"
-#include "../../Block/BlockGridManager.h"
 #include "Component/BlockDestroyer.h"
+#include "../../Block/BlockGridManager.h"
 #include "../../UI/Mouse/Mouse.h"
 #include "../../Collision/Collision.h"
+#include "../../Map/Gimmick/Lift/Lift.h"
 
 Player::Player() = default;
 Player::~Player() = default;
@@ -189,24 +190,47 @@ void Player::PostUpdate()
 	std::vector<KdGameObject*> nearObjs;
 	CollisionFilter::CollectAround(m_pos, 20.0f, nearObjs, this);
 
-	for (KdGameObject* obj : nearObjs)
-	{
-		if (obj == pCarried) continue;	// 掴んでいるブロックは足場にしない
-		obj->Intersects(ray, &resultList);
-	}
+	// リフト専用のレイ：足元より少し高い位置(kLiftStepHeight)から飛ばす
+	// 角から斜めに入って足元が上面より少し下にあっても、上面に押し上げて乗せるため
+	static const float kLiftStepHeight = 4.0f;		// ResolveWallCollsionのfootCutと同じ
+	static const float kLiftTopTolerance = 1.0f;	// 「上面」とみなす高さの許容
 
-	// 複数の地面候補の中から「一番近い(重なりが大きい)」ものを採用する
+	KdCollider::RayInfo liftRay = ray;
+	liftRay.m_pos.y = m_pos.y - m_adjustHeight + kLiftStepHeight;
+	liftRay.m_range = m_gravity + kLiftStepHeight;
+
 	bool isHit = false;
 	float maxOverLap = 0.0f;
 	Math::Vector3 groundPos = Math::Vector3::Zero;
+	const KdGameObject* pGroundObj = nullptr;
 
-	for (auto& ret : resultList)
+	for (KdGameObject* obj : nearObjs)
 	{
-		if (maxOverLap < ret.m_overlapDistance)
+		if (obj == pCarried) continue;
+
+		// Liftなら、専用のレイを使う
+		const Lift* pLiftObj = dynamic_cast<const Lift*>(obj);
+
+		std::list<KdCollider::CollisionResult> objResults;
+		obj->Intersects(pLiftObj ? liftRay : ray, &objResults);
+
+		for (auto& ret : objResults)
 		{
-			maxOverLap = ret.m_overlapDistance;
-			groundPos = ret.m_hitPos;
-			isHit = true;
+			// リフトは、上面(今のリフトの高さ)に当たった結果だけ採用する
+			// 底の面や横の面に当たった結果は無視するので、中に埋まった状態で立たなくなる
+			if (pLiftObj)
+			{
+				const Math::Vector3 hitPos = ret.m_hitPos;
+				if (fabsf(hitPos.y - pLiftObj->GetTopY()) > kLiftTopTolerance) continue;
+			}
+
+			if (maxOverLap < ret.m_overlapDistance)
+			{
+				maxOverLap = ret.m_overlapDistance;
+				groundPos = ret.m_hitPos;
+				pGroundObj = obj;
+				isHit = true;
+			}
 		}
 	}
 
@@ -216,6 +240,14 @@ void Player::PostUpdate()
 		m_pos = groundPos;
 		m_pos.y += m_adjustHeight; // 頭基準の座標に戻す
 		m_gravity = 0;
+
+		// リフトに乗っていたら、リフトが今フレームに動いた横方向の量だけ一緒に動く
+		// (縦は毎フレームこの足元レイで高さが合うので、足さなくてよい)
+		if (const Lift* pLift = dynamic_cast<const Lift*>(pGroundObj))
+		{
+			m_pos.x += pLift->GetDelta().x;
+			m_pos.z += pLift->GetDelta().z;
+		}
 	}
 
 	// ----- 奈落判定 -----

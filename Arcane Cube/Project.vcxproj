@@ -288,6 +288,7 @@
     <ClInclude Include="Src\Application\GameObject\Magic\MagicManager.h" />
     <ClInclude Include="Src\Application\GameObject\Map\Gimmick\Cage\Cage.h" />
     <ClInclude Include="Src\Application\GameObject\Map\Gimmick\Goal\Goal.h" />
+    <ClInclude Include="Src\Application\GameObject\Map\Gimmick\Lift\Lift.h" />
     <ClInclude Include="Src\Application\GameObject\Map\Gimmick\Switch\Switch.h" />
     <ClInclude Include="Src\Application\GameObject\Map\Ground\Ground.h" />
     <ClInclude Include="Src\Application\GameObject\Map\MapBackGround\MapBackGround.h" />
@@ -367,6 +368,7 @@
     <ClCompile Include="Src\Application\GameObject\Collision\Collision.cpp" />
     <ClCompile Include="Src\Application\GameObject\Map\Gimmick\Cage\Cage.cpp" />
     <ClCompile Include="Src\Application\GameObject\Map\Gimmick\Goal\Goal.cpp" />
+    <ClCompile Include="Src\Application\GameObject\Map\Gimmick\Lift\Lift.cpp" />
     <ClCompile Include="Src\Application\GameObject\Map\Gimmick\Switch\Switch.cpp" />
     <ClCompile Include="Src\Application\GameObject\Map\Ground\Ground.cpp" />
     <ClCompile Include="Src\Application\GameObject\Map\MapBackGround\MapBackGround.cpp" />

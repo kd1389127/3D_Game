@@ -8,7 +8,7 @@ void GimmickBlock::Init(const Math::Vector3& pos)
 	{
 		m_spModel = std::make_shared<KdModelWork>();
 		// TODO: 実際のギミック専用ブロックのモデルパスに置き換える
-		m_spModel->SetModelData("Asset/Models/Block/WoodenBox/Wooden_Box.gltf");
+		m_spModel->SetModelData("Asset/Models/Block/GimmickBlock/GimmickBlock.gltf");
 	}
 
 	if (!m_pDebugWire)

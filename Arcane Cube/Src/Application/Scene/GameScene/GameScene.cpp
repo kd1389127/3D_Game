@@ -3,6 +3,7 @@
 #include "../StageData.h"
 #include "../../GameObject/Block/BlockGridManager.h"
 #include "../../GameObject/Magic/MagicManager.h"
+#include "../../GameObject/Particle/ParticleManager.h"
 
 #include "../../GameObject/Camera/FPSCamera/FPSCamera.h"
 #include "../../GameObject/Map/Ground/Ground.h"
@@ -10,14 +11,14 @@
 #include "../../GameObject/Weapon/Magicwand/Magicwand.h"
 #include "../../GameObject/UI/Reticle/Reticle.h"
 #include "../../GameObject/UI/MagicGaugeUI/MagicGaugeUI.h"
+#include "../../GameObject/UI/Mouse/Mouse.h"
 #include "../../GameObject/Block/GimmickBlock/GimmickBlock.h"
 #include "../../GameObject/Map/Gimmick/Goal/Goal.h"
 #include "../../GameObject/Map/Gimmick/Cage/Cage.h"
 #include "../../GameObject/Map/Gimmick/Switch/Switch.h"
+#include "../../GameObject/Map/Gimmick/Lift/Lift.h"
 #include "../../GameObject/Map/MapBackGround/MapBackGround.h"
 #include "../../GameObject/Map/MapLoader.h"
-#include "../../GameObject/UI/Mouse/Mouse.h"
-#include "../../GameObject/Particle/ParticleManager.h"
 
 void GameScene::Event()
 {
@@ -169,6 +170,15 @@ void GameScene::Init()
 	goal->Init(data.goalPos);
 	goal->SetTarget(player);
 	m_objList.push_back(goal);
+
+	// リフト(このステージに設定があれば生成する。なければ何もしない)
+	for (const LiftData& liftData : data.lifts)
+	{
+		std::shared_ptr<Lift> lift;
+		lift = std::make_shared<Lift>();
+		lift->Init(liftData.startPos, liftData.endPos, liftData.seconds);
+		m_objList.push_back(lift);
+	}
 
 	// スイッチ・檻・ギミックブロックは、このステージで必要な場合のみ生成する
 	if (data.hasGimmickCage)
