@@ -4,6 +4,10 @@ namespace
 {
 	// このゲームは通常ブロック(1mのモデル)を8倍している。リフトも同じ縮尺にそろえる
 	constexpr float kModelScale = 8.0f;
+
+	// 端で止まる長さ(0.2で全体の約14%、0.5で約33%)
+	constexpr float kEndPause = 0.5f;	
+
 }
 
 void Lift::Init(const Math::Vector3& startPos, const Math::Vector3& endPos, float seconds)
@@ -11,6 +15,7 @@ void Lift::Init(const Math::Vector3& startPos, const Math::Vector3& endPos, floa
 	m_startPos = startPos;
 	m_endPos = endPos;
 	m_curPos = startPos;
+	m_progress = -kEndPause;
 
 	// 固定フレーム前提：60フレームで1秒なので、1フレームの進み量は 1 ÷ (60 × 秒)
 	m_speed = 1.0f / (60.0f * seconds);
@@ -66,12 +71,12 @@ void Lift::Update()
 {
 	const Math::Vector3 prevPos = m_curPos;
 
-	// 進捗度を -0.2 ～ 1.2 の間で往復させる
+	// 進捗度を -kEndPause ～ 1+kEndPause の間で往復させる(0～1の外にいる間は、端で止まっている)
 	m_progress += m_isReverse ? -m_speed : m_speed;
-	if (m_progress >= 1.2f) { m_isReverse = true; }
-	else if (m_progress <= -0.2f) { m_isReverse = false; }
+	if (m_progress >= 1.0f + kEndPause) { m_isReverse = true; }
+	else if (m_progress <= -kEndPause) { m_isReverse = false; }
 
-	// 位置には、0～1に切り詰めた値を使う(両端で少し止まる)
+	// 位置には、0～1に切り詰めた値を使う(両端で止まる)
 	const float t = std::clamp(m_progress, 0.0f, 1.0f);
 
 	// イージング(EaseInOutSineと同じ式)
@@ -85,6 +90,9 @@ void Lift::Update()
 
 	// 今フレームに動いた量(Playerが読む)
 	m_delta = m_curPos - prevPos;
+
+	if (m_progress >= 1.0f + kEndPause) { m_isReverse = true; }
+	else if (m_progress <= -kEndPause) { m_isReverse = false; }
 }
 
 void Lift::DrawLit()

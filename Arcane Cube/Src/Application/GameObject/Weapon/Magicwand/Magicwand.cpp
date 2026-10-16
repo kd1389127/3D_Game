@@ -7,6 +7,7 @@
 #include "../../Block/BlockGridManager.h"
 #include "../../Block/NormalBlock/NormalBlock.h" 
 #include "../../Map/Ground/Ground.h"
+#include "../../Map/Gimmick/Lift/Lift.h"
 #include "../../Magic/MagicManager.h"
 #include "../../Collision/Collision.h"
 namespace
@@ -524,6 +525,13 @@ void Magicwand::UpdateAimMode(const Math::Vector3& muzzlePos, const Math::Matrix
 				isHit = true;
 			}
 		}
+	}
+	
+	// リフトを狙った時は、何も狙えていない扱いにする(リフトの上にはブロックを置かせない)
+	if (hitRaw && dynamic_cast<Lift*>(hitRaw))
+	{
+		isHit = false;
+		hitRaw = nullptr;
 	}
 
 	// ③ 以降の処理はshared_ptrが必要なので、最後に1回だけ戻す

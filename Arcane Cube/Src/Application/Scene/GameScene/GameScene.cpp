@@ -45,11 +45,12 @@ void GameScene::Event()
 	prevDown = nowDown;
 
 	// ステージを切り替え
-	static bool prev1 = false, prev2 = false, prev3 = false, prev4 = false; 
+	static bool prev1 = false, prev2 = false, prev3 = false, prev4 = false, prev5 = false; 
 	bool now1 = (GetAsyncKeyState('1') & 0x8000) != 0;
 	bool now2 = (GetAsyncKeyState('2') & 0x8000) != 0;
 	bool now3 = (GetAsyncKeyState('3') & 0x8000) != 0;
 	bool now4 = (GetAsyncKeyState('4') & 0x8000) != 0;
+	bool now5 = (GetAsyncKeyState('5') & 0x8000) != 0;
 
 	if (now1 && !prev1)
 	{
@@ -71,10 +72,16 @@ void GameScene::Event()
 		SceneManager::Instance().SetCurrentStage(3);
 		SceneManager::Instance().ReloadScene();
 	}
+	if (now5 && !prev5)
+	{
+		SceneManager::Instance().SetCurrentStage(4);
+		SceneManager::Instance().ReloadScene();
+	}
 	prev1 = now1;
 	prev2 = now2;
 	prev3 = now3;
 	prev4 = now4;
+	prev5 = now5;
 }
 
 void GameScene::Init()
@@ -199,6 +206,15 @@ void GameScene::Init()
 		cage = std::make_shared<Cage>();
 		cage->Init(switches, data.cageBasePos, data.cageScale, data.cageHeight, 0.2f);  // 高さはStageDataから
 		m_objList.push_back(cage);
+
+		// 追加の檻(最初の檻と同じスイッチで一緒に開く。ゴールを4面とも囲う時に使う)
+		for (const CageData& cageData : data.extraCages)
+		{
+			std::shared_ptr<Cage> extraCage;
+			extraCage = std::make_shared<Cage>();
+			extraCage->Init(switches, cageData.pos, data.cageScale, data.cageHeight, 0.2f, cageData.yaw);
+			m_objList.push_back(extraCage);
+		}
 
 		// ギミック専用ブロック(スイッチに置くための鍵ブロック)
 		for (const auto& pos : data.gimmickBlockPositions)

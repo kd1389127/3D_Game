@@ -4,8 +4,15 @@
 struct LiftData
 {
 	Math::Vector3 startPos = Math::Vector3::Zero;	// 始点(リフトの原点の位置)
-	Math::Vector3 endPos = Math::Vector3::Zero;	// 終点
+	Math::Vector3 endPos = Math::Vector3::Zero;		// 終点
 	float         seconds = 8.0f;					// 止まらず動いている時間(秒)
+};
+
+// 檻1つ分の追加配置(cageBasePosの檻に加えて、同じスイッチで一緒に開く)
+struct CageData
+{
+	Math::Vector3 pos = Math::Vector3::Zero;
+	float yaw = 90.0f;
 };
 
 // 1ステージ分の配置情報
@@ -40,6 +47,7 @@ struct StageData
 
 	Math::Vector3 cageScale = Math::Vector3(55.0f, 45.0f, 45.0f);	// 檻の大きさ
 	std::vector<LiftData> lifts;									// リフト(なければ空)
+	std::vector<CageData> extraCages;
 };
 
 // ステージテーブル(ステージを増やす場合はここに追加していくだけでOK)
@@ -71,7 +79,7 @@ static const StageData g_stageTable[] =
 		true,
 		{ Math::Vector3(176, 0, 0) },					// switchPositions
 		Math::Vector3(192, 0, 0),						// cageBasePos
-		{ Math::Vector3(8, 4, 16) },					// gimmickBlockPositions
+		{ Math::Vector3(18, 4, 16) },					// gimmickBlockPositions
 		"Asset/Data/MapData/Map3.csv", 2, 4,			// originCol=2, originRow=4
 		2,												// buildLimitLayers
 		32.0f,											// cageHeight
@@ -96,6 +104,36 @@ static const StageData g_stageTable[] =
 		5, Math::Vector2(60, 44), Math::Vector2(148, 108),				// 南の部屋だけ5層
 		Math::Vector3(73.0f, 57.0f, 45.0f)								// cageScale
 	},
+
+	// ステージ5：ハブ型。A・B・Cのスイッチを全部押すと、真ん中のゴールを囲う檻4つが開く
+{
+	Math::Vector3(0, 0, 0), Math::Vector3(0, -2.5f, -128), 0.0f, 180.0f,
+	true,
+	{ Math::Vector3(-135, 0, -127),		// A
+	  Math::Vector3(304, 0, -128),		// B
+	  Math::Vector3(48, 0, -256) },		// C
+	Math::Vector3(24, 0, -128),			// cageBasePos(東)
+	{ Math::Vector3(-288, 28, -128),	// A：棚の上
+	  Math::Vector3(128, 4, -128),		// B：入口の足場
+	  Math::Vector3(0, 52, -328) },		// C：塔の上
+	"Asset/Data/MapData/Map5.csv", 39, 45,
+	2,
+	50.0f,
+	5, Math::Vector2(-84, -348), Math::Vector2(84, -228),
+	Math::Vector3(41.0f, 57.0f, 45.0f),
+	{
+		{ Math::Vector3(168, 0, -160), Math::Vector3(168, 0, -176), 5.0f },
+		{ Math::Vector3(168, 0, -96),  Math::Vector3(168, 0, -80),  6.5f },
+		{ Math::Vector3(196, 0, -128), Math::Vector3(220, 0, -128), 6.0f },
+		{ Math::Vector3(248, 0, -176), Math::Vector3(248, 0, -144), 5.5f },
+		{ Math::Vector3(248, 0, -80),  Math::Vector3(248, 0, -112), 7.0f },
+	},
+	{
+		{ Math::Vector3(-24, 0, -128), 90.0f },	// 西
+		{ Math::Vector3(0, 0, -152),   0.0f },	// 北
+		{ Math::Vector3(0, 0, -104),   0.0f },	// 南
+	}
+},
 };
 
 static const int g_stageCount = sizeof(g_stageTable) / sizeof(g_stageTable[0]);

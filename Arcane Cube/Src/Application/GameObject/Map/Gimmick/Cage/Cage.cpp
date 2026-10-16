@@ -3,10 +3,8 @@
 
 // 全部のスイッチがオンの間だけ開く(スイッチ1個なら { sw } と渡す)
 void Cage::Init(const std::vector<std::shared_ptr<Switch>>& switches, 
-	const Math::Vector3& basePos, 
-	const Math::Vector3& scale, 
-	float maxHeight, 
-	float speed)
+	const Math::Vector3& basePos, const Math::Vector3& scale, 
+	float maxHeight, float speed, float yawDeg)
 {
 	m_switches = switches;
 	m_basePos = basePos;
@@ -23,15 +21,16 @@ void Cage::Init(const std::vector<std::shared_ptr<Switch>>& switches,
 	{
 		m_pCollider = std::make_unique<KdCollider>();
 
-		// 閉じている間はプレイヤーを通さない壁として機能させる
+		// 幅と厚みは見た目に合わせ、高さだけ極端に長くして、上から入れないようにする
+		// (モデルの高さ1が57倍されるので、Extents.yの9だと足元から約1,000の高さになる)
 		DirectX::BoundingBox wallBox;
-		wallBox.Center = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
-		wallBox.Extents = DirectX::XMFLOAT3(2.0f, 3.0f, 0.1f);
+		wallBox.Center = DirectX::XMFLOAT3(0.0f, 9.0f, 0.0f);
+		wallBox.Extents = DirectX::XMFLOAT3(0.5f, 9.0f, 0.1f);
 		m_pCollider->RegisterCollisionShape("CageWall", wallBox, KdCollider::TypeBump);
 	}
 
 	Math::Matrix scaleMat = Math::Matrix::CreateScale(scale);
-	Math::Matrix rotMat   = Math::Matrix::CreateRotationY(DirectX::XMConvertToRadians(90));
+	Math::Matrix rotMat = Math::Matrix::CreateRotationY(DirectX::XMConvertToRadians(yawDeg));
 	Math::Matrix transMat = Math::Matrix::CreateTranslation(basePos);
 
 	m_mWorld = scaleMat * rotMat * transMat;
