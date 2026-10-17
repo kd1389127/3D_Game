@@ -1,4 +1,5 @@
 ﻿#include "CameraBase.h"
+#include "../Map/MapBlock/MapBlock.h"
 
 void CameraBase::Init()
 {
@@ -16,6 +17,7 @@ void CameraBase::PreDraw()
 	if (!m_spCamera) { return; }
 
 	m_spCamera->SetCameraMatrix(m_mWorld);
+	MapBlock::UpdateFrustum(m_spCamera->GetCameraViewMatrix(), m_spCamera->GetProjMatrix());
 	m_spCamera->SetToShader();
 }
 

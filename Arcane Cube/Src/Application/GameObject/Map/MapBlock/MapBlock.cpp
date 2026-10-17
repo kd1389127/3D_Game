@@ -6,6 +6,7 @@ std::shared_ptr<KdModelData> MapBlock::s_spStair = nullptr;
 void MapBlock::Init(const Math::Vector3& pos, Shape shape, StairDir dir)
 {
 	const bool isStair = (shape == Shape::Stair);
+	m_isStair = isStair;	// ← この1行を追加
 
 	auto& spShared = isStair ? s_spStair : s_spFull;
 	if (!spShared)
@@ -69,8 +70,44 @@ void MapBlock::Init(const Math::Vector3& pos, Shape shape, StairDir dir)
 	SetScale(8.0f);
 }
 
+// 先頭の static メンバ定義の並びに追加
+Math::Vector4 MapBlock::s_planes[6] = {};
+
+void MapBlock::UpdateFrustum(const Math::Matrix& view, const Math::Matrix& proj)
+{
+	// ワールド座標 → 画面の座標に一気に変換する行列
+	const Math::Matrix m = view * proj;
+
+	// この行列の列を足し引きすると、画面の端にあたる6つの面になる
+	s_planes[0] = Math::Vector4(m._14 + m._11, m._24 + m._21, m._34 + m._31, m._44 + m._41); // 左
+	s_planes[1] = Math::Vector4(m._14 - m._11, m._24 - m._21, m._34 - m._31, m._44 - m._41); // 右
+	s_planes[2] = Math::Vector4(m._14 + m._12, m._24 + m._22, m._34 + m._32, m._44 + m._42); // 下
+	s_planes[3] = Math::Vector4(m._14 - m._12, m._24 - m._22, m._34 - m._32, m._44 - m._42); // 上
+	s_planes[4] = Math::Vector4(m._13, m._23, m._33, m._43);                                  // 手前
+	s_planes[5] = Math::Vector4(m._14 - m._13, m._24 - m._23, m._34 - m._33, m._44 - m._43); // 奥
+
+	// 面の向き(x,y,z)の長さを1にそろえる。そろえないと「距離」として使えない
+	for (auto& p : s_planes)
+	{
+		const float len = sqrtf(p.x * p.x + p.y * p.y + p.z * p.z);
+		if (len > 0.0f) p /= len;
+	}
+}
+
 void MapBlock::DrawUnLit()
 {
 	if (!m_spModel)return;
+
+	// 映る範囲の外にあるブロックは描かない
+	// ブロック(1辺8)がすっぽり入る球の半径は約6.93。少し余裕を見て7にしてある
+	const Math::Vector3 c = GetPos();
+	constexpr float radius = 7.0f;
+	for (const Math::Vector4& p : s_planes)
+	{
+		// 面までの距離。マイナスは「面の外側」。-radiusより外側なら、球ごと外にある
+		if (p.x * c.x + p.y * c.y + p.z * c.z + p.w < -radius) return;
+	}
+
 	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
 }
+

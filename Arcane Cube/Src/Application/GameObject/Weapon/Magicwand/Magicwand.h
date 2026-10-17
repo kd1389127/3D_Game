@@ -108,4 +108,5 @@ private:
 
 	// 生成するたびに発行するスタックID
 	int m_nextStackId = 0;
+
 };

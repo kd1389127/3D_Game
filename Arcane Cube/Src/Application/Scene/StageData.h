@@ -77,7 +77,8 @@ static const StageData g_stageTable[] =
 		{Math::Vector3(0, 0, -16)},			// switchPositions
 		Math::Vector3(-48, 24.0f, 0),		// cageBasePos
 		{Math::Vector3(64, 52.0f, 0)},		// gimmickBlockPositions
-		"Asset/Data/MapData/Map2.csv", 14, 5 
+		"Asset/Data/MapData/Map2.csv", 14, 5, 
+		7,
 	},
 	
 	// ステージ3：奈落を橋で渡り、塔の壁に柱を積んで登ってゴールへ
@@ -102,7 +103,7 @@ static const StageData g_stageTable[] =
 			// 奈落の上は、高さも奥行きも全部、魔法ブロックを置けない(リフトを使わせる)
 			{ Math::Vector3(36, -1000, -1000), Math::Vector3(148, 1000, 1000) }
 		}
-},
+	},
 
 	// ステージ4：A側は魔法の橋、B側は階段で高台へ。ブロック2個を両スイッチに置くと檻が開く
 	{
@@ -119,34 +120,41 @@ static const StageData g_stageTable[] =
 	},
 
 	// ステージ5：ハブ型。A・B・Cのスイッチを全部押すと、真ん中のゴールを囲う檻4つが開く
-{
-	Math::Vector3(0, 0, 0), Math::Vector3(0, -2.5f, -128), 0.0f, 180.0f,
-	true,
-	{ Math::Vector3(-135, 0, -127),		// A
-	  Math::Vector3(304, 0, -128),		// B
-	  Math::Vector3(48, 0, -256) },		// C
-	Math::Vector3(24, 0, -128),			// cageBasePos(東)
-	{ Math::Vector3(-288, 28, -128),	// A：棚の上
-	  Math::Vector3(128, 4, -128),		// B：入口の足場
-	  Math::Vector3(0, 52, -328) },		// C：塔の上
-	"Asset/Data/MapData/Map5.csv", 39, 45,
-	2,
-	50.0f,
-	5, Math::Vector2(-84, -348), Math::Vector2(84, -228),
-	Math::Vector3(41.0f, 57.0f, 45.0f),
 	{
-		{ Math::Vector3(168, 0, -160), Math::Vector3(168, 0, -176), 5.0f },
-		{ Math::Vector3(168, 0, -96),  Math::Vector3(168, 0, -80),  6.5f },
-		{ Math::Vector3(196, 0, -128), Math::Vector3(220, 0, -128), 6.0f },
-		{ Math::Vector3(248, 0, -176), Math::Vector3(248, 0, -144), 5.5f },
-		{ Math::Vector3(248, 0, -80),  Math::Vector3(248, 0, -112), 7.0f },
+		Math::Vector3(0, 0, 0), Math::Vector3(0, -2.5f, -128), 0.0f, 180.0f,
+		true,
+		{ Math::Vector3(-135, 0, -127),		// A
+		  Math::Vector3(304, 0, -128),		// B
+		  Math::Vector3(48, 0, -256) },		// C
+		Math::Vector3(24, 0, -128),			// cageBasePos(東)
+		{ Math::Vector3(-288, 28, -128),	// A：棚の上
+		  Math::Vector3(128, 4, -128),		// B：入口の足場
+		  Math::Vector3(0, 52, -328) },		// C：塔の上
+		"Asset/Data/MapData/Map5.csv", 39, 45,
+		2,
+		50.0f,
+		5, Math::Vector2(-84, -348), Math::Vector2(84, -228),
+		Math::Vector3(41.0f, 57.0f, 45.0f),
+		{
+			{ Math::Vector3(168, 0, -160), Math::Vector3(168, 0, -176), 5.0f },
+			{ Math::Vector3(168, 0, -96),  Math::Vector3(168, 0, -80),  6.5f },
+			{ Math::Vector3(196, 0, -128), Math::Vector3(220, 0, -128), 6.0f },
+			{ Math::Vector3(248, 0, -176), Math::Vector3(248, 0, -144), 5.5f },
+			{ Math::Vector3(248, 0, -80),  Math::Vector3(248, 0, -112), 7.0f },
+		},
+		{
+			{ Math::Vector3(-24, 0, -128), 90.0f },	// 西
+			{ Math::Vector3(0, 0, -152),   0.0f },	// 北
+			{ Math::Vector3(0, 0, -104),   0.0f },	// 南
+		},
+		{
+			// リフト部屋の奈落の上。高さも全部、魔法ブロックを置けない(リフトを使わせる)
+			// 穴のマス中心はx=152〜264なので、その外側のマス(144と272)を含まない範囲にする
+			{ Math::Vector3(148, -1000, -196), Math::Vector3(268, 1000, -60) }
+		}
 	},
-	{
-		{ Math::Vector3(-24, 0, -128), 90.0f },	// 西
-		{ Math::Vector3(0, 0, -152),   0.0f },	// 北
-		{ Math::Vector3(0, 0, -104),   0.0f },	// 南
-	}
-},
+
+
 };
 
 static const int g_stageCount = sizeof(g_stageTable) / sizeof(g_stageTable[0]);

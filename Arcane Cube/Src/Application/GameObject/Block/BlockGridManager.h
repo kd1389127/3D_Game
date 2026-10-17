@@ -133,9 +133,6 @@ public:
 	Math::Vector3 ResolvePlaceableCell(const Math::Vector3& hitPos, const Math::Vector3& axisNormal, KdGameObject& groundObj)
 	{
 		Math::Vector3 baseCell = SnapToGrid(hitPos + axisNormal * (GridSize * 0.5f + 0.01f));
-
-		bool baseOccupied = IsOccupied(baseCell);
-		bool baseCanPlace = CanPlaceBlockAt(baseCell, groundObj);
 		/*KdDebugGUI::Instance().AddLog("[Grid] baseCell(%.1f,%.1f,%.1f) occupied=%d canPlace=%d\n",
 			baseCell.x, baseCell.y, baseCell.z, baseOccupied, baseCanPlace);*/
 

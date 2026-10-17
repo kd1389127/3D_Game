@@ -1,5 +1,6 @@
 ﻿#include "Cage.h"
 #include "../Switch/Switch.h"
+#include "../../../Block/BlockGridManager.h"
 
 // 全部のスイッチがオンの間だけ開く(スイッチ1個なら { sw } と渡す)
 void Cage::Init(const std::vector<std::shared_ptr<Switch>>& switches, 
@@ -28,6 +29,24 @@ void Cage::Init(const std::vector<std::shared_ptr<Switch>>& switches,
 		wallBox.Extents = DirectX::XMFLOAT3(0.5f, 9.0f, 0.1f);
 		m_pCollider->RegisterCollisionShape("CageWall", wallBox, KdCollider::TypeBump);
 	}
+
+
+	// --- ここからCage::Initの最後に追加 ---
+	// 檻の中のマスにも、魔法ブロックを置かせない
+	// 当たり判定の半分の大きさ(ローカル)：幅0.5×scale.x、厚み0.1×scale.z
+	const float yawRad = DirectX::XMConvertToRadians(yawDeg);
+	const float lx = 0.5f * scale.x;
+	const float lz = 0.1f * scale.z;
+
+	// 回転後の「ワールドで見た半分の大きさ」(Y回転だけなので、cosとsinの絶対値で足せばよい)
+	const float hx = fabsf(cosf(yawRad)) * lx + fabsf(sinf(yawRad)) * lz;
+	const float hz = fabsf(sinf(yawRad)) * lx + fabsf(cosf(yawRad)) * lz;
+
+	// マスの「中心」で判定するので、マスの半分(4)だけ広げておく
+	constexpr float cellHalf = BlockGridManager::GridSize * 0.5f;
+	BlockGridManager::Instance().AddForbiddenZone(
+		Math::Vector3(basePos.x - hx - cellHalf, basePos.y - cellHalf, basePos.z - hz - cellHalf),
+		Math::Vector3(basePos.x + hx + cellHalf, basePos.y + scale.y + cellHalf, basePos.z + hz + cellHalf));
 
 	Math::Matrix scaleMat = Math::Matrix::CreateScale(scale);
 	Math::Matrix rotMat = Math::Matrix::CreateRotationY(DirectX::XMConvertToRadians(yawDeg));
