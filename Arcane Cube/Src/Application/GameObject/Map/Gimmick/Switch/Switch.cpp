@@ -1,7 +1,7 @@
 ﻿#include "Switch.h"
 
 #include "../../../Block/Grabbable.h"
-#include "../../../../Scene/SceneManager.h"
+#include "../../../Block/GimmickBlock/GimmickBlock.h"
 
 namespace
 {
@@ -9,14 +9,23 @@ namespace
 	constexpr float kPadHalfSize = 3.5f;
 	// ブロックが踏み板の上に「乗っている」とみなす高さの許容範囲
 	constexpr float kPressHeight = 3.0f;
+	// 作動した時に、踏み板が沈む深さ
+	constexpr float kPressDepth = 0.8f;
+	// 1フレームに沈む・戻る量(0.1なら約8フレームで沈みきる)
+	constexpr float kPressSpeed = 0.1f;
+	// ブロックが乗る高さ(床から台座の縁の上面まで)。見ながら調整する
+	constexpr float kRideHeight = 1.0f;
 }
 
 void Switch::Init(const Math::Vector3& pos)
 {
 	if (!m_spModel)
 	{
-		m_spModel = std::make_shared<KdModelWork>();
-		m_spModel->SetModelData("Asset/Models/Map/Switch/Switch.gltf");
+		m_spModel = std::make_shared<KdModelData>();
+		m_spModel->Load("Asset/Models/Map/Pedestal/Pedestal.gltf");
+
+		m_spPadModel = std::make_shared<KdModelData>();
+		m_spPadModel->Load("Asset/Models/Map/Switch/Switch.gltf");
 	}
 
 	SetScale(15.0f);
@@ -53,14 +62,31 @@ void Switch::Update()
 		if (overlapXZ && onPad)
 		{
 			m_isActive = true;
+
+			// 作動しているブロックは、見た目を板の上に乗せる(位置は動かさない)
+			if (auto block = std::dynamic_pointer_cast<GimmickBlock>(obj))
+			{
+				block->SetRideOffset(kRideHeight);
+			}
 			break;
 		}
 	}
+
+	// 作動中は沈み、離れたら戻る
+	const float target = m_isActive ? kPressDepth : 0.0f;
+	m_pressDepth += std::clamp(target - m_pressDepth, -kPressSpeed, kPressSpeed);
 }
 
 void Switch::DrawLit()
 {
-	if (!m_spModel) return;
+	if (!m_spModel || !m_spPadModel) return;
 
-	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
+	auto& shader = KdShaderManager::Instance().m_StandardShader;
+
+	// 台座はそのまま描く
+	shader.DrawModel(*m_spModel, m_mWorld);
+
+	// 踏み板は、沈んだ量だけ下にずらして描く
+	const Math::Matrix padMat = m_mWorld * Math::Matrix::CreateTranslation(0.0f, -m_pressDepth, 0.0f);
+	shader.DrawModel(*m_spPadModel, padMat);
 }

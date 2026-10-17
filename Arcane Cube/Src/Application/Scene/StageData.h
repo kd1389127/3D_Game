@@ -81,7 +81,6 @@ static const StageData g_stageTable[] =
 		7,
 	},
 	
-	// ステージ3：奈落を橋で渡り、塔の壁に柱を積んで登ってゴールへ
 	// ステージ3：リフトの紹介。ブロックを持ってリフトで奈落を渡り、スイッチに置いて檻を開ける
 	{
 		Math::Vector3(0, 0, 0), Math::Vector3(208, -2.5f, 0), 0.0f, 90.0f,
@@ -96,7 +95,7 @@ static const StageData g_stageTable[] =
 		Math::Vector3(55.0f, 40.0f, 45.0f),				// cageScale
 		{
 		// 奈落は X=36〜148。リフトの横幅が24なら、始点=36+12、終点=148-12
-		{ Math::Vector3(48, 0, 0), Math::Vector3(136, 0, 0), 8.0f }
+		{ Math::Vector3(48, 0, 0), Math::Vector3(136, 0, 0), 5.0f }
 		},
 		{},
 		{
@@ -136,10 +135,10 @@ static const StageData g_stageTable[] =
 		5, Math::Vector2(-84, -348), Math::Vector2(84, -228),
 		Math::Vector3(41.0f, 57.0f, 45.0f),
 		{
-			{ Math::Vector3(168, 0, -160), Math::Vector3(168, 0, -176), 5.0f },
-			{ Math::Vector3(168, 0, -96),  Math::Vector3(168, 0, -80),  6.5f },
-			{ Math::Vector3(196, 0, -128), Math::Vector3(220, 0, -128), 6.0f },
-			{ Math::Vector3(248, 0, -176), Math::Vector3(248, 0, -144), 5.5f },
+			{ Math::Vector3(168, 0, -160), Math::Vector3(168, 0, -176), 3.5f },
+			{ Math::Vector3(168, 0, -96),  Math::Vector3(168, 0, -80),  3.5f },
+			{ Math::Vector3(196, 0, -128), Math::Vector3(220, 0, -128), 5.5f },
+			{ Math::Vector3(248, 0, -176), Math::Vector3(248, 0, -144), 7.5f },
 			{ Math::Vector3(248, 0, -80),  Math::Vector3(248, 0, -112), 7.0f },
 		},
 		{

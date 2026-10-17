@@ -15,7 +15,7 @@
 	"nodes":[
 		{
 			"mesh":0,
-			"name":"\u7acb\u65b9\u4f53"
+			"name":"\u7acb\u65b9\u4f53.001"
 		}
 	],
 	"materials":[
@@ -40,7 +40,7 @@
 	],
 	"meshes":[
 		{
-			"name":"\u7acb\u65b9\u4f53",
+			"name":"\u7acb\u65b9\u4f53.001",
 			"primitives":[
 				{
 					"attributes":{
@@ -89,35 +89,35 @@
 		{
 			"bufferView":0,
 			"componentType":5126,
-			"count":68,
+			"count":20,
 			"max":[
-				0.36540496349334717,
+				0.308298796415329,
 				0.13843829929828644,
-				0.36540496349334717
+				0.308298796415329
 			],
 			"min":[
-				-0.36540496349334717,
-				-0.0675584077835083,
-				-0.36540496349334717
+				-0.308298796415329,
+				-0.030590347945690155,
+				-0.308298796415329
 			],
 			"type":"VEC3"
 		},
 		{
 			"bufferView":1,
 			"componentType":5126,
-			"count":68,
+			"count":20,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":2,
 			"componentType":5126,
-			"count":68,
+			"count":20,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":3,
 			"componentType":5123,
-			"count":114,
+			"count":30,
 			"type":"SCALAR"
 		},
 		{
@@ -158,50 +158,50 @@
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":816,
+			"byteLength":240,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":816,
-			"byteOffset":816,
+			"byteLength":240,
+			"byteOffset":240,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":544,
-			"byteOffset":1632,
+			"byteLength":160,
+			"byteOffset":480,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":228,
-			"byteOffset":2176,
+			"byteLength":60,
+			"byteOffset":640,
 			"target":34963
 		},
 		{
 			"buffer":0,
 			"byteLength":48,
-			"byteOffset":2404,
+			"byteOffset":700,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":48,
-			"byteOffset":2452,
+			"byteOffset":748,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":32,
-			"byteOffset":2500,
+			"byteOffset":796,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":12,
-			"byteOffset":2532,
+			"byteOffset":828,
 			"target":34963
 		}
 	],
@@ -213,7 +213,7 @@
 	],
 	"buffers":[
 		{
-			"byteLength":2544,
+			"byteLength":840,
 			"uri":"Switch.bin"
 		}
 	]

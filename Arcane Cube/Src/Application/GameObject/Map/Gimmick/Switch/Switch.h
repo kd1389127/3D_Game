@@ -16,9 +16,11 @@ public:
 
 private:
 
-	std::shared_ptr<KdModelWork> m_spModel = nullptr;
+	std::shared_ptr<KdModelData> m_spModel = nullptr;     // 台座(Pedestal)
+	std::shared_ptr<KdModelData> m_spPadModel = nullptr;  // 踏み板(Switch)
 
 	bool m_isActive = false;
+	float m_pressDepth = 0.0f;  // 今の沈み量(0 = 元の高さ)
 
 	Math::Vector3 m_debugCheckPos = Math::Vector3::Zero; //判定位置保持用
 };

@@ -138,7 +138,7 @@ void Magicwand::Init()
 
 		// 親(プレイヤー)から見た「杖本体」の相対位置(手元に構えている位置)
 		// 位置も右下寄りに調整
-		Math::Matrix pos = Math::Matrix::CreateTranslation(0.6f, -0.7f, 0.6f);
+		Math::Matrix pos = Math::Matrix::CreateTranslation(0.8f, -0.7f, 0.6f);
 
 		// 親(プレイヤー)から見た「杖本体」の相対位置(手元に構えている位置)
 		m_localMat = rot * pos;

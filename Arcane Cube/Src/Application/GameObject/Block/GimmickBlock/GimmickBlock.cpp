@@ -7,7 +7,6 @@ void GimmickBlock::Init(const Math::Vector3& pos)
 	if (!m_spModel)
 	{
 		m_spModel = std::make_shared<KdModelWork>();
-		// TODO: 実際のギミック専用ブロックのモデルパスに置き換える
 		m_spModel->SetModelData("Asset/Models/Block/GimmickBlock/GimmickBlock.gltf");
 	}
 
@@ -39,6 +38,10 @@ void GimmickBlock::Init(const Math::Vector3& pos)
 
 void GimmickBlock::Update()
 {
+	// 持ち上げ量を、目標へ1フレームに最大0.15ずつ近づける
+	constexpr float kRideSpeed = 0.15f;
+	m_rideCurrent += std::clamp(m_rideTarget - m_rideCurrent, -kRideSpeed, kRideSpeed);
+
 	// 持ち運び中は、位置をBlockGrabber側が決めているので落下処理はしない
 	if (m_isCarried) return;
 
@@ -118,7 +121,7 @@ void GimmickBlock::Update()
 	if (pos.y < m_startPos.y - 200.0f)
 	{
 		ResetToStartPos();
-		return;	// 位置はもう決まっているので、下のSetPos(pos)には進まない
+		return;
 	}
 
 	SetPos(pos);
@@ -128,24 +131,31 @@ void GimmickBlock::DrawLit()
 {
 	if (!m_spModel) return;
 
-	// 狙われている間だけ、緑にゆっくり点滅させる
-	// (運んでいる間は、置く位置のプレビューを見やすくするため、点滅しない)
+	// スイッチに乗っている間は、見た目だけ持ち上げて描く
+	const Math::Matrix drawMat = m_mWorld * Math::Matrix::CreateTranslation(0.0f, m_rideCurrent, 0.0f);
+
 	if (m_isGrabTargeted)
 	{
 		m_blinkTimer++;
-		float blink = (sinf(m_blinkTimer * 0.1f) * 0.5f + 0.5f); // 0.0～1.0を往復(赤より遅い)
+		float blink = (sinf(m_blinkTimer * 0.1f) * 0.5f + 0.5f);
 		Math::Color grabColor(0.4f + blink * 0.3f, 1.0f, 0.4f + blink * 0.3f, 1.0f);
-		KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld, grabColor);
+		KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, drawMat, grabColor);
 		return;
 	}
 
-	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
+	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, drawMat);
 }
 
 void GimmickBlock::SetCarried(bool isCarried)
 {
 	m_isCarried = isCarried;
 	m_fallSpeed = 0.0f;			// 掴んだ/離した瞬間は落下速度をリセット
+
+	if (isCarried)
+	{
+		m_rideTarget = 0.0f;
+		m_rideCurrent = 0.0f;
+	}
 
 	if (m_pCollider)
 	{

@@ -2,11 +2,12 @@
 
 std::shared_ptr<KdModelData> MapBlock::s_spFull = nullptr;
 std::shared_ptr<KdModelData> MapBlock::s_spStair = nullptr;
+Math::Vector4 MapBlock::s_planes[6] = {};
 
 void MapBlock::Init(const Math::Vector3& pos, Shape shape, StairDir dir)
 {
 	const bool isStair = (shape == Shape::Stair);
-	m_isStair = isStair;	// ← この1行を追加
+	m_isStair = isStair;
 
 	auto& spShared = isStair ? s_spStair : s_spFull;
 	if (!spShared)
@@ -53,7 +54,6 @@ void MapBlock::Init(const Math::Vector3& pos, Shape shape, StairDir dir)
 		return;
 	}
 
-
 	// 壁用(横の押し出し)
 	DirectX::BoundingBox wallBox;
 	wallBox.Center = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
@@ -70,12 +70,11 @@ void MapBlock::Init(const Math::Vector3& pos, Shape shape, StairDir dir)
 	SetScale(8.0f);
 }
 
-// 先頭の static メンバ定義の並びに追加
-Math::Vector4 MapBlock::s_planes[6] = {};
-
 void MapBlock::UpdateFrustum(const Math::Matrix& view, const Math::Matrix& proj)
 {
 	// ワールド座標 → 画面の座標に一気に変換する行列
+	// view は「ワールド座標をカメラから見た座標に変える行列」
+	// proj は「それを画面用に押し縮める行列」
 	const Math::Matrix m = view * proj;
 
 	// この行列の列を足し引きすると、画面の端にあたる6つの面になる
@@ -83,7 +82,7 @@ void MapBlock::UpdateFrustum(const Math::Matrix& view, const Math::Matrix& proj)
 	s_planes[1] = Math::Vector4(m._14 - m._11, m._24 - m._21, m._34 - m._31, m._44 - m._41); // 右
 	s_planes[2] = Math::Vector4(m._14 + m._12, m._24 + m._22, m._34 + m._32, m._44 + m._42); // 下
 	s_planes[3] = Math::Vector4(m._14 - m._12, m._24 - m._22, m._34 - m._32, m._44 - m._42); // 上
-	s_planes[4] = Math::Vector4(m._13, m._23, m._33, m._43);                                  // 手前
+	s_planes[4] = Math::Vector4(m._13, m._23, m._33, m._43);                                 // 手前
 	s_planes[5] = Math::Vector4(m._14 - m._13, m._24 - m._23, m._34 - m._33, m._44 - m._43); // 奥
 
 	// 面の向き(x,y,z)の長さを1にそろえる。そろえないと「距離」として使えない
@@ -108,6 +107,8 @@ void MapBlock::DrawUnLit()
 		if (p.x * c.x + p.y * c.y + p.z * c.z + p.w < -radius) return;
 	}
 
-	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
+	// 階段だけ明るさを変える(1.0で変化なし)。見ながら調整する
+	const Math::Color col = m_isStair ? Math::Color(1.5f, 1.5f, 1.5f, 1.0f) : kWhiteColor;
+	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld, col);
 }
 

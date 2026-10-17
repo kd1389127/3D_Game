@@ -29,6 +29,9 @@ public:
 	// 最初に置かれた場所に戻す(奈落に落ちた時などに使う)
 	void ResetToStartPos();
 
+	// スイッチに乗っている時の「見た目の持ち上げ量」を教えてもらう(Switchが毎フレーム呼ぶ)
+	void SetRideOffset(float y) { m_rideTarget = y; }
+
 private:
 
 	std::shared_ptr<KdModelWork> m_spModel = nullptr;
@@ -39,4 +42,7 @@ private:
 
 	float m_fallSpeed = 0.0f;
 	Math::Vector3 m_startPos = Math::Vector3::Zero;
+
+	float m_rideTarget = 0.0f;   // スイッチが決める「持ち上げたい量」
+	float m_rideCurrent = 0.0f;  // 今、描画に使っている量(目標へ少しずつ近づく)
 };
