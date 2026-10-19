@@ -26,6 +26,10 @@ void GameScene::Event()
 	{
 		SceneManager::Instance().RequestChangeScene(SceneManager::SceneType::Title, 0);
 	}
+	if (GetAsyncKeyState('R') & 0x8000)
+	{
+		SceneManager::Instance().RequestChangeScene(SceneManager::SceneType::Result, 0);
+	}
 	// Gキーでデバッググリッドの表示切り替え
 	static bool prevG = false;
 	bool nowG = (GetAsyncKeyState('G') & 0x8000) != 0;
@@ -86,6 +90,15 @@ void GameScene::Event()
 
 void GameScene::Init()
 {
+	// BGM：すでに鳴っていれば何もしない(ステージ移動のReloadSceneで鳴り直さないため)
+	static std::shared_ptr<KdSoundInstance> s_bgm;
+	if (!s_bgm || !s_bgm->IsPlaying())
+	{
+		KdAudioManager::Instance().StopAllSound();
+		s_bgm = KdAudioManager::Instance().Play("Asset/Sounds/BGM/Game/GameBGM.wav", true);
+		if (s_bgm) { s_bgm->SetVolume(0.05f); }
+	}
+
 	// マウス関連
 	Mouse::Instance().ShowMouse(false);
 	Mouse::Instance().ResetCursorToCenter(); // 前回位置を中央にそろえる
@@ -147,7 +160,7 @@ void GameScene::Init()
 	// Player
 	std::shared_ptr<Player> player;
 	player = std::make_shared<Player>();
-	player->Init(data.playerStartPos, data.groundHeight, data.playerStartYaw);
+	player->Init(data.playerStartPos, data.groundHeight, data.playerStartYaw, &data.checkpoints);
 	m_objList.push_back(player);
 
 	// 魔法の杖

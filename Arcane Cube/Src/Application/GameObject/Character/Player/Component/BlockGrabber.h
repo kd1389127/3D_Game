@@ -2,6 +2,7 @@
 
 class IGrabbable;
 class KdEffekseerObject;
+class KdSoundInstance;
 
 class BlockGrabber
 {
@@ -53,6 +54,9 @@ private:
 	void UpdateGrabEffect();
 	void StopGrabEffect();
 	std::weak_ptr<KdEffekseerObject> m_wpGrabEffect;
+
+	// 掴み中のループ音(止める時に使うので持っておく)
+	std::shared_ptr<KdSoundInstance> m_spHoldSe;	
 
 	std::shared_ptr<KdGameObject> m_spCarriedBlock = nullptr;
 	bool m_eKeyFlg = false;

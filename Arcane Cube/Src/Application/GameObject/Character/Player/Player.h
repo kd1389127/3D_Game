@@ -3,14 +3,19 @@
 class CameraBase;
 class BlockGrabber;
 class BlockDestroyer;
+class KdSoundInstance;
+
+struct CheckpointZone; 
 
 class Player : public KdGameObject
 {
 public:
 	Player();
-	~Player() override;
+	~Player();
 
-	void Init(const Math::Vector3& startPos, float groundHeight = 0.0f, float startYawDeg = 0.0f);	void Update()	  override;
+	void Init(const Math::Vector3& startPos, float groundHeight, float startYawDeg,
+		const std::vector<CheckpointZone>* pCheckpoints);
+	void Update()	  override;
 	void PostUpdate() override;
 
 	// ブロックを保持しているかチェックする関数
@@ -73,7 +78,11 @@ private:
 
 	// スポーン地点
 	Math::Vector3 m_startPos = Math::Vector3::Zero;
-	Math::Vector3 m_startDegAng = Math::Vector3::Zero;	// スタート時の向き
+
+	// 落ちた時に戻る場所(最初はスタート位置。中間地点の箱に入るたびに書き換わる)
+	Math::Vector3 m_respawnPos = Math::Vector3::Zero;
+	Math::Vector3 m_respawnDegAng = Math::Vector3::Zero;
+	const std::vector<CheckpointZone>* m_pCheckpoints = nullptr;
 
 	// 進行方向(ベクトルの向き)
 	Math::Vector3 m_moveDir = Math::Vector3::Zero;
@@ -93,7 +102,12 @@ private:
 
 	// ジャンプ力
 	const float m_jumpPow = 0.9f;
+	bool m_isGrounded = false;		// 今、地面に立っているか(PostUpdateで更新)
 
 	bool m_isAimBlocking = false;
 	bool m_respawnedEvent = false;
+
+	// SE
+	std::shared_ptr<KdSoundInstance> m_spWalkSe;	// 歩いている間のループ音
+	bool m_goalSePlayed = false;	// ゴール音をもう鳴らしたか
 };

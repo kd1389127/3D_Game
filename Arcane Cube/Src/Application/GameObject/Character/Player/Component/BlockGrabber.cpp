@@ -13,6 +13,9 @@ namespace
 	constexpr float kSweepStep      = 2.0f;  // 1回に動かす距離
 	constexpr float kCullMargin     = 16.0f; // MapBlockを近くに絞る時の余裕
 	constexpr float kGrabEffectSize = 6.0f;  // 掴み中エフェクトの大きさ
+	constexpr float kBodyHeight = 10.0f;	 // 頭から足元までの高さ(Player::m_adjustHeightと同じ)
+	constexpr float kBodyRadius = 3.0f;		 // 体の半径
+	constexpr float kBlockHalf = BlockGridManager::GridSize * 0.5f;
 
 	using ColliderList = std::vector<KdGameObject*>;
 
@@ -259,7 +262,8 @@ namespace
 
 BlockGrabber::~BlockGrabber()
 {
-	StopGrabEffect();	// 持ったままゴールに入っても、エフェクトが次のシーンに残らないように
+	StopGrabEffect();						// 持ったままゴールに入っても、エフェクトが次のシーンに残らないように
+	if (m_spHoldSe) { m_spHoldSe->Stop(); }	// 掴んだままゴール/Tキーで消えても、音だけ残らないように
 }
 
 void BlockGrabber::Init(float groundHeight)
@@ -334,6 +338,8 @@ void BlockGrabber::HandleGrabAndDrop(const Math::Vector3& playerPos, const Math:
 				if (OverlapsAnyBlock(pos, self, colliders))
 				{
 					++m_dropBlockedId;	// 「離せなかった」ことをレティクルに知らせる
+					auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Magic/Fail.wav", false);
+					if (se) { se->SetVolume(0.2f); }
 					return;
 				}
 
@@ -350,6 +356,22 @@ void BlockGrabber::HandleGrabAndDrop(const Math::Vector3& playerPos, const Math:
 				// 届く距離にある時だけ掴める
 				if (candidate.obj && candidate.dist <= kGrabRange)
 				{
+					// 自分が乗っているブロックは掴めない
+					// (足元から抜き取ると、持っているブロックが真下に残り、押し出しで壁の中へ入ってしまうため)
+					const Math::Vector3 bp = candidate.obj->GetPos();
+					const float feetY = playerPos.y - kBodyHeight;	// playerPosは頭の高さ
+					const bool standingOn =
+						fabsf(bp.x - playerPos.x) < kBlockHalf + kBodyRadius &&
+						fabsf(bp.z - playerPos.z) < kBlockHalf + kBodyRadius &&
+						feetY > bp.y;	// 足元がブロックの中心より上＝上に乗っている
+					if (standingOn)
+					{
+						++m_dropBlockedId;	// レティクルを震わせて「できない」と知らせる
+						auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Magic/Fail.wav", false);
+						if (se) { se->SetVolume(0.2f); }
+						return;
+					}
+
 					m_spCarriedBlock = candidate.obj;
 					m_holdDistance = kGrabRange;
 
@@ -554,15 +576,23 @@ void BlockGrabber::StartGrabEffect()
 	StopGrabEffect();	// 念のため、前のが残っていたら止める
 	if (!m_spCarriedBlock) return;
 
-	// ファイル名だけ渡せばよい(Asset/Data/Effect/ はフレームワークが自動で前に付ける)
-	// isLoopは使わない：ループだと終わった時にハンドルが変わり、SetPosで追従できなくなるため
 	m_wpGrabEffect = KdEffekseerManager::GetInstance().Play(
 		"Grab.efkefc", m_spCarriedBlock->GetPos(), kGrabEffectSize);
+
+	// 音もエフェクトの再生開始に合わせて鳴らす(ループにしない。エフェクトが1周するたびに鳴り直す)
+	if (m_spHoldSe) { m_spHoldSe->Stop(); }	// 前の音が残っていたら止めてから
+	m_spHoldSe = KdAudioManager::Instance().Play("Asset/Sounds/SE/Block/Hold.wav", false);
+	if (m_spHoldSe) { m_spHoldSe->SetVolume(0.15f); }
 }
 
 void BlockGrabber::UpdateGrabEffect()
 {
-	if (!m_spCarriedBlock) return;
+	// 持っていない：残っている音を止める(離した・奈落・リスポーンのどれでもここで止まる)
+	if (!m_spCarriedBlock)
+	{
+		if (m_spHoldSe) { m_spHoldSe->Stop(); m_spHoldSe.reset(); }
+		return;
+	}
 
 	const std::shared_ptr<KdEffekseerObject> spEffect = m_wpGrabEffect.lock();
 	if (spEffect && spEffect->IsPlaying())
@@ -571,7 +601,7 @@ void BlockGrabber::UpdateGrabEffect()
 	}
 	else
 	{
-		// 再生が終わっていたら、もう一度再生する
+		// 再生が終わっていたら、もう一度再生する(StartGrabEffectの中で音も一緒に鳴り直す)
 		StartGrabEffect();
 	}
 }

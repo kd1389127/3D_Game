@@ -11,7 +11,6 @@ public:
 	void Init(const Math::Vector3& pos);
 	void Update()		override;
 	void DrawUnLit()	override;
-	void DrawBright()	override;
 
 	// 近づいたかを調べる相手(プレイヤー)を渡してもらう
 	void SetTarget(const std::shared_ptr<KdGameObject>& target) { m_wpTarget = target; }

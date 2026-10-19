@@ -105,6 +105,10 @@ namespace
 
 		KdEffekseerManager::GetInstance().Play(
 			"BulletHit.efkefc", pos - shotDir * kBackOff, kEffectSize);
+
+		// 弾く音：SingleShotとConfirmStackのハズレ側は、どちらもEmitBounceを呼ぶのでここ1か所
+		auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Magic/MagicCancel.wav", false);
+		if (se) { se->SetVolume(0.1f); }
 	}
 
 	// プレイヤーの体の大きさ(Player::ResolveWallCollsionの半径3・Player::m_adjustHeightの10に合わせる)
@@ -363,6 +367,9 @@ void Magicwand::StartSwingAnim()
 {
 	m_isSwinging = true;
 	m_SwingFram = 0;
+	// 発射音：杖を振るのは弾を撃つ時だけで、SingleShotとConfirmStackの両方がここを通る。1か所で済む
+	auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Magic/MagicShot.wav", false);
+	if (se) { se->SetVolume(0.05f); }
 }
 
 void Magicwand::UpdateSwingAnim()
@@ -864,6 +871,10 @@ bool Magicwand::GenerateStackAt(const Math::Vector3& baseCell, const Math::Vecto
 	}
 
 	m_generatedStacks.push_back(newStack);
+	// 生成音：ブロックは6フレームずつずれて出るので、1個ごとに鳴らすと音が重なって濁る。1スタックにつき1回
+	auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Block/Generate.wav", false);
+	if (se) { se->SetVolume(0.1f); }
+
 	return true;
 }
 

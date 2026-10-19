@@ -2,6 +2,8 @@
 #include "../Switch/Switch.h"
 #include "../../../Block/BlockGridManager.h"
 
+static std::shared_ptr<KdSoundInstance> s_cageSe;	// 檻の音(全Cage共通で1つ)
+
 // 全部のスイッチがオンの間だけ開く(スイッチ1個なら { sw } と渡す)
 void Cage::Init(const std::vector<std::shared_ptr<Switch>>& switches, 
 	const Math::Vector3& basePos, const Math::Vector3& scale, 
@@ -68,6 +70,24 @@ void Cage::Update()
 			break;
 		}
 	}
+
+	// 開閉が始まった瞬間だけ鳴らす
+	if (active != m_wasActive)
+	{
+		m_wasActive = active;
+
+		// 檻は複数(extraCages)が同時に動くので、すでに鳴っていたら重ねて鳴らさない
+		if (!s_cageSe || !s_cageSe->IsPlaying())
+		{
+			s_cageSe = KdAudioManager::Instance().Play("Asset/Sounds/SE/Gimmick/Cage.wav", false);
+			if (s_cageSe)
+			{
+				s_cageSe->SetVolume(0.35f);
+				s_cageSe->SetPitch(active ? 0.0f : -0.3f);	// 閉じる時は低くして、開く音と区別する
+			}
+		}
+	}
+
 	float target = active ? m_maxHeight : 0.0f;
 
 	// 1フレームごとにm_speed分だけ近づける(DeltaTimeは使わない、他クラスと同じ固定フレーム前提の書き方)

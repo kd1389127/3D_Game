@@ -108,6 +108,17 @@ void GimmickBlock::Update()
 
 	if (landed)
 	{
+		// 着地音：ある程度の勢いで落ちてきた時だけ鳴らす(リセットする前の落下速度を見る)
+		constexpr float kLandSeSpeed = 0.5f;
+		if (m_fallSpeed > kLandSeSpeed)
+		{
+			auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Gimmick/GimmickBlock.wav", false);
+			if (se)
+			{
+				se->SetVolume(0.2f);
+			}
+		}
+
 		// 地面の上にぴったり乗せて、落下速度をリセット
 		pos.y = landY + halfSize;
 		m_fallSpeed = 0.0f;

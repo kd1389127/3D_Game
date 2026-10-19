@@ -10,19 +10,27 @@
 #include "../../Map/Gimmick/Lift/Lift.h"
 
 Player::Player() = default;
-Player::~Player() = default;
+
+Player::~Player()
+{
+	// ステージ移動やゴールでPlayerが消える時、歩く音だけ鳴りっぱなしにならないように
+	if (m_spWalkSe) { m_spWalkSe->Stop(); }
+}
 
 // 初期化：ステージごとの開始位置(startPos)を受け取ってセットする
-void Player::Init(const Math::Vector3& startPos, float groundHeight, float startYawDeg)
+void Player::Init(const Math::Vector3& startPos, float groundHeight, float startYawDeg,
+	const std::vector<CheckpointZone>* pCheckpoints)
 {
 	m_pos = startPos;
 	m_pos.y += m_adjustHeight;
 
 	m_startPos = m_pos;
+	m_pCheckpoints = pCheckpoints;
+	m_respawnPos = m_startPos;		// 最初のリスポーン地点はスタート位置
 
 	// 開始時の向きをセット(左右=Y軸回転のみ指定、上下の見上げは0度から始める)
 	m_degAng = Math::Vector3(0.0f, startYawDeg, 0.0f);
-	m_startDegAng = m_degAng;
+	m_respawnDegAng = m_degAng;
 
 	m_upBlockGrabber = std::make_unique<BlockGrabber>();
 	m_upBlockGrabber->Init(groundHeight); // ← groundHeightを渡す
@@ -48,7 +56,15 @@ void Player::Update()
 		if (m_jumpKeyFlg == false)
 		{
 			m_jumpKeyFlg = true;
-			m_gravity -= m_jumpPow; // 重力の値をマイナスにする＝上に跳ねる勢いを与える
+
+			// 通常は地面にいる時だけ跳べる。デバッグ用：Jキーを押している間は空中でも跳べる(Mapを見る時用)
+			const bool debugAirJump = (GetAsyncKeyState('Q') & 0x8000) != 0;
+			if (m_isGrounded || debugAirJump)
+			{
+				m_gravity -= m_jumpPow; // 重力の値をマイナスにする＝上に跳ねる勢いを与える
+				auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Player/Jump.wav", false);
+				if (se) { se->SetVolume(0.05f); }
+			}
 		}
 	}
 	else
@@ -81,6 +97,22 @@ void Player::Update()
 
 	// 横方向の移動を確定(壁への当たり判定はまだしていない。PostUpdateで後から押し戻す方式)
 	m_pos += m_moveDir * m_moveSpeed;
+
+	// 歩く音：地面にいて動いている間だけループで鳴らし、止まったら止める
+	const bool isWalking = m_isGrounded && m_moveDir.LengthSquared() > 0.01f;
+	if (isWalking)
+	{
+		if (!m_spWalkSe || !m_spWalkSe->IsPlaying())
+		{
+			m_spWalkSe = KdAudioManager::Instance().Play("Asset/Sounds/SE/Player/Walk.wav", true);
+			if (m_spWalkSe) { m_spWalkSe->SetVolume(0.25f); }
+		}
+	}
+	else if (m_spWalkSe)
+	{
+		m_spWalkSe->Stop();		// 止まった・ジャンプした・落ちた、どれでもここで止まる
+		m_spWalkSe.reset();
+	}
 
 	if (m_upBlockGrabber)
 	{
@@ -143,6 +175,27 @@ void Player::Update()
 			// 天井の少し手前で上昇を止める(めり込み防止に0.05だけ余裕を持たせる)
 			verticalMove = std::max(0.0f, minDist - 0.05f);
 			m_gravity = 0.0f; // 頭をぶつけたら上昇をやめて落下に切り替える
+		}
+	}
+
+	// 持っているブロックが頭の上にある時は、天井と同じように頭をぶつけて止まる
+	if (verticalMove > 0.0f && m_upBlockGrabber && m_upBlockGrabber->IsCarrying())
+	{
+		const Math::Vector3 bp = m_upBlockGrabber->GetCarriedBlockPos();
+		constexpr float half = BlockGridManager::GridSize * 0.5f;
+		constexpr float radius = 3.0f;	// 体の半径
+
+		// 横方向で、ブロックの真下あたりにいるか
+		const bool under = fabsf(m_pos.x - bp.x) < half + radius
+			&& fabsf(m_pos.z - bp.z) < half + radius;
+
+		// 頭(m_pos)からブロックの底までの隙間
+		const float gap = (bp.y - half) - m_pos.y;
+
+		if (under && gap >= 0.0f && gap < verticalMove)
+		{
+			verticalMove = std::max(0.0f, gap - 0.05f);	// 底の少し手前で止める
+			m_gravity = 0.0f;
 		}
 	}
 
@@ -234,9 +287,23 @@ void Player::PostUpdate()
 		}
 	}
 
+	m_isGrounded = isHit;	// 足元のレイが地面に当たった＝立っている
+
 	// 地面に当たっていたら、そこに足を合わせて重力(落下速度)をリセットする
 	if (isHit)
 	{
+		// 着地音：落ちてきた勢いが一定以上の時だけ(リセットする前の値を見る)
+		constexpr float kLandSpeed = 0.5f;
+		if (m_gravity > kLandSpeed)
+		{
+			auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Player/Jump.wav", false);
+			if (se)
+			{
+				se->SetVolume(0.05f);
+				se->SetPitch(-0.3f);	// 低くして、ジャンプの音と区別する
+			}
+		}
+
 		m_pos = groundPos;
 		m_pos.y += m_adjustHeight; // 頭基準の座標に戻す
 		m_gravity = 0;
@@ -247,6 +314,24 @@ void Player::PostUpdate()
 		{
 			m_pos.x += pLift->GetDelta().x;
 			m_pos.z += pLift->GetDelta().z;
+		}
+	}
+
+	// ----- 中間地点(部屋の箱)の更新 -----
+	// 箱の中にいる間は、落ちた時に戻る場所をその箱のものにする
+	if (m_pCheckpoints)
+	{
+		for (const auto& zone : *m_pCheckpoints)
+		{
+			// 1つでも範囲の外なら、この箱ではないので次へ
+			if (m_pos.x < zone.min.x || m_pos.x > zone.max.x) continue;
+			if (m_pos.y < zone.min.y || m_pos.y > zone.max.y) continue;
+			if (m_pos.z < zone.min.z || m_pos.z > zone.max.z) continue;
+
+			m_respawnPos = zone.respawnPos;
+			m_respawnPos.y += m_adjustHeight;	// StageDataは足元の高さ。m_posは頭の高さなので足す
+			m_respawnDegAng = Math::Vector3(0.0f, zone.yaw, 0.0f);
+			break;
 		}
 	}
 
@@ -307,9 +392,9 @@ bool Player::TryDeleteTarget()
 
 void Player::Respawn()
 {
-	m_pos = m_startPos;
-	m_degAng = m_startDegAng;	// 向きも戻す(落ちた方向を向いたままだと分かりにくい)
-	m_gravity = 0.0f;			// 落下で溜まった勢いを捨てる。これを忘れると着地で突き抜ける
+	m_pos     = m_respawnPos;
+	m_degAng  = m_respawnDegAng;
+	m_gravity = 0.0f;
 
 	// 持っているブロックは、手放して元の場所に戻す
 	if (m_upBlockGrabber)
@@ -433,6 +518,14 @@ void Player::CheckGoal()
 	// 何かTypeEventの物(＝ゴール)に触れていたら
 	if (!resultList.empty())
 	{
+		// ゴール音：触れた最初の1回だけ(この関数は毎フレーム呼ばれるので、フラグで止める)
+		if (!m_goalSePlayed)
+		{
+			m_goalSePlayed = true;
+			auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Gimmick/Goal.wav", false);
+			if (se) { se->SetVolume(0.8f); }
+		}
+
 		int nextStage = SceneManager::Instance().GetCurrentStage() + 1;
 
 		if (nextStage < g_stageCount)

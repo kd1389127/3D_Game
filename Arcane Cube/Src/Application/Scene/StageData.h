@@ -22,6 +22,15 @@ struct ForbiddenZone
 	Math::Vector3 max = Math::Vector3::Zero;
 };
 
+// 「この部屋の中にいる間は、落ちたらここに戻る」という中間地点(部屋ごとに置く)
+struct CheckpointZone
+{
+	Math::Vector3 min = Math::Vector3::Zero;		// 箱の最小(ワールド座標)
+	Math::Vector3 max = Math::Vector3::Zero;		// 箱の最大
+	Math::Vector3 respawnPos = Math::Vector3::Zero;	// 落ちた時に戻る場所
+	float yaw = 0.0f;								// 戻った時の向き(度、0=+Z)
+};
+
 // 1ステージ分の配置情報
 struct StageData
 {
@@ -56,6 +65,7 @@ struct StageData
 	std::vector<LiftData> lifts;									// リフト(なければ空)
 	std::vector<CageData> extraCages;
 	std::vector<ForbiddenZone> forbiddenZones;						// 魔法ブロックを置けない場所(なければ空)
+	std::vector<CheckpointZone> checkpoints;						// 部屋ごとの中間地点(なければ空)
 };
 
 // ステージテーブル(ステージを増やす場合はここに追加していくだけでOK)
@@ -65,7 +75,7 @@ static const StageData g_stageTable[] =
 	// プレイヤー開始位置、ゴールの位置、ステージの下限、プレイヤーの向き
 	// ギミックを使うか、ギミックの各配置、CSVデータ、CSVの列、CSVの行、置ける最大の上面
 	{ 
-		Math::Vector3(80, 0, 10), Math::Vector3(-100, 13.5, 10), 0.0f,-90.0f,
+		Math::Vector3(80, 0, 10), Math::Vector3(-100, 13.5, 8.0f), 0.0f,-90.0f,
 		false, {}, Math::Vector3::Zero,{},
 		"Asset/Data/MapData/Map1.csv", 14, 4 
 	},
@@ -94,8 +104,8 @@ static const StageData g_stageTable[] =
 		0, Math::Vector2::Zero, Math::Vector2::Zero,	// 高く積めるエリアなし
 		Math::Vector3(55.0f, 40.0f, 45.0f),				// cageScale
 		{
-		// 奈落は X=36〜148。リフトの横幅が24なら、始点=36+12、終点=148-12
-		{ Math::Vector3(48, 0, 0), Math::Vector3(136, 0, 0), 5.0f }
+		// 変更後：始点をゴール側(136)、終点をプレイヤー側(48)にする
+		{ Math::Vector3(136, 0, 0), Math::Vector3(48, 0, 0), 5.0f }
 		},
 		{},
 		{
@@ -123,11 +133,11 @@ static const StageData g_stageTable[] =
 		Math::Vector3(0, 0, 0), Math::Vector3(0, -2.5f, -128), 0.0f, 180.0f,
 		true,
 		{ Math::Vector3(-135, 0, -127),		// A
-		  Math::Vector3(304, 0, -128),		// B
+		  Math::Vector3(128, 0, -128),		// B
 		  Math::Vector3(48, 0, -256) },		// C
 		Math::Vector3(24, 0, -128),			// cageBasePos(東)
 		{ Math::Vector3(-288, 28, -128),	// A：棚の上
-		  Math::Vector3(128, 4, -128),		// B：入口の足場
+		  Math::Vector3(304, 4, -128),		// B
 		  Math::Vector3(0, 52, -328) },		// C：塔の上
 		"Asset/Data/MapData/Map5.csv", 39, 45,
 		2,
@@ -135,24 +145,40 @@ static const StageData g_stageTable[] =
 		5, Math::Vector2(-84, -348), Math::Vector2(84, -228),
 		Math::Vector3(41.0f, 57.0f, 45.0f),
 		{
-			{ Math::Vector3(168, 0, -160), Math::Vector3(168, 0, -176), 3.5f },
-			{ Math::Vector3(168, 0, -96),  Math::Vector3(168, 0, -80),  3.5f },
-			{ Math::Vector3(196, 0, -128), Math::Vector3(220, 0, -128), 5.5f },
-			{ Math::Vector3(248, 0, -176), Math::Vector3(248, 0, -144), 7.5f },
-			{ Math::Vector3(248, 0, -80),  Math::Vector3(248, 0, -112), 7.0f },
+			{ Math::Vector3(168, 0, -176), Math::Vector3(168, 0, -144), 3.5f },
+			{ Math::Vector3(168, 0, -80),  Math::Vector3(168, 0, -112), 3.5f },
+			{ Math::Vector3(220, 0, -128), Math::Vector3(196, 0, -128), 3.5f },
+			{ Math::Vector3(248, 0, -144), Math::Vector3(248, 0, -176), 3.5f },
+			{ Math::Vector3(248, 0, -112), Math::Vector3(248, 0, -80),  3.5f },
 		},
+
 		{
 			{ Math::Vector3(-24, 0, -128), 90.0f },	// 西
 			{ Math::Vector3(0, 0, -152),   0.0f },	// 北
 			{ Math::Vector3(0, 0, -104),   0.0f },	// 南
 		},
+
 		{
 			// リフト部屋の奈落の上。高さも全部、魔法ブロックを置けない(リフトを使わせる)
 			// 穴のマス中心はx=152〜264なので、その外側のマス(144と272)を含まない範囲にする
 			{ Math::Vector3(148, -1000, -196), Math::Vector3(268, 1000, -60) }
-		}
+		},
+		
+		{
+			// ---- 奈落のある部屋ごとの中間地点(落ちたら、その部屋の入口に戻る) ----
+			// 箱の範囲は仮。部屋の端でPキーを押して、座標を見て広げる
+			{
+				// A部屋(西)：入口の足元の座標は、Pキーで見た値(Y=10)から頭の高さ10を引いた0
+				Math::Vector3(-330, -1000, -196), Math::Vector3(-100, 1000, -60),	// 箱(最小・最大)
+				Math::Vector3(-110, 0, -128), -90.0f								// 戻る位置、向き
+			},
+			{
+				// リフト部屋(東)：箱の最小Xは、戻る位置(105)より少し手前の100にする
+				Math::Vector3(100, -1000, -196), Math::Vector3(330, 1000, -56),
+				Math::Vector3(105, 0, -128), 90.0f
+			}
+		},
 	},
-
 
 };
 

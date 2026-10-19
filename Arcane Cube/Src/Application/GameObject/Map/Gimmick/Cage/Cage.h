@@ -27,4 +27,5 @@ private:
 	float m_maxHeight		= 0.0f;
 	float m_currentHeight	= 0.0f;
 	float m_speed			= 0.2f;	// 1フレームあたりの移動量(Playerのm_moveSpeed等に合わせた感覚の値)
+	bool  m_wasActive		= false;// 前のフレームでスイッチが全部オンだったか(開閉の始まりを見つけるため)
 };

@@ -36,6 +36,8 @@ void Goal::Update()
 	const float distXZ = sqrtf(diff.x * diff.x + diff.z * diff.z);
 	const bool sameLevel = fabsf(diff.y) <= kMaxHeightDiff;
 
+	const bool wasNear = m_isNear;	// 判定を変える前の状態を覚えておく
+
 	if (m_isNear)
 	{
 		if (distXZ > kExitRadius || !sameLevel) m_isNear = false;
@@ -43,6 +45,17 @@ void Goal::Update()
 	else
 	{
 		if (distXZ < kEnterRadius && sameLevel) m_isNear = true;
+	}
+
+	// 近づいた瞬間だけ鳴らす(前は遠くて、今回近くなった時)
+	if (m_isNear && !wasNear)
+	{
+		auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Gimmick/Goal.wav", false);
+		if (se)
+		{
+			se->SetVolume(0.15f);	// 高くすると聞こえやすくなるので調整
+			se->SetPitch(1.0f);		// 近づいた時は高め。
+		}
 	}
 
 	// ----- 出現の進み具合を、近いかどうかに向けて少しずつ動かす -----
@@ -81,11 +94,4 @@ void Goal::DrawUnLit()
 	if (!m_spModel) return;
 
 	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
-}
-
-void Goal::DrawBright()
-{
-	if (!m_spModel) return;
-
-	//KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
 }

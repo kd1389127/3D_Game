@@ -33,4 +33,5 @@ private:
 	bool  m_isReverse = false;						// trueなら戻っている途中
 	Math::Vector3 m_curPos = Math::Vector3::Zero;	// 今のリフトの上面の位置(モデルの原点ではない)
 	float m_topOffset = 0.0f;						// モデルの原点から上面までの高さ
+	float m_endPause = 0.0f;						// 端で止まる分の進捗度(秒から変換した値)
 };

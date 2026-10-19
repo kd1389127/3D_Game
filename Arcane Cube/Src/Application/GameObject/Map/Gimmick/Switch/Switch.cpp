@@ -34,6 +34,7 @@ void Switch::Init(const Math::Vector3& pos)
 
 void Switch::Update()
 {
+	const bool wasActive = m_isActive;	// 前のフレームの状態を覚えておく(次の行でfalseに戻す前に)
 	m_isActive = false;
 
 	constexpr float blockHalf = BlockGridManager::GridSize * 0.5f;
@@ -69,6 +70,17 @@ void Switch::Update()
 				block->SetRideOffset(kRideHeight);
 			}
 			break;
+		}
+	}
+
+	// 踏み板に乗った瞬間だけ鳴らす(前はオフで、今回オンになった時)
+	if (m_isActive && !wasActive)
+	{
+		auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Gimmick/Switch.wav", false);
+		if (se) 
+		{ 
+			se->SetVolume(0.2f); 
+			se->SetPitch(-0.5f);
 		}
 	}
 

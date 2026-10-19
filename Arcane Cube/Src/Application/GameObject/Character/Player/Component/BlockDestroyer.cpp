@@ -68,6 +68,10 @@ bool BlockDestroyer::TryDeleteTarget()
 {
 	auto target = m_wpTarget.lock();
 	if (!target) return false;
+	
+	// 削除音：対象がある時だけ鳴らす(削除に失敗した時は、ここまで来ない)
+	auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Block/Recovery.wav", false);
+	if (se) { se->SetVolume(0.1f); }
 
 	// 削除の演出(ブロックの中心に出す。ディゾルブと同時に再生される)
 	KdEffekseerManager::GetInstance().Play("Delete.efkefc", target->GetPos(), 3.0f);

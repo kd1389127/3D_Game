@@ -169,6 +169,9 @@
     <Filter Include="Src\Application\GameObject\Map\Gimmick\Lift">
       <UniqueIdentifier>{5982ac7b-b9b3-42c5-a70b-f56d56f2731d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Scene\ResultScene\ResultTexture">
+      <UniqueIdentifier>{21df6af1-6127-463c-b531-cba6d46d36fb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -435,6 +438,9 @@
     <ClInclude Include="Src\Application\GameObject\Map\Gimmick\Lift\Lift.h">
       <Filter>Src\Application\GameObject\Map\Gimmick\Lift</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Scene\ResultScene\ResultTexture\ResultTexture.h">
+      <Filter>Src\Application\Scene\ResultScene\ResultTexture</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -658,6 +664,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\Map\Gimmick\Lift\Lift.cpp">
       <Filter>Src\Application\GameObject\Map\Gimmick\Lift</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Scene\ResultScene\ResultTexture\ResultTexture.cpp">
+      <Filter>Src\Application\Scene\ResultScene\ResultTexture</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

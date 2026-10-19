@@ -52,6 +52,8 @@ public:
 	void MarkAttemptFailed()
 	{
 		m_attemptFailedId++;
+		auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Magic/Fail.wav", false);
+		if (se) { se->SetVolume(0.2f); }
 	}
 
 	// UI側が「前回チェックした時から失敗が起きたか」を判定するためのID
