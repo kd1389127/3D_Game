@@ -30,14 +30,24 @@ public :
 	void AddObject(const std::shared_ptr<KdGameObject>& _obj);
 
 	int GetCurrentStage() const { return m_currentStage; }
-	void SetCurrentStage(int stage) { m_currentStage = stage; }
+	void SetCurrentStage(int stage)
+	{
+		m_currentStage = stage;
+		// 到達した一番先のステージを覚えておく(メニューのステージ選択で、ここまでを選べる)
+		m_unlockedStage = std::max(m_unlockedStage, stage);
+	}
+	int GetUnlockedStage() const { return m_unlockedStage; }
+
+	// 全ステージを解放する(デバッグ用)。_stageCount=ステージの総数
+	void UnlockAllStages(int _stageCount) { m_unlockedStage = _stageCount - 1; }
 
 	void ReloadScene() { m_forceReload = true; } // 同じ種類のシーンでも強制的に作り直す
 
 	// フェード付きでシーンを切り替える(暗転してから切り替わり、明るくなる)
 	// _nextStageを0以上にすると、切り替える瞬間にステージ番号も変更する
 	// フェード中に呼ばれた要求は無視する(ゴールが毎フレーム呼んでも1回だけ処理される)
-	void RequestChangeScene(SceneType _nextScene, int _nextStage = -1);
+	// (最後に、白いフェードにするかを追加。省略したら今まで通り黒)
+	void RequestChangeScene(SceneType _nextScene, int _nextStage = -1, bool _whiteFade = false);
 
 	bool IsFading() const { return m_fadeState != FadeState::None; }
 
@@ -69,6 +79,7 @@ private :
 	SceneType m_nextSceneType = m_currentSceneType;
 
 	int m_currentStage = 0;
+	int m_unlockedStage = 0;	// 解放済みのステージ(この番号以下を選べる。0=ステージ1だけ)
 
 	bool m_forceReload = false;
 
@@ -92,7 +103,8 @@ private :
 
 	// フェード完了時に切り替える予定のシーンとステージ
 	SceneType m_pendingScene = SceneType::Title;
-	int m_pendingStage = -1;
+	int  m_pendingStage = -1;
+	bool m_whiteFade = false;		// 今回のフェードを白にするか
 
 	bool m_fadeOnly = false;		// 今回のフェードはシーン切り替えなし
 	bool m_blackoutEvent = false;	// 真っ暗になった瞬間に立つフラグ

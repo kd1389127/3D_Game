@@ -2,6 +2,8 @@
 
 #include"../BaseScene/BaseScene.h"
 
+class PauseMenu;
+
 class GameScene : public BaseScene
 {
 public :
@@ -13,4 +15,7 @@ private:
 
 	void Event() override;
 	void Init()  override;
+	bool IsPaused() const override;
+
+	std::shared_ptr<PauseMenu> m_pauseMenu;
 };

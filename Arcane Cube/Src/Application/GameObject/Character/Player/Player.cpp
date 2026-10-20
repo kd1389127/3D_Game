@@ -105,7 +105,7 @@ void Player::Update()
 		if (!m_spWalkSe || !m_spWalkSe->IsPlaying())
 		{
 			m_spWalkSe = KdAudioManager::Instance().Play("Asset/Sounds/SE/Player/Walk.wav", true);
-			if (m_spWalkSe) { m_spWalkSe->SetVolume(0.25f); }
+			if (m_spWalkSe) { m_spWalkSe->SetVolume(0.15f); }
 		}
 	}
 	else if (m_spWalkSe)
@@ -523,7 +523,7 @@ void Player::CheckGoal()
 		{
 			m_goalSePlayed = true;
 			auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Gimmick/Goal.wav", false);
-			if (se) { se->SetVolume(0.8f); }
+			if (se) { se->SetVolume(0.6f); }
 		}
 
 		int nextStage = SceneManager::Instance().GetCurrentStage() + 1;

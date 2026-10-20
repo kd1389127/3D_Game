@@ -172,6 +172,12 @@
     <Filter Include="Src\Application\Scene\ResultScene\ResultTexture">
       <UniqueIdentifier>{21df6af1-6127-463c-b531-cba6d46d36fb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\GameObject\UI\PauseMenu">
+      <UniqueIdentifier>{34e9c735-5714-49d9-9ab5-ae4a53aa0dff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\GameObject\Map\ExitLight">
+      <UniqueIdentifier>{b869eb75-6d20-4aa1-9293-f91933dd90d1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -441,6 +447,12 @@
     <ClInclude Include="Src\Application\Scene\ResultScene\ResultTexture\ResultTexture.h">
       <Filter>Src\Application\Scene\ResultScene\ResultTexture</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\UI\PauseMenu\PauseMenu.h">
+      <Filter>Src\Application\GameObject\UI\PauseMenu</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Map\ExitLight\ExitLight.h">
+      <Filter>Src\Application\GameObject\Map\ExitLight</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -667,6 +679,12 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Scene\ResultScene\ResultTexture\ResultTexture.cpp">
       <Filter>Src\Application\Scene\ResultScene\ResultTexture</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\UI\PauseMenu\PauseMenu.cpp">
+      <Filter>Src\Application\GameObject\UI\PauseMenu</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Map\ExitLight\ExitLight.cpp">
+      <Filter>Src\Application\GameObject\Map\ExitLight</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

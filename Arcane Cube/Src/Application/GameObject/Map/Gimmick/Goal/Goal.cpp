@@ -1,6 +1,6 @@
 ﻿#include "Goal.h"
 
-void Goal::Init(const Math::Vector3& pos)
+void Goal::Init(const Math::Vector3& pos, bool _showMagic)
 {
 	if (!m_spModel)
 	{

@@ -34,6 +34,15 @@ protected :
 	virtual void Event();
 	virtual void Init();
 
+	// ポーズ中かどうか。ポーズを使うシーンだけオーバーライドする
+	virtual bool IsPaused() const { return false; }
+	// ポーズ中かどうか。1フレームの最初(PreUpdate)で1回だけ決めて、
+	// Update・PostUpdateでも同じ値を使う(途中で変わると、カメラだけ1フレーム遅れてずれるため)
+	bool m_paused = false;
+
+	// ポーズ中でも更新を止めないオブジェクト(ポーズメニュー本体)
+	std::shared_ptr<KdGameObject> m_pauseObj;
+
 	// 全オブジェクトのアドレスをリストで管理
 	std::list<std::shared_ptr<KdGameObject>> m_objList;
 };

@@ -86,13 +86,14 @@ void SceneManager::ChangeScene(SceneType _sceneType)
 	m_currentSceneType = _sceneType;
 }
 
-void SceneManager::RequestChangeScene(SceneType _nextScene, int _nextStage)
+void SceneManager::RequestChangeScene(SceneType _nextScene, int _nextStage, bool _whiteFade)
 {
 	// すでにフェード中なら何もしない(二重呼び出し防止)
 	if (m_fadeState != FadeState::None) return;
 
 	m_pendingScene = _nextScene;
 	m_pendingStage = _nextStage;
+	m_whiteFade = _whiteFade;
 	m_fadeState = FadeState::Out;
 }
 
@@ -136,7 +137,7 @@ void SceneManager::UpdateFade()
 				// 真っ暗になった瞬間にシーンを切り替える(切り替わりが見えない)
 				if (m_pendingStage >= 0)
 				{
-					m_currentStage = m_pendingStage;
+					SetCurrentStage(m_pendingStage);
 				}
 				m_nextSceneType = m_pendingScene;
 				ChangeScene(m_pendingScene);
@@ -160,6 +161,7 @@ void SceneManager::UpdateFade()
 		{
 			m_fadeAlpha = 0.0f;
 			m_fadeState = FadeState::None;
+			m_whiteFade = false;	// 終わったら、次回のために黒に戻す
 		}
 		break;
 	}
@@ -173,8 +175,9 @@ void SceneManager::DrawFade()
 	sp.Begin();
 	sp.SetMatrix(Math::Matrix::Identity);
 
-	// 画面全体を覆う黒い四角(画面より十分大きくしておく)
-	Math::Color color = { 0.0f, 0.0f, 0.0f, m_fadeAlpha };
+	// 画面全体を覆う白いフェードの時は白、普段は黒
+	const float c = m_whiteFade ? 1.0f : 0.0f;
+	Math::Color color = { c, c, c, m_fadeAlpha };
 	sp.DrawBox(0, 0, 800, 450, &color, true);
 
 	sp.End();

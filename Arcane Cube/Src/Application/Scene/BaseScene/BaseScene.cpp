@@ -3,38 +3,42 @@
 void BaseScene::PreUpdate()
 {
 	// Updateの前の更新処理
-	// オブジェクトリストの整理 ・・・ 無効なオブジェクトを削除
+	// オブジェクトリストの整理 ・・・ 無効なオブジェクトを削除(ポーズ中も動かす)
 	auto it = m_objList.begin();
 
 	while (it != m_objList.end())
 	{
 		if ((*it)->IsExpired())	// IsExpired() ・・・ 無効ならtrue
 		{
-			// 無効なオブジェクトをリストから削除
 			it = m_objList.erase(it);
 		}
 		else
 		{
-			++it;	// 次の要素へイテレータを進める
+			++it;
 		}
 	}
 
-	// ↑の後には有効なオブジェクトだけのリストになっている
+	// このフレームがポーズかどうかを、ここで1回だけ決める
+	m_paused = IsPaused();
 
 	for (auto& obj : m_objList)
 	{
+		// ポーズ中は、ポーズメニュー以外の更新を飛ばす
+		if (m_paused && obj != m_pauseObj) { continue; }
+
 		obj->PreUpdate();
 	}
 }
 
 void BaseScene::Update()
 {
-	// シーン毎のイベント処理
+	// シーン毎のイベント処理(ポーズ中も動かす)
 	Event();
 
-	// KdGameObjectを継承した全てのオブジェクトの更新 (ポリモーフィズム)
 	for (auto& obj : m_objList)
 	{
+		if (m_paused && obj != m_pauseObj) { continue; }
+
 		obj->Update();
 	}
 }
@@ -43,6 +47,8 @@ void BaseScene::PostUpdate()
 {
 	for (auto& obj : m_objList)
 	{
+		if (m_paused && obj != m_pauseObj) { continue; }
+
 		obj->PostUpdate();
 	}
 }

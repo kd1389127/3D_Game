@@ -180,6 +180,23 @@ static const StageData g_stageTable[] =
 		},
 	},
 
+		// GoalMap：階段を上ると画面が白くなって、リザルトへ(ゴールは置かない。常に最後のステージにする)
+	{
+		Math::Vector3(16, 0, 0), Math::Vector3::Zero, 0.0f, -90.0f,
+		false, {}, Math::Vector3::Zero, {},
+		"Asset/Data/MapData/GoalMap.csv", 8, 2,
+		0,												// buildLimitLayers(下で全部禁止するので使わない)
+		32.0f,											// cageHeight(檻がないので使わない)
+		0, Math::Vector2::Zero, Math::Vector2::Zero,	// 高く積めるエリアなし
+		Math::Vector3(55.0f, 45.0f, 45.0f),				// cageScale(使わない)
+		{},												// lifts
+		{},												// extraCages
+		{
+			// 全体を、魔法ブロック禁止にする(階段を飛ばしたり、壁を越えたりさせない)
+			{ Math::Vector3(-1000, -1000, -1000), Math::Vector3(1000, 1000, 1000) }
+		}
+	},
+
 };
 
 static const int g_stageCount = sizeof(g_stageTable) / sizeof(g_stageTable[0]);

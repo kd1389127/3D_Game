@@ -12,6 +12,7 @@
 #include "../../GameObject/UI/Reticle/Reticle.h"
 #include "../../GameObject/UI/MagicGaugeUI/MagicGaugeUI.h"
 #include "../../GameObject/UI/Mouse/Mouse.h"
+#include "../../GameObject/UI/PauseMenu/PauseMenu.h"
 #include "../../GameObject/Block/GimmickBlock/GimmickBlock.h"
 #include "../../GameObject/Map/Gimmick/Goal/Goal.h"
 #include "../../GameObject/Map/Gimmick/Cage/Cage.h"
@@ -19,13 +20,13 @@
 #include "../../GameObject/Map/Gimmick/Lift/Lift.h"
 #include "../../GameObject/Map/MapBackGround/MapBackGround.h"
 #include "../../GameObject/Map/MapLoader.h"
+#include "../../GameObject/Map/ExitLight/ExitLight.h"
 
 void GameScene::Event()
 {
-	if (GetAsyncKeyState('T') & 0x8000)
-	{
-		SceneManager::Instance().RequestChangeScene(SceneManager::SceneType::Title, 0);
-	}
+	// ======================================================================================
+	// デバックキー
+	// ======================================================================================
 	if (GetAsyncKeyState('R') & 0x8000)
 	{
 		SceneManager::Instance().RequestChangeScene(SceneManager::SceneType::Result, 0);
@@ -48,44 +49,23 @@ void GameScene::Event()
 	prevUp = nowUp;
 	prevDown = nowDown;
 
-	// ステージを切り替え
-	static bool prev1 = false, prev2 = false, prev3 = false, prev4 = false, prev5 = false; 
-	bool now1 = (GetAsyncKeyState('1') & 0x8000) != 0;
-	bool now2 = (GetAsyncKeyState('2') & 0x8000) != 0;
-	bool now3 = (GetAsyncKeyState('3') & 0x8000) != 0;
-	bool now4 = (GetAsyncKeyState('4') & 0x8000) != 0;
-	bool now5 = (GetAsyncKeyState('5') & 0x8000) != 0;
+	// 0キーで全ステージを解放する(ステージ選択を見せる用。今のステージからは動かない)
+	static bool prev0 = false;
+	const bool now0 = (GetAsyncKeyState('0') & 0x8000) != 0;
+	if (now0 && !prev0)
+	{
+		SceneManager::Instance().UnlockAllStages(static_cast<int>(std::size(g_stageTable)));
+	}
+	prev0 = now0;
 
-	if (now1 && !prev1)
+	static bool prev6 = false;
+	bool now6 = (GetAsyncKeyState('6') & 0x8000) != 0;
+	if (now6 && !prev6)
 	{
-		SceneManager::Instance().SetCurrentStage(0);
+		SceneManager::Instance().SetCurrentStage(g_stageCount - 1);
 		SceneManager::Instance().ReloadScene();
 	}
-	if (now2 && !prev2)
-	{
-		SceneManager::Instance().SetCurrentStage(1);
-		SceneManager::Instance().ReloadScene();
-	}
-	if (now3 && !prev3)
-	{
-		SceneManager::Instance().SetCurrentStage(2);
-		SceneManager::Instance().ReloadScene();
-	}
-	if (now4 && !prev4)
-	{
-		SceneManager::Instance().SetCurrentStage(3);
-		SceneManager::Instance().ReloadScene();
-	}
-	if (now5 && !prev5)
-	{
-		SceneManager::Instance().SetCurrentStage(4);
-		SceneManager::Instance().ReloadScene();
-	}
-	prev1 = now1;
-	prev2 = now2;
-	prev3 = now3;
-	prev4 = now4;
-	prev5 = now5;
+	prev6 = now6;
 }
 
 void GameScene::Init()
@@ -188,12 +168,25 @@ void GameScene::Init()
 	fpscamera->Init();
 	m_objList.push_back(fpscamera);
 
+	// 最後のステージは、魔法陣ではなく「外の光」の出口にする
+	const bool isExitStage = (stage == g_stageCount - 1);
+
 	// ゴール
 	std::shared_ptr<Goal> goal;
 	goal = std::make_shared<Goal>();
-	goal->Init(data.goalPos);
+	goal->Init(data.goalPos, !isExitStage);
 	goal->SetTarget(player);
 	m_objList.push_back(goal);
+
+	// 外の光：ゴールの少し先(突き当たりの壁の手前)に立てる。ゴールを動かしたら一緒に動く
+	if (isExitStage)
+	{
+		std::shared_ptr<ExitLight> exitLight;
+		exitLight = std::make_shared<ExitLight>();
+		exitLight->Init(data.goalPos + Math::Vector3(-15.5f, 14.5f, 0.0f));
+		m_objList.push_back(exitLight);
+	}
+
 
 	// リフト(このステージに設定があれば生成する。なければ何もしない)
 	for (const LiftData& liftData : data.lifts)
@@ -250,5 +243,15 @@ void GameScene::Init()
 	mapbackground->SetTarget(player);
 	fpscamera->SetMagicwand(magicwand);
 	KdEffekseerManager::GetInstance().SetCamera(fpscamera->WorkCamera());
+	
+	// Tabメニュー：一番手前に描くため、リストの最後に追加する
+	m_pauseMenu = std::make_shared<PauseMenu>();
+	m_pauseMenu->Init();
+	m_objList.push_back(m_pauseMenu);
+	m_pauseObj = m_pauseMenu;	// ポーズ中でも、これだけは更新を止めない
+}
 
+bool GameScene::IsPaused() const
+{
+	return m_pauseMenu && m_pauseMenu->IsOpen();
 }

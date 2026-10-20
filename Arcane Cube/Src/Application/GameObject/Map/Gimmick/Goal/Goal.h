@@ -8,7 +8,7 @@ public:
 	Goal()						 {}
 	~Goal()				override {}
 
-	void Init(const Math::Vector3& pos);
+	void Init(const Math::Vector3& pos, bool _showMagic = true);
 	void Update()		override;
 	void DrawUnLit()	override;
 
