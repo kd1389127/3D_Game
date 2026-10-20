@@ -105,6 +105,22 @@ bool MapLoader::Load(const std::string& csvPath, float groundHeight, int originC
 				// 全セルを登録する(見えない埋まりセルも。魔法ブロックの重複防止に必要)
 				BlockGridManager::Instance().Register(cellCenter, BlockGridManager::BlockKind::Map);
 
+				// 階段の通り道には、魔法ブロックを置かせない
+				if (shape == MapBlock::Shape::Stair)
+				{
+					// 階段が上る方向の軸(XかZか)だけ分かればいい
+					const bool alongX = (dir == MapBlock::StairDir::PosX || dir == MapBlock::StairDir::NegX);
+
+					// 上る方向の前後に1マスずつ広げる(入口側と出口側)
+					const float extX = alongX ? G : 0.0f;
+					const float extZ = alongX ? 0.0f : G;
+					constexpr float eps = 0.1f;		// 小数の誤差で端のマスが外れないように
+
+					BlockGridManager::Instance().AddForbiddenZone(
+						Math::Vector3(cellCenter.x - extX - eps, cellCenter.y - eps, cellCenter.z - extZ - eps),
+						Math::Vector3(cellCenter.x + extX + eps, cellCenter.y + G * 2 + eps, cellCenter.z + extZ + eps));
+				}
+
 				// 6方向をフルブロックで囲まれていたら生成しない(描画・当たり判定の節約)
 				if (shape == MapBlock::Shape::Full && IsBuried(x, y, z)) { ++skipped; continue; }
 
