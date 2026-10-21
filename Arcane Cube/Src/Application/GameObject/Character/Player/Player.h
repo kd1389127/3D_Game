@@ -46,6 +46,11 @@ private:
 	// 当たり判定
 	void ResolveWallCollsion();
 	void CheckGoal();
+	// 隙間に入れる対策
+	Math::Vector3 m_prevPos = Math::Vector3::Zero;
+	bool m_prevHadHeadRoom = true;						// 前フレームは頭上が空いていたか
+	static constexpr float kHeadRoomRayStart = 4.5f;	// ResolveWallCollsionのfootCut(4)より少し上から出す(階段の斜面に当たらないように)
+	static constexpr float kHeadRoomRayOffset = 2.5f;	// 体の半径(3)より少し内側(壁際で誤反応しないように)
 
 	// 持っているブロックの中に入り込んでいたら押し出す
 	void ResolvePushOutFromCarriedBlock();

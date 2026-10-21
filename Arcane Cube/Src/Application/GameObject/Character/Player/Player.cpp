@@ -41,6 +41,8 @@ void Player::Init(const Math::Vector3& startPos, float groundHeight, float start
 // 毎フレームの更新：入力受付・移動・重力・ゴール判定などをまとめて行う
 void Player::Update()
 {
+	m_prevPos = m_pos;	// 動く前の位置を覚えておく
+
 	// 今フレームの進行方向を毎回リセットしてから、押されているキーに応じて組み立てる
 	m_moveDir = Math::Vector3::Zero;
 
@@ -222,6 +224,48 @@ void Player::PostUpdate()
 
 	// 壁にめり込んでいたら押し出す(貫通防止)
 	ResolveWallCollsion();
+
+	// ----- 頭上の空きチェック -----
+	// 体の中心と四隅の計5本のレイで、頭上の空きを調べる
+	// 足〜頭の高さ(10)が確保できない所(ブロック1マス=8の隙間)には入れない
+	const KdGameObject* pCarriedBlock = m_upBlockGrabber ? m_upBlockGrabber->GetCarriedBlock() : nullptr;
+
+	std::vector<KdGameObject*> headObjs;
+	CollisionFilter::CollectAround(m_pos, 20.0f, headObjs, this);
+
+	const float ofs = kHeadRoomRayOffset;
+	const float offsets[5][2] = { {0.0f, 0.0f}, {ofs, ofs}, {ofs, -ofs}, {-ofs, ofs}, {-ofs, -ofs} };
+
+	bool noHeadRoom = false;
+	for (const auto& o : offsets)
+	{
+		KdCollider::RayInfo headRay;
+		headRay.m_pos = Math::Vector3(m_pos.x + o[0],
+			m_pos.y - m_adjustHeight + kHeadRoomRayStart,
+			m_pos.z + o[1]);
+		headRay.m_dir = Math::Vector3::Up;
+		headRay.m_range = m_adjustHeight - kHeadRoomRayStart;	// 頭の高さまで
+		headRay.m_type = KdCollider::TypeGround | KdCollider::TypeBump;
+
+		for (KdGameObject* obj : headObjs)
+		{
+			if (obj == pCarriedBlock) continue;
+			if (obj->Intersects(headRay, nullptr)) { noHeadRoom = true; break; }
+		}
+		if (noHeadRoom) break;
+	}
+
+	// 前フレームは空いていたのに今フレーム塞がった = 狭い所に入ろうとした → 横移動を取り消す
+	// 前から塞がっていた場合は戻さない(戻すと動けなくなるため)
+	if (noHeadRoom && m_prevHadHeadRoom)
+	{
+		m_pos.x = m_prevPos.x;
+		m_pos.z = m_prevPos.z;
+	}
+	else
+	{
+		m_prevHadHeadRoom = !noHeadRoom;
+	}
 
 	// ----- 地面判定(足元にレイを飛ばして高さを合わせる) -----
 	KdCollider::RayInfo ray;

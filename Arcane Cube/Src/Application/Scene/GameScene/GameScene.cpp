@@ -3,7 +3,6 @@
 #include "../StageData.h"
 #include "../../GameObject/Block/BlockGridManager.h"
 #include "../../GameObject/Magic/MagicManager.h"
-#include "../../GameObject/Particle/ParticleManager.h"
 
 #include "../../GameObject/Camera/FPSCamera/FPSCamera.h"
 #include "../../GameObject/Map/Ground/Ground.h"
@@ -86,9 +85,6 @@ void GameScene::Init()
 
 	// パーティクル関連
 	KdEffekseerManager::GetInstance().Reset();
-
-	ParticleManager::Instance().Clear();
-	m_objList.push_back(std::make_shared<ParticleDrawer>());
 
 	// ステージ開始時は魔力を満タンにリセット
 	MagicManager::Instance().Reset();

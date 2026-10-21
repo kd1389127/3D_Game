@@ -55,9 +55,9 @@ public:
 	}
 
 	// ===================================================
-	// baseCellを起点に、stepDir方向へrequestCount段分の設置予定座標を計算する
-	// groundObjを受け取り、ブロック同士の重なりだけでなく
-	// 壁・天井などのCOLとの衝突もチェックするようにした
+	// baseCellを起点に、stepDir方向へrequestCount段分の「置ける座標」を返す
+	// 重複・壁や天井のCOL・(checkPlayer=trueなら)プレイヤーの体のどれかに
+	// 引っかかった段で打ち切る
 	// ===================================================
 	std::vector<Math::Vector3> TryStack(const Math::Vector3& baseCell, const Math::Vector3& stepDir,
 		int requestCount, KdGameObject& groundObj, bool checkPlayer = false) const
@@ -88,15 +88,16 @@ public:
 		m_occupied[ToKey(snappedPos)] = kind;
 	}
 
-	// 指定したグリッドセル(スナップ済み座標)に、壁COLと重ならずにブロックを置けるかチェック
-	// ※groundObjのIntersects()を使うことで、Groundの実際のワールド行列(スケール込み)が自動的に反映される
+	// 指定したマス(スナップ済み座標)に、ブロックを置けるかチェックする
+	// 軽い判定から順に行い、最後に壁・天井などのCOLとの重なりを調べる
+	// ※groundObjのIntersects()は、Groundの実際のワールド行列(スケール込み)を自動で反映してくれる
 	bool CanPlaceBlockAt(const Math::Vector3& snappedPos, KdGameObject& groundObj) const
 	{
 		// 一番軽い判定を先に。ここで落とせば、下の当たり判定まで進まなくて済む
 		if (!IsInsideBuildBounds(snappedPos)) return false;	// Map外には置けない
 		if (IsInForbiddenZone(snappedPos)) return false;	// 禁止エリアには置けない
 
-		if (IsOverlappingFreeBlock(snappedPos)) return false;
+		if (IsOverlappingFreeBlock(snappedPos)) return false;	// ギミックブロックと重なる所には置けない
 
 		// 高く積めるエリアの中なら、そのエリア用の層数を使う
 		int limitLayers = m_buildLimitLayers;
@@ -129,13 +130,12 @@ public:
 	}
 
 	// 弾の着弾情報から、実際に置けるセルを候補の中から探す
-	// baseCell自身がダメなら、法線方向前後にずらした候補も試す
+	// 候補の順番：着弾点の手前(baseCell) → 法線の外側 → 法線の内側
+	// どれもダメならbaseCellを返す
 	Math::Vector3 ResolvePlaceableCell(const Math::Vector3& hitPos, const Math::Vector3& axisNormal, KdGameObject& groundObj)
 	{
 		Math::Vector3 baseCell = SnapToGrid(hitPos + axisNormal * (GridSize * 0.5f + 0.01f));
-		/*KdDebugGUI::Instance().AddLog("[Grid] baseCell(%.1f,%.1f,%.1f) occupied=%d canPlace=%d\n",
-			baseCell.x, baseCell.y, baseCell.z, baseOccupied, baseCanPlace);*/
-
+	
 		if (!IsOccupied(baseCell) && CanPlaceBlockAt(baseCell, groundObj))
 		{
 			return baseCell;
@@ -168,10 +168,12 @@ public:
 		m_freeBlocks.push_back(block);
 	}
 
-	// 指定したマスに、自由に動くブロックが重なっているか、ignoreを渡すと自分自身は数えない(魔法ブロックの生成を防ぐために使う)
+	// 指定した座標に、自由に動くブロック(ギミックブロック)が重なっているか
+	// ignoreを渡すと、そのブロック自身は数えない
+	// (魔法ブロックをギミックブロックの上に生成させないために使う)
 	bool IsOverlappingFreeBlock(const Math::Vector3& pos,const KdGameObject* ignore = nullptr) const
 	{
-		constexpr float limit = GridSize - 0.5f;
+		constexpr float limit = GridSize - 0.5f;		// 1マス分より少し小さい値(触れているだけは重なりにしない)
 		for (auto& wp : m_freeBlocks)
 		{
 			auto sp = wp.lock();
@@ -183,7 +185,7 @@ public:
 		return false;
 	}
 
-	// ステージを読み込む際に前回置いたblockを無くす
+	// ステージを読み込む際に、前のステージの情報(ブロック・体・禁止エリア・置ける範囲)を全部消す
 	void Clear()
 	{
 		m_occupied.clear();
@@ -191,7 +193,6 @@ public:
 		m_hasPlayerBody = false;	// ステージ切替で前のプレイヤー位置を引きずらない
 		m_forbiddenZones.clear();	// ステージが変わったら、前のステージの禁止エリアを持ち越さない
 		m_hasBounds = false;
-
 	}
 
 	// 法線ベクトル(斜めを含む)を、一番近いXYZ軸方向(±1方向のどれか)に丸める
@@ -324,8 +325,10 @@ public:
 		return OverlapsPlayerBody(cellPos) && !IsPlayerAboveCell(cellPos);
 	}
 	
+	// 魔法ブロックを積める最大の層数(0=上限なし)。StageDataのbuildLimitLayersを渡す
 	void SetBuildLimitLayers(int layers) { m_buildLimitLayers = layers; }
 
+	// このXZの範囲(minXZ〜maxXZ、yにはZが入る)の中だけ、積める層数をlayersにする
 	void SetTallBuildZone(int layers, const Math::Vector2& minXZ, const Math::Vector2& maxXZ)
 	{
 		m_tallLimitLayers = layers;
@@ -350,12 +353,13 @@ public:
 			pos.z >= m_boundsMin.y - margin - eps && pos.z <= m_boundsMax.y + margin + eps;
 	}
 
-	// 「ここには置けない」箱を足す。StageDataの禁止エリアを、GameSceneから登録する
+	// 「ここには置けない」箱を足す。StageDataの禁止エリア(GameScene)と、階段のマス(MapLoader)から登録する
 	void AddForbiddenZone(const Math::Vector3& minPos, const Math::Vector3& maxPos)
 	{
 		m_forbiddenZones.push_back({ minPos, maxPos });
 	}
 
+	// 位置が、登録した禁止エリアのどれかの中か
 	bool IsInForbiddenZone(const Math::Vector3& pos) const
 	{
 		for (const auto& zone : m_forbiddenZones)
