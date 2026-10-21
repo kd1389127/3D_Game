@@ -168,23 +168,28 @@ void GameScene::Init()
 	fpscamera->Init();
 	m_objList.push_back(fpscamera);
 
-	// 最後のステージは、魔法陣ではなく「外の光」の出口にする
+	// 最後のステージ(GoalMap)は、ゴールを置かない(階段を上ると画面が白くなって、リザルトへ移る)
 	const bool isExitStage = (stage == g_stageCount - 1);
 
-	// ゴール
-	std::shared_ptr<Goal> goal;
-	goal = std::make_shared<Goal>();
-	goal->Init(data.goalPos, !isExitStage);
-	goal->SetTarget(player);
-	m_objList.push_back(goal);
-
-	// 外の光：ゴールの少し先(突き当たりの壁の手前)に立てる。ゴールを動かしたら一緒に動く
 	if (isExitStage)
 	{
+		// ゴールマップのライト(階段を上ると白くなり、リザルトへ移る)
 		std::shared_ptr<ExitLight> exitLight;
 		exitLight = std::make_shared<ExitLight>();
-		exitLight->Init(data.goalPos + Math::Vector3(-15.5f, 14.5f, 0.0f));
+
+		// originCol=8, originRow=2 の場合の位置(壁の手前面に0.3だけ出す)
+		exitLight->Init(Math::Vector3(-59.7f, data.groundHeight + 64.0f, 0.0f));
+		exitLight->SetTarget(player);		// 階段をどこまで上ったかを調べる相手
 		m_objList.push_back(exitLight);
+	}
+	else
+	{
+		// ゴール
+		std::shared_ptr<Goal> goal;
+		goal = std::make_shared<Goal>();
+		goal->Init(data.goalPos);
+		goal->SetTarget(player);
+		m_objList.push_back(goal);
 	}
 
 

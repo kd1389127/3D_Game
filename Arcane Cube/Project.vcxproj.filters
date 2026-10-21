@@ -178,6 +178,9 @@
     <Filter Include="Src\Application\GameObject\Map\ExitLight">
       <UniqueIdentifier>{b869eb75-6d20-4aa1-9293-f91933dd90d1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\GameObject\UI\Guide">
+      <UniqueIdentifier>{f34b8270-22c2-4c12-83fd-148d09a1ccc6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -453,6 +456,9 @@
     <ClInclude Include="Src\Application\GameObject\Map\ExitLight\ExitLight.h">
       <Filter>Src\Application\GameObject\Map\ExitLight</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\UI\Guide\Guide.h">
+      <Filter>Src\Application\GameObject\UI\Guide</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -685,6 +691,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\Map\ExitLight\ExitLight.cpp">
       <Filter>Src\Application\GameObject\Map\ExitLight</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\UI\Guide\Guide.cpp">
+      <Filter>Src\Application\GameObject\UI\Guide</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
