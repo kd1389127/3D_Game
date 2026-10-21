@@ -13,6 +13,7 @@
 #include "../../GameObject/UI/MagicGaugeUI/MagicGaugeUI.h"
 #include "../../GameObject/UI/Mouse/Mouse.h"
 #include "../../GameObject/UI/PauseMenu/PauseMenu.h"
+#include "../../GameObject/UI/Guide/Guide.h"
 #include "../../GameObject/Block/GimmickBlock/GimmickBlock.h"
 #include "../../GameObject/Map/Gimmick/Goal/Goal.h"
 #include "../../GameObject/Map/Gimmick/Cage/Cage.h"
@@ -154,7 +155,15 @@ void GameScene::Init()
 	reticle = std::make_shared<Reticle>();
 	reticle->Init();
 	reticle->SetTarget(player); 
+	reticle->SetShowHint(stage == 1);	// Map2だけ(stageは0始まり)
 	m_objList.push_back(reticle);
+
+	// 操作説明(バナーはMap1だけ、Tabアイコンは全ステージ)
+	std::shared_ptr<Guide> guide;
+	guide = std::make_shared<Guide>();
+	guide->Init(stage == 0);
+	guide->SetTarget(player);
+	m_objList.push_back(guide);
 
 	// 魔力ゲージ
 	std::shared_ptr<MagicGaugeUI> magicgaugeUI;

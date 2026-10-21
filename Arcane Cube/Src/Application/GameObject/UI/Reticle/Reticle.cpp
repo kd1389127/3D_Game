@@ -7,6 +7,8 @@ void Reticle::Init()
 	m_texNormal.Load("Asset/Textures/Reticle/Reticle_Blue.png");
 	m_texDelete.Load("Asset/Textures/Reticle/Reticle_Red.png");
 	m_texGrab.Load("Asset/Textures/Reticle/Reticle_Green.png");
+	m_texHintGrab.Load("Asset/Textures/UI/Guide/GrabHint.png");
+	m_texHintRelease.Load("Asset/Textures/UI/Guide/ReleaseHint.png");
 }
 
 void Reticle::Update()
@@ -56,11 +58,13 @@ void Reticle::DrawSprite()
 	bool isDeleteMode = false;
 	bool isGrabActive = false;
 	bool isGrabFar = false;
+	bool isCarrying = false;
 	if (auto player = m_wpPlayer.lock())
 	{
 		isDeleteMode = player->HasDeleteTarget();
 		isGrabActive = player->IsGrabActive();
-		isGrabFar    = player->IsGrabTargetFar();
+		isGrabFar = player->IsGrabTargetFar();
+		isCarrying = player->IsCarryingBlock();
 	}
 
 	KdTexture* tex = &m_texNormal;
@@ -77,14 +81,22 @@ void Reticle::DrawSprite()
 	float baseSize = 64.0f * m_shakeScale;
 	float centerAdj = -(baseSize - 64.0f) * 0.5f;	// 中心基準で拡縮させる補正
 
-	KdShaderManager::Instance().m_spriteShader.DrawTex(
+	auto& sp = KdShaderManager::Instance().m_spriteShader;
+	sp.DrawTex(
 		tex,
 		centerAdj + m_shakeOffset.x,
 		centerAdj + m_shakeOffset.y,
 		baseSize, baseSize,
 		nullptr, &color);
-}
 
+	// Eキーの案内：Map2で、Eが効く時(掴める距離で狙っている or 運んでいる)だけ、レティクルの下に出す
+	if (m_showHint && isGrabActive && !isDeleteMode)
+	{
+		const float w = isCarrying ? kHintReleaseW : kHintGrabW;
+		sp.DrawTex(isCarrying ? &m_texHintRelease : &m_texHintGrab,
+			0.0f, kHintY, w, kHintH, nullptr, &color);
+	}
+}
 void Reticle::StartShake()
 {
 	m_isShaking  = true;
