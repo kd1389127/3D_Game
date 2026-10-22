@@ -193,6 +193,13 @@ void GameScene::Init()
 		std::shared_ptr<Goal> goal;
 		goal = std::make_shared<Goal>();
 		goal->Init(data.goalPos);
+		// ゴールの周り(3×3マス)には魔法ブロックを置けない(ゴールを自分で塞ぐのを防ぐ)
+		constexpr float kGoalZoneHalf = BlockGridManager::GridSize * 1.5f;  // 隣のマスまで含める
+		constexpr float kGoalZoneHeight = BlockGridManager::GridSize * 3.0f;  // 頭の上の3マスまで
+		constexpr float kGoalZoneBottom = BlockGridManager::GridSize * 0.5f;  // ゴールの高さのマスも含める
+		BlockGridManager::Instance().AddForbiddenZone(
+			Math::Vector3(data.goalPos.x - kGoalZoneHalf, data.goalPos.y - kGoalZoneBottom, data.goalPos.z - kGoalZoneHalf),
+			Math::Vector3(data.goalPos.x + kGoalZoneHalf, data.goalPos.y + kGoalZoneHeight, data.goalPos.z + kGoalZoneHalf));
 		goal->SetTarget(player);
 		m_objList.push_back(goal);
 	}

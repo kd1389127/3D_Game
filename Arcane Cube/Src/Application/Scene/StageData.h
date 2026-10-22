@@ -134,7 +134,7 @@ static const StageData g_stageTable[] =
 		true,
 		{ Math::Vector3(-135, 0, -127),		// A
 		  Math::Vector3(128, 0, -128),		// B
-		  Math::Vector3(48, 0, -256) },		// C
+		  Math::Vector3(0, 0, -256) },		// C
 		Math::Vector3(24, 0, -128),			// cageBasePos(東)
 		{ Math::Vector3(-288, 28, -128),	// A：棚の上
 		  Math::Vector3(304, 4, -128),		// B

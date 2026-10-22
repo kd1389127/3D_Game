@@ -218,52 +218,81 @@ public:
 		constexpr Math::Color axisZColor = { 0.2f, 0.4f, 1.0f, 1.0f };
 		constexpr Math::Color normalColor = { 1.0f, 1.0f, 0.2f, 1.0f };
 		constexpr Math::Color gimmickColor = { 1.0f, 0.3f, 1.0f, 1.0f };
-		constexpr Math::Color mapColor = { 0.6f, 0.6f, 0.6f, 1.0f };
-
-		Math::Vector3 centerCell = SnapToGrid(center);
-		int cellRange = static_cast<int>(range / GridSize);
+		constexpr Math::Color mapColor = { 0.45f, 0.45f, 0.45f, 1.0f };
 
 		// マスの「境界線」の高さ(=ブロックの底面の高さ)
-		float y = m_groundHeight + m_debugLayer * GridSize;
+		const float y = m_groundHeight + m_debugLayer * GridSize;
 
-		// 線の描画範囲
-		float minX = centerCell.x - (cellRange + 0.5f) * GridSize;
-		float maxX = centerCell.x + (cellRange + 0.5f) * GridSize;
-		float minZ = centerCell.z - (cellRange + 0.5f) * GridSize;
-		float maxZ = centerCell.z + (cellRange + 0.5f) * GridSize;
+		// 線を引くマスの範囲(マス中心の座標で持つ)
+		// Mapの範囲が分かっていればそれに合わせ、無ければcenterの周りだけ描く
+		float minCellX = 0.0f;
+		float maxCellX = 0.0f;
+		float minCellZ = 0.0f;
+		float maxCellZ = 0.0f;
 
-		// マスの境界線(ブロックの外周に当たる線)
-		for (int i = 0; i <= cellRange * 2 + 1; ++i)
+		if (m_hasBounds)
 		{
-			float x = minX + i * GridSize;
-			float z = minZ + i * GridSize;
-			wire.AddDebugLine({ x,y,minZ }, { x,y,maxZ }, gridColor);
-			wire.AddDebugLine({ minX,y,z }, { maxX,y,z }, gridColor);
+			minCellX = m_boundsMin.x;
+			maxCellX = m_boundsMax.x;
+			minCellZ = m_boundsMin.y;	// Vector2のyにはZが入っている
+			maxCellZ = m_boundsMax.y;
+		}
+		else
+		{
+			const Math::Vector3 centerCell = SnapToGrid(center);
+			const float rangeLength = static_cast<int>(range / GridSize) * GridSize;
+			minCellX = centerCell.x - rangeLength;
+			maxCellX = centerCell.x + rangeLength;
+			minCellZ = centerCell.z - rangeLength;
+			maxCellZ = centerCell.z + rangeLength;
+		}
+
+		// 線の描画範囲(マス中心から半マス外側が境界)
+		const float minX = minCellX - half;
+		const float maxX = maxCellX + half;
+		const float minZ = minCellZ - half;
+		const float maxZ = maxCellZ + half;
+
+		// 境界線の本数 = マスの数 + 1
+		const int cellCountX = static_cast<int>(std::round((maxX - minX) / GridSize));
+		const int cellCountZ = static_cast<int>(std::round((maxZ - minZ) / GridSize));
+
+		// Z方向へ伸びる線(Xの位置ごとに1本)
+		for (int i = 0; i <= cellCountX; ++i)
+		{
+			const float x = minX + i * GridSize;
+			wire.AddDebugLine({ x, y, minZ }, { x, y, maxZ }, gridColor);
+		}
+
+		// X方向へ伸びる線(Zの位置ごとに1本)
+		for (int i = 0; i <= cellCountZ; ++i)
+		{
+			const float z = minZ + i * GridSize;
+			wire.AddDebugLine({ minX, y, z }, { maxX, y, z }, gridColor);
 		}
 
 		// ワールド原点の軸(マスの中心を通る線)
-		wire.AddDebugLine({ 0,y,minZ }, { 0,y,maxZ }, axisZColor);
-		wire.AddDebugLine({ minX,y,0 }, { maxX,y,0 }, axisXColor);
+		wire.AddDebugLine({ 0, y, minZ }, { 0, y, maxZ }, axisZColor);
+		wire.AddDebugLine({ minX, y, 8}, { maxX, y, 8 }, axisXColor);
 
 		// 置き済みブロックのマス
 		for (const auto& [key, kind] : m_occupied)
 		{
 			auto [kx, ky, kz] = key;
 			Math::Vector3 cellPos(kx * GridSize, ky * GridSize + half + m_groundHeight, kz * GridSize);
-			
+
 			Math::Color c = normalColor;
 			if (kind == BlockKind::GimmickKey)  c = gimmickColor;
 			else if (kind == BlockKind::Map)	c = mapColor;
 
 			Math::Matrix mat = Math::Matrix::CreateTranslation(cellPos);
-			wire.AddDebugBox(mat, Math::Vector3(half, half, half), Math::Vector3::Zero, false,c);
+			wire.AddDebugBox(mat, Math::Vector3(half, half, half), Math::Vector3::Zero, false, c);
 		}
-
-		if (m_hasPlayerBody)
+		/*if (m_hasPlayerBody)
 		{
 			wire.AddDebugBox(Math::Matrix::CreateTranslation(m_playerBodyCenter),
-				m_playerBodyHalf, Math::Vector3::Zero, false, Math::Color(1.0f, 1.0f, 1.0f, 1.0f));
-		}
+				m_playerBodyHalf, Math::Vector3::Zero, false, playerColor);
+		}*/
 	}
 
 	// 表示する高さの段を切り替える(0=地面の高さ)

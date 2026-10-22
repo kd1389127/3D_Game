@@ -50,6 +50,14 @@ void Cage::Init(const std::vector<std::shared_ptr<Switch>>& switches,
 		Math::Vector3(basePos.x - hx - cellHalf, basePos.y - cellHalf, basePos.z - hz - cellHalf),
 		Math::Vector3(basePos.x + hx + cellHalf, basePos.y + scale.y + cellHalf, basePos.z + hz + cellHalf));
 
+	// 檻が立っている範囲(開いていても、ここにはブロックを入れさせない)
+	m_zoneMin = Math::Vector3(basePos.x - hx, basePos.y, basePos.z - hz);
+	m_zoneMax = Math::Vector3(basePos.x + hx, basePos.y + scale.y, basePos.z + hz);
+
+	// 魔法ブロックはマスの「中心」で判定するので、マスの半分(4)だけ広げて登録
+	const Math::Vector3 margin(cellHalf, cellHalf, cellHalf);
+	BlockGridManager::Instance().AddForbiddenZone(m_zoneMin - margin, m_zoneMax + margin);
+
 	Math::Matrix scaleMat = Math::Matrix::CreateScale(scale);
 	Math::Matrix rotMat = Math::Matrix::CreateRotationY(DirectX::XMConvertToRadians(yawDeg));
 	Math::Matrix transMat = Math::Matrix::CreateTranslation(basePos);
@@ -124,4 +132,14 @@ void Cage::DrawLit()
 	if (!m_spModel) return;
 
 	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
+}
+
+bool Cage::OverlapsZone(const Math::Vector3& center, float half) const
+{
+	// X・Y・Zの3軸すべてで範囲が重なっている時だけ「重なり」
+	const bool overlapX = center.x + half > m_zoneMin.x && center.x - half < m_zoneMax.x;
+	const bool overlapY = center.y + half > m_zoneMin.y && center.y - half < m_zoneMax.y;
+	const bool overlapZ = center.z + half > m_zoneMin.z && center.z - half < m_zoneMax.z;
+
+	return overlapX && overlapY && overlapZ;
 }

@@ -3,6 +3,7 @@
 #include "../../../Block/BlockGridManager.h"
 #include "../../../Map/MapBlock/MapBlock.h"
 #include "../../../Block/GimmickBlock/GimmickBlock.h"
+#include "../../../Map/Gimmick/Cage/Cage.h"
 #include "../../../../Scene/SceneManager.h"
 #include "../../../Collision/Collision.h"
 
@@ -77,6 +78,12 @@ namespace
 		// 全オブジェクトではなく、作っておいた一覧だけを見る
 		for (KdGameObject* obj : colliders)
 		{
+			// 檻は開いていても、ブロックは通さない(奥に入れて、閉じた時に詰むのを防ぐ)
+			if (auto* cage = dynamic_cast<Cage*>(obj))
+			{
+				if (cage->OverlapsZone(pos, half)) return true;
+			}
+
 			// 重なっているかだけ知りたいので結果リストは不要
 			if (obj->Intersects(info, nullptr)) return true;
 		}
