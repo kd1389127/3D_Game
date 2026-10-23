@@ -4,7 +4,7 @@ void ResultTexture::Init()
 {
 	m_bgTex.Load("Asset/Textures/Result/Result.png");
 	m_logoTex.Load("Asset/Textures/Result/GameClearLogo.png");
-	m_keyTex.Load("Asset/Textures/Result/PressAnyKey.png");
+	m_keyTex.Load("Asset/Textures/Result/ClickToTitle.png");
 }
 
 void ResultTexture::Update()

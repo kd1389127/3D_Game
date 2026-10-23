@@ -5,26 +5,15 @@
 
 static int  s_frame = 0;		// リザルトに入ってからの経過フレーム
 static bool s_clicked = false;	// クリック音をもう鳴らしたか
-static bool s_prevDown[256] = {};	// 前フレームに押されていたか
 
 void ResultScene::Event()
 {
 	s_frame++;
 
-	// 「今フレームで新しく押されたキー」があるかを調べる
-	// ※待ち時間中も s_prevDown を更新し続けるのが大事(押しっぱなしを覚えるため)
-	bool pressed = false;
-	for (int vk = 1; vk < 255; ++vk)
-	{
-		const bool down = (GetAsyncKeyState(vk) & 0x8000) != 0;
-		if (down && !s_prevDown[vk]) { pressed = true; }
-		s_prevDown[vk] = down;
-	}
-
-	// 案内が現れる前(90フレーム=約1.5秒)と、何も押されていない時は何もしない
+	// 案内が現れる前(90フレーム=約1.5秒)と、クリックされていない時は何もしない
 	// ※ResultTextureの案内が現れる時間(90)と同じ値にしておく
-	if (s_frame < 90 || !pressed) { return; }
-
+	if (s_frame < 90 || !Mouse::Instance().IsClick()) { return; }	
+	
 	if (!s_clicked)
 	{
 		s_clicked = true;
