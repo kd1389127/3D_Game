@@ -12,8 +12,15 @@ void Bullet::Init(const Math::Vector3& startPos, const Math::Vector3& targetPos,
 	m_hitNormal = hitNormal;
 	m_hitNormal.Normalize();
 
-	m_dir = m_targetPos - startPos;
-	m_dir.Normalize();
+	m_startPos = startPos;
+
+	// 距離から飛行時間を決める(近いと短く、遠くても最長で頭打ち)
+	const float distance = (m_targetPos - startPos).Length();
+	const float speed = std::clamp(distance / m_maxFlightFrames, m_baseSpeed, m_maxSpeed);
+	
+	// その速度で届くまでのフレーム数(最低1フレーム)
+	m_totalFrames = std::max(1, static_cast<int>(std::ceil(distance / speed)));
+	m_flightFrame = 0;
 
 	m_onImpact = onImpact; // 呼び出し元(Magicwandなど)から受け取った着弾時処理を保持しておく
 
@@ -28,11 +35,11 @@ void Bullet::Init(const Math::Vector3& startPos, const Math::Vector3& targetPos,
 
 void Bullet::Update()
 {
-	Math::Vector3 toTarget = m_targetPos - GetPos();
-	float         remainDist = toTarget.Length();
+	m_flightFrame++;
+	const float t = static_cast<float>(m_flightFrame) / m_totalFrames; //0 -> 1で着弾
 
-	// 残り距離が1フレームの移動量以下になったら「着弾」とみなす
-	if (m_speed >= remainDist)
+	// 着弾したとみなす(元の「残り距離 <= 速度」の判定を置き換え)
+	if (t >= 1.0f)
 	{
 		SetPos(m_targetPos);
 
@@ -66,8 +73,8 @@ void Bullet::Update()
 		return;
 	}
 
-	// まだ届かない → 直進(発射方向×速度分だけ毎フレーム進める)
-	SetPos(GetPos() + m_dir * m_speed);
+	// 一定の速さで直進する
+	SetPos(Math::Vector3::Lerp(m_startPos, m_targetPos, t));
 }
 
 void Bullet::DrawUnLit()

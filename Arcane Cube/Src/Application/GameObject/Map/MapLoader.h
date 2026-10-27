@@ -15,7 +15,7 @@ public:
 		std::vector<std::shared_ptr<KdGameObject>>& outObject);
 
 private:
-	enum CellType 
+	enum CellType
 	{
 		Empty = 0,		// 何もなし
 		Normal = 1,		// Normalのブロック
@@ -23,13 +23,19 @@ private:
 		StairPosX = 3,	// +X方向に上る階段
 		StairNegZ = 4,	// -Z方向(行が減る方)に上る階段
 		StairPosZ = 5,	// +Z方向(行が増える方)に上る階段
+		MagicCancel = 6,// 魔法ブロックを生成できない壁(奈落のまわりに使う)
 	};
 
 	// m_grid[層y][行z][列x]
 	std::vector<std::vector<std::vector<int>>> m_grid;
 
 	int GetCell(int x, int y, int z) const;
-	bool IsFull(int x, int y, int z) const { return GetCell(x, y, z) == Normal; }
 	bool IsBuried(int x, int y, int z) const;
 
+	// 面を完全に塞ぐブロックか(通常ブロックと生成不可ブロック)
+	bool IsFull(int x, int y, int z) const
+	{
+		const int cell = GetCell(x, y, z);
+		return cell == Normal || cell == MagicCancel;
+	}
 };

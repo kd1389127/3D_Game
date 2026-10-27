@@ -13,6 +13,8 @@
 #include "../../Collision/Collision.h"
 namespace
 {
+	constexpr float kHitEffectSize = 3.5f;
+
 	// ===================================================
 	// レイ(origin, dir)が、center±halfExtentsのAABBに当たるか判定する(スラブ法)
 	// 当たった場合、出会うまでの距離(tOut)を返す
@@ -171,7 +173,7 @@ void Magicwand::Update()
 		ClearAllStacks();
 	}
 
-	// 毎フレーム、Aiming/Adjusting中かどうかをPlayerに伝える(Idleの時だけ削除判定を許可する)
+	// 毎フレーム、AimingかどうかをPlayerに伝える(Idleの時だけ削除判定を許可する)
 	if (player)
 	{
 		player->SetAimBlocking(m_state != WandState::Idle);
@@ -237,7 +239,7 @@ void Magicwand::Update()
 			}
 			else if (leftPressed && !isCarrying)
 			{
-				// ★既存ブロックを狙っていれば削除を優先し、無ければ従来通り新規生成
+				// 既存ブロックを狙っていれば削除を優先し、無ければ従来通り新規生成
 				bool deleted = player ? player->TryDeleteTarget() : false;
 
 				if (!deleted)
@@ -261,57 +263,37 @@ void Magicwand::Update()
 		// ---------------------------------------------------
 		case WandState::Aiming:
 		{
-			UpdateAimMode(muzzlePos, parentMat);
+			// 魔力が尽きたらエイムを終える
+			if (!MagicManager::Instance().CanCast())
+			{
+				CancelAim();
+				break;
+			}
 
-			// ズーム判定用に経過フレームを数える
+			// プレビューに乗っている間は狙いを固定し、外れたら今まで通り狙いを更新する
+			bool isOnPreview = UpdateHighlight(muzzlePos, parentMat);
+			if (isOnPreview)
+			{
+				ClearFaceHighlight();	// 本物のブロックの面ハイライトが残らないようにする
+			}
+			else
+			{
+				UpdateAimMode(muzzlePos, parentMat);
+			}
 			m_aimHoldFrames++;
 
-			// 右クリックを離したら、狙っている位置で固定して調整モードへ
+			// 右クリックを離したらキャンセル
 			if (rightReleased)
 			{
-				if (m_hasValidAim)
-				{
-					ClearFaceHighlight();	// 確定した瞬間、面ハイライトは役目を終える
-					m_state = WandState::Adjusting;
-				}
-				else
-				{
-					// 何も狙えていない状態で離した場合はキャンセル扱い
-					CancelAim();
-				}
-			}
-			break;
-		}
-
-		// ---------------------------------------------------
-		// 調整モード：プレビュー位置は固定。ホイールで段数調整
-		// 左クリックで確定発射、右クリックでキャンセル
-		// ---------------------------------------------------
-		case WandState::Adjusting:
-		{
-			// ★視界からプレビューが外れたら、自動でキャンセルする(弾が飛んでいる間は除く)
-			if (!m_isFiring && !IsPreviewInView(muzzlePos, parentMat))
-			{
 				CancelAim();
 				break;
 			}
 
-			UpdateHighlight(muzzlePos, parentMat);	// 毎フレーム、狙っているプレビューを判定
-
-			// ----- 右クリックでキャンセル -----
-			if (rightPressed)
+			// 左クリックで発射(弾が飛んでいる間は次を撃てない)
+			if (leftPressed && !m_isFiring)
 			{
-				CancelAim();
-				break;
+				FireStack(muzzlePos);
 			}
-
-			// ----- 左クリックで確定発射 -----
-			if (leftPressed)
-			{
-				ConfirmStack(muzzlePos, parentMat);
-				break;
-			}
-
 
 			// ----- ホイールで段数変更 -----
 			int wheelValue = Application::Instance().GetMouseWheelValue();
@@ -337,7 +319,6 @@ void Magicwand::Update()
 			}
 			break;
 		}
-
 	}
 
 	// 次フレームの判定用に、今フレームのボタン状態を保存しておく
@@ -471,6 +452,7 @@ void Magicwand::EnterAimMode()
 	m_aimDir		= Math::Vector3::Up;
 	m_aimHoldFrames = 0;
 	m_isFiring		= false;
+	m_hoverFrames	= 0;
 }
 
 // ===================================================
@@ -591,6 +573,7 @@ void Magicwand::UpdateAimMode(const Math::Vector3& muzzlePos, const Math::Matrix
 
 		m_aimBaseCell = newBaseCell;
 		m_aimDir = axisNormal;
+		m_aimHitPos = hitPos;			// 発射時の弾の飛び先
 		m_hasValidAim = true;
 
 		if (cellChanged || dirChanged || firstTime)
@@ -609,12 +592,15 @@ void Magicwand::UpdateAimMode(const Math::Vector3& muzzlePos, const Math::Matrix
 }
 
 // ===================================================
-// Adjusting中、毎フレーム呼ばれる：レティクル方向のレイが
+// 毎フレーム呼ばれる：レティクル方向のレイが
 // どのプレビューブロックに当たっているかを判定し、ハイライトを切り替える
 // ===================================================
-void Magicwand::UpdateHighlight(const Math::Vector3& muzzlePos, const Math::Matrix& parentMat)
+bool Magicwand::UpdateHighlight(const Math::Vector3& muzzlePos, const Math::Matrix& parentMat)
 {
-	if (m_previewBlocks.empty()) return;
+	if (m_previewBlocks.empty())
+	{
+		return false;
+	}
 
 	Math::Vector3 dir = parentMat.Backward();
 	Math::Vector3 halfExtent(BlockGridManager::GridSize * 0.5f, BlockGridManager::GridSize * 0.5f, BlockGridManager::GridSize * 0.5f);
@@ -629,26 +615,51 @@ void Magicwand::UpdateHighlight(const Math::Vector3& muzzlePos, const Math::Matr
 	if (!isHit)
 	{
 		baseBlock->SetHighlightFace(false);
-		return;
+		m_hoverFrames = 0;
+		return false;	// プレビューの外：狙いを更新してよい
 	}
 
-	// 狙っている面をハイライト
+	// 弾の飛び先は、プレビューに当たった位置にする
+	m_aimHitPos = muzzlePos + dir * dist;
+
+	// 狙っている面を光らせる(伸ばせる面の目印)
 	baseBlock->SetHighlightFace(true, faceNormal);
 
-	// 狙っている面の方向が今の伸びる方向と違うなら、方向を切り替えてスタックを作り直す
-	if ((faceNormal - m_aimDir).LengthSquared() > 0.01f)
+	// 今の伸ばす向きと同じ面なら、切り替えは不要
+	bool isSameDir = (faceNormal - m_aimDir).LengthSquared() < 0.01f;
+	if (isSameDir)
+	{
+		m_hoverFrames = 0;
+		return true;
+	}
+
+	// 別の面：同じ面を見続けている間だけ数える
+	bool isSameHover = (faceNormal - m_hoverNormal).LengthSquared() < 0.01f;
+	if (isSameHover)
+	{
+		m_hoverFrames++;
+	}
+	else
+	{
+		m_hoverNormal = faceNormal;
+		m_hoverFrames = 1;
+	}
+
+	// 十分見続けたら、その面の向きへ伸ばし直す
+	if (m_hoverFrames >= m_faceSwitchFrames)
 	{
 		m_aimDir = faceNormal;
-		RebuildPreview(); // ← ここでm_previewBlocksが全部新しく作り直される
+		m_hoverFrames = 0;
+		RebuildPreview();	// ここでm_previewBlocksが全部作り直される
 
-		// 作り直した直後のbaseBlockは別インスタンスになっているので、ハイライトを付け直す
+		// 作り直した後は別インスタンスなので、ハイライトを付け直す
 		if (!m_previewBlocks.empty())
 		{
 			m_previewBlocks.front()->SetHighlightFace(true, faceNormal);
 		}
 	}
+	return true;
 }
-
 // ===================================================
 // 現在の段数(m_stackCount)・方向(m_aimDir)を元に、
 // プレビュー用の半透明ブロックを作り直す
@@ -684,151 +695,69 @@ void Magicwand::RebuildPreview()
 	}
 }
 
-// ===================================================
-// 確定操作(左クリックを離した瞬間)：ブロックはまだ生成せず、その場所に向けて弾を発射する
-// ===================================================
-void Magicwand::ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix& parentMat)
+void Magicwand::FireStack(const Math::Vector3& muzzlePos)
 {
-	// Expireで消す前に、プレビューブロックの座標だけ先に保存しておく
-	std::vector<Math::Vector3> previewPositions;
-	previewPositions.reserve(m_previewBlocks.size());
-	for (auto& block : m_previewBlocks)
+	// 置ける場所が無ければ撃たず、魔力切れと同じ振動で知らせる
+	if (m_previewBlocks.empty())
 	{
-		previewPositions.push_back(block->GetPos());
-	}
-
-	if (!m_hasValidAim)
-	{
-		// 狙いが無効なまま呼ばれた場合のみ、ここで消して抜ける
-		for (auto& block : m_previewBlocks)block->Expire();
-		m_previewBlocks.clear();
-		m_state = WandState::Idle;
+		MagicManager::Instance().MarkAttemptFailed();
 		return;
 	}
 
-	// 生成用の情報(確定済みのスタック起点・方向・段数)保持
-	Math::Vector3 confirmedBaseCell = m_aimBaseCell;
-	Math::Vector3 confirmedDir		= m_aimDir;
-	int confirmedCount				= m_stackCount;
+	// 着弾までに狙いが動くので、今の値をコピーして弾に持たせる
+	const Math::Vector3 baseCell = m_aimBaseCell;
+	const Math::Vector3 dir		 = m_aimDir;
+	const int stackCount		 = m_stackCount;
 
-	// 今のカメラ向きで改めてレイキャストする(UpdateAimModeと同じロジック)
-	KdCollider::RayInfo rayInfo;
-	rayInfo.m_pos	= muzzlePos;
-	rayInfo.m_dir   = parentMat.Backward();
-	rayInfo.m_range = 1000.0f;
-	rayInfo.m_type  = KdCollider::TypeGround | KdCollider::TypeBump;
+	m_isFiring = true;
 
-	bool  isHit		 = false;
-	float minDistSqr = FLT_MAX;
-	Math::Vector3 realHitPos	= Math::Vector3::Zero;
-	Math::Vector3 realHitNormal = Math::Vector3::Up;
-	std::shared_ptr<KdGameObject> realHitObj = nullptr;
+	// 弾の飛ぶ向き(中止された時の「弾かれた」演出に使う)
+	Math::Vector3 shotDir = m_aimHitPos - muzzlePos;
+	shotDir.Normalize();
 
-	for (auto& obj : SceneManager::Instance().GetObjList())
-	{
-		std::list<KdCollider::CollisionResult> localResult;
-		if (!obj->Intersects(rayInfo, &localResult))continue;
-
-		for (auto& ret : localResult)
-		{
-			float distSqr = (ret.m_hitPos - muzzlePos).LengthSquared();
-			if (distSqr < minDistSqr)
-			{
-				minDistSqr = distSqr;
-				realHitPos = ret.m_hitPos;
-				realHitNormal = ret.m_hitNDir;
-				realHitObj = obj;
-				isHit = true;
-			}
-		}
-	}
-
-	// BOX判定の法線を、面の法線に直す
-	if (isHit) realHitNormal = CorrectBoxNormal(realHitNormal, rayInfo.m_dir, realHitPos, realHitObj);
-
-	// 何にも当たらなかった場合は、レイの最大距離まで飛んだ先を仮の着弾点にする
-	Math::Vector3 realTargetPos = isHit ? realHitPos : (muzzlePos + rayInfo.m_dir * rayInfo.m_range);
-
-	// 今の照準の着弾点が、確定済みプレビュー(緑ブロック)のどれかと重なっているか判定
-	// (地面のヒット点との座標比較ではなく、レイ×箱の交差判定で直接調べる)
-	Math::Vector3 halfExtent(BlockGridManager::GridSize * 0.5f, BlockGridManager::GridSize * 0.5f, BlockGridManager::GridSize * 0.5f);
-	
-	// 何かに当たった位置までしか判定しない(壁の向こう側のブロックを誤検出しないため)
-	float maxCheckDist = isHit ? sqrtf(minDistSqr) + 0.1f : rayInfo.m_range;
-
-	bool isTargetHit = false;
-	float closestHitDistance = FLT_MAX;	// 命中したブロックの中で一番手前の距離を覚えておく
-
-	for (auto& pos : previewPositions)
-	{
-		float hitDistance = 0.0f;
-		if (IntersectRayAABB(muzzlePos, rayInfo.m_dir, pos, halfExtent, maxCheckDist, &hitDistance))
-		{
-			isTargetHit = true;
-			closestHitDistance = std::min(closestHitDistance, hitDistance);	 // 複数ブロックに当たりうるので一番近い方を採用
-		}
-	}
-
-	// 命中していれば「ブロックに実際に当たった座標」を、していなければ従来通りrealTargetPosを使う
-	Math::Vector3 bulletTargetPos = isTargetHit
-		? (muzzlePos + rayInfo.m_dir * closestHitDistance)
-		: realTargetPos;
-
-	auto bulletObj = std::make_shared<Bullet>();
-
-	// weak_ptrで持つことで、万が一Magicwand側が破棄されてもコールバック側で安全に弾ける
+	// weak_ptrで持てば、Magicwandが先に破棄されても安全
 	std::weak_ptr<Magicwand> weakSelf =
 		std::static_pointer_cast<Magicwand>(shared_from_this());
 
-	if (isTargetHit)
-	{
-		// 弾が着弾するまで、自動キャンセルを止める
-		m_isFiring = true;
+	auto bullet = std::make_shared<Bullet>();
+	bullet->Init(muzzlePos, m_aimHitPos, m_aimDir,
+		[weakSelf, baseCell, dir, stackCount,shotDir](const Math::Vector3& hitPos, const Math::Vector3& axisNormal)
+		{
+			auto self = weakSelf.lock();
+			if (!self) { return; }
 
-		// 命中：生成し、この時初めてプレビューを消してIdleに戻す
-		// (m_previewBlocksはコールバック内でself経由で触るため、ここではコピーを渡さない)	
-		bulletObj->Init(muzzlePos, bulletTargetPos, realHitNormal,
-			[weakSelf, confirmedBaseCell, confirmedDir, confirmedCount]
-			(const Math::Vector3& hitPos, const Math::Vector3&)
+			// 飛んでいる間に右クリックを離した(=中止された)なら、生成せず弾かれた演出だけ出す
+			if (!self->m_isFiring)
 			{
-				if (auto self = weakSelf.lock())
-				{
-					// 着弾位置に「当たった」演出を出す
-					KdEffekseerManager::GetInstance().Play("Blue.efkefc", hitPos, 3.5f);
+				EmitBounce(hitPos, axisNormal, shotDir);
+				return;
+			}
 
-					self->m_isFiring = false;
+			self->m_isFiring = false;
+			KdEffekseerManager::GetInstance().Play("Blue.efkefc", hitPos, kHitEffectSize);
 
-					// 先に生成を試す。失敗(体と重なる・魔力不足)ならプレビューを消さずに戻る
-					if (!self->GenerateStackAt(confirmedBaseCell, confirmedDir, confirmedCount))
-					{
-						MagicManager::Instance().MarkAttemptFailed();	// レティクルを振動させて失敗を知らせる
-						return;											// Adjustingのまま=もう一度確定できる
-					}
-
-					// 生成に成功してからプレビューを消す
-					for (auto& block : self->m_previewBlocks)block->Expire();
-					self->m_previewBlocks.clear();
-
-					self->m_hasValidAim = false;
-					self->m_state = WandState::Idle;
-				}
-			});
-	}
-	else
-	{
-		// ハズレ：プレビューには一切触らない。状態もAdjustingのまま維持する
-		// 弾かれた演出だけ出す(何にも当たらず遠くへ飛んだ時は出さない)
-		const Math::Vector3 shotDir = rayInfo.m_dir;
-
-		bulletObj->Init(muzzlePos, bulletTargetPos, realHitNormal,
-			[isHit, shotDir](const Math::Vector3& pos, const Math::Vector3& axisNormal)
+			// 体と重なる・魔力不足なら生成されない
+			if (!self->GenerateStackAt(baseCell, dir, stackCount))
 			{
-				if (isHit) EmitBounce(pos, axisNormal, shotDir);
-			});
-	}
+				MagicManager::Instance().MarkAttemptFailed();
+				return;
+			}
 
-	SceneManager::Instance().AddObject(bulletObj);
+			// 生成できたら今のプレビューを消す(まだエイム中なら次のフレームで作り直される)
+			for (auto& block : self->m_previewBlocks)
+			{
+				block->Expire();
+			}
+			self->m_previewBlocks.clear();
+			self->m_hasValidAim = false;
 
+			// 魔力が減った分、段数の上限も下げる(プレビューの数と撃てる数をそろえる)
+			const int remain = MagicManager::Instance().GetRemainingCasts();
+			self->m_stackCount = std::min(self->m_stackCount, std::max(remain, 1));
+
+		});
+
+	SceneManager::Instance().AddObject(bullet);
 	StartSwingAnim();
 }
 
@@ -888,42 +817,13 @@ void Magicwand::CancelAim()
 		block->Expire();
 	}
 	m_previewBlocks.clear();
+	ClearFaceHighlight();
+	m_hasValidAim = false;
+	m_isFiring    = false;
 
 	m_state = WandState::Idle;
 }
 
-// ====================================================================
-// プレビューが1つでも視界に入っているかを調べる
-// (方向を「右・上・正面」に分けて、正面に対するずれの大きさで判定する)
-// ====================================================================
-bool Magicwand::IsPreviewInView(const Math::Vector3& eyePos, const Math::Matrix& parentMat) const
-{
-	constexpr float tanHalfV = 0.577f;			// 縦の視野：FOV60度の半分(30度)のtan
-	constexpr float aspect   = 16.0f / 9.0f;	// 横の視野の広がり
-	constexpr float margin   = 1.25f;			// ブロックの大きさ分のゆとり(大きいほど消えにくい)
-
-	const Math::Vector3 forward = parentMat.Backward();
-	const Math::Vector3 right	= parentMat.Right();
-	const Math::Vector3 up		= parentMat.Up();
-
-	for (auto& block : m_previewBlocks)
-	{
-		Math::Vector3 v = block->GetPos() - eyePos;
-
-		float z = v.Dot(forward);
-		if (z <= 0.0f) continue;	// 背中側にあるものは、視界の外
-
-		float x = v.Dot(right);
-		float y = v.Dot(up);
-
-		if (fabsf(y) / z < tanHalfV * margin &&
-			fabsf(x) / z < tanHalfV * aspect * margin)
-		{
-			return true;
-		}
-	}
-	return false;
-}
 
 void Magicwand::DismissStack(const std::vector<std::weak_ptr<NormalBlock>>& stack)
 {

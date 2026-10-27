@@ -1,29 +1,26 @@
 ﻿#include "MapBlock.h"
 
-std::shared_ptr<KdModelData> MapBlock::s_spFull = nullptr;
-std::shared_ptr<KdModelData> MapBlock::s_spStair = nullptr;
+std::shared_ptr<KdModelData> MapBlock::s_spModels[MapBlock::kShapeCount] = {};
 Math::Vector4 MapBlock::s_planes[6] = {};
 
 void MapBlock::Init(const Math::Vector3& pos, Shape shape, StairDir dir)
 {
-	const bool isStair = (shape == Shape::Stair);
-	m_isStair = isStair;
+	m_shape = shape;
 
-	auto& spShared = isStair ? s_spStair : s_spFull;
+	// 形の番号でモデルを選ぶ(まだ読んでいなければ、ここで1回だけ読む)
+	const int index = static_cast<int>(shape);
+	auto& spShared = s_spModels[index];
 	if (!spShared)
 	{
 		spShared = std::make_shared<KdModelData>();
-
-		spShared->Load(isStair
-			? "Asset/Models/Map/MapStair/MapStair.gltf"
-			: "Asset/Models/Map/MapBlock/MapBlock.gltf");
+		spShared->Load(kModelPaths[index]);
 	}
 	m_spModel = spShared;
 
 	m_pCollider = std::make_unique<KdCollider>();
 
 	// ---- 階段: 見た目はL字、判定はモデル内の斜面(COL_Stair)1枚 ----
-	if (isStair)
+	if (shape == Shape::Stair)
 	{
 		m_pCollider->RegisterCollisionShape("MapStairSlope", m_spModel,
 			KdCollider::TypeGround | KdCollider::TypeBump);
@@ -54,6 +51,7 @@ void MapBlock::Init(const Math::Vector3& pos, Shape shape, StairDir dir)
 		return;
 	}
 
+	// ---- Full・MagicCancel(見た目が違うだけで、判定は同じ) ----
 	// 壁用(横の押し出し)
 	DirectX::BoundingBox wallBox;
 	wallBox.Center = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
@@ -107,8 +105,11 @@ void MapBlock::DrawUnLit()
 		if (p.x * c.x + p.y * c.y + p.z * c.z + p.w < -radius) return;
 	}
 
-	// 階段だけ明るさを変える(1.0で変化なし)。見ながら調整する
-	const Math::Color col = m_isStair ? Math::Color(1.5f, 1.5f, 1.5f, 1.0f) : kWhiteColor;
+	// 階段だけ明るさを変える(1.0で変化なし)
+	Math::Color col = kWhiteColor;
+	if (m_shape == Shape::Stair)
+	{
+		col = Math::Color(kStairBrightness, kStairBrightness, kStairBrightness, 1.0f);
+	}
 	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld, col);
 }
-

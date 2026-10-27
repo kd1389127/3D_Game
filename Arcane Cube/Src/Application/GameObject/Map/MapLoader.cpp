@@ -35,7 +35,7 @@ bool MapLoader::Load(const std::string& csvPath, float groundHeight, int originC
 			m_grid.emplace_back();
 			continue;
 		}
-		
+
 		if (m_grid.empty()) m_grid.emplace_back();
 
 		std::vector<int> row;
@@ -75,15 +75,17 @@ bool MapLoader::Load(const std::string& csvPath, float groundHeight, int originC
 
 				switch (type)
 				{
-				case Normal:                                                          
+				case Normal:
 					break;
-				case StairPosX: shape = MapBlock::Shape::Stair; dir = MapBlock::StairDir::PosX; 
+				case StairPosX: shape = MapBlock::Shape::Stair; dir = MapBlock::StairDir::PosX;
 					break;
-				case StairNegX: shape = MapBlock::Shape::Stair; dir = MapBlock::StairDir::NegX; 
+				case StairNegX: shape = MapBlock::Shape::Stair; dir = MapBlock::StairDir::NegX;
 					break;
-				case StairPosZ: shape = MapBlock::Shape::Stair; dir = MapBlock::StairDir::PosZ; 
+				case StairPosZ: shape = MapBlock::Shape::Stair; dir = MapBlock::StairDir::PosZ;
 					break;
-				case StairNegZ: shape = MapBlock::Shape::Stair; dir = MapBlock::StairDir::NegZ; 
+				case StairNegZ: shape = MapBlock::Shape::Stair; dir = MapBlock::StairDir::NegZ;
+					break;
+				case MagicCancel: shape = MapBlock::Shape::MagicCancel;
 					break;
 				default:
 					KdDebugGUI::Instance().AddLog("[MapLoader] 不明な値 %d (層%d 行%d 列%d)\n", type, y, z, x);
@@ -121,11 +123,42 @@ bool MapLoader::Load(const std::string& csvPath, float groundHeight, int originC
 						Math::Vector3(cellCenter.x + extX + eps, cellCenter.y + G * 2 + eps, cellCenter.z + extZ + eps));
 				}
 
+				// 生成不可の壁の前(まわり1マス)にも、魔法ブロックを置かせない
+				// 同じ列で縦に並ぶ壁は1つのゾーンにまとめる(ゾーンが増えると毎フレームの判定が重くなるため)
+				if (shape == MapBlock::Shape::MagicCancel && GetCell(x, y - 1, z) != MagicCancel)
+				{
+					// この列の壁の一番上の層を探す
+					int topLayer = y;
+					while (GetCell(x, topLayer + 1, z) == MagicCancel)
+					{
+						++topLayer;
+					}
+					const float topCenterY = cellCenter.y + (topLayer - y) * G;
+					constexpr float eps = 0.1f;
+
+					// 壁が延びる方向には広げない(広げると、壁の端の外側まで生成禁止になる)
+					float extX = G;
+					float extZ = G;
+					if (GetCell(x - 1, y, z) == MagicCancel || GetCell(x + 1, y, z) == MagicCancel)
+					{
+						extX = 0.0f;	// 壁がX方向に延びている → Z方向(正面)だけ広げる
+					}
+					if (GetCell(x, y, z - 1) == MagicCancel || GetCell(x, y, z + 1) == MagicCancel)
+					{
+						extZ = 0.0f;	// 壁がZ方向に延びている → X方向(正面)だけ広げる
+					}
+
+					BlockGridManager::Instance().AddForbiddenZone(
+						Math::Vector3(cellCenter.x - extX - eps, cellCenter.y - eps, cellCenter.z - extZ - eps),
+						Math::Vector3(cellCenter.x + extX + eps, topCenterY + eps, cellCenter.z + extZ + eps));
+				}
+
 				// 6方向をフルブロックで囲まれていたら生成しない(描画・当たり判定の節約)
-				if (shape == MapBlock::Shape::Full && IsBuried(x, y, z)) { ++skipped; continue; }
+				// 階段は面を塞がないので対象外
+				if (shape != MapBlock::Shape::Stair && IsBuried(x, y, z)) { ++skipped; continue; }
 
 				auto spBlock = std::make_shared<MapBlock>();
-				spBlock->Init(cellCenter, shape,dir);
+				spBlock->Init(cellCenter, shape, dir);
 				outObject.push_back(spBlock);
 				++spawned;
 			}

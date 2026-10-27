@@ -35,8 +35,7 @@ private:
 	enum class WandState
 	{
 		Idle,		// 通常状態：右クリックでエイムモードに入る
-		Aiming,		// 長押し中：レイを飛ばし続けてプレビューを追従させている状態
-		Adjusting,	// 離した後：プレビュー位置が固定、ホイールで調整状態
+		Aiming,		// 長押し中：プレビューが狙いを追い、左クリックで発射する
 	};
 	WandState m_state = WandState::Idle;
 
@@ -73,23 +72,29 @@ private:
 	// (ボタン判定は行わない。Update側で状態遷移を管理する)
 	void UpdateAimMode(const Math::Vector3& muzzlePos, const Math::Matrix& parentMat);
 
-	// Adjusting中、毎フレーム呼ばれる：レティクルがどのプレビューブロックに合っているか判定する
-	void UpdateHighlight(const Math::Vector3& muzzlePos, const Math::Matrix& parentMat);
+	// 戻り値：レティクルがプレビューに乗っているか(trueの間は狙いを固定する)
+	bool UpdateHighlight(const Math::Vector3& muzzlePos, const Math::Matrix& parentMat);
+
+	// ----- 面の切り替え用(別の面を見続けた時間を数える) -----
+	Math::Vector3		 m_hoverNormal = Math::Vector3::Zero;	// 今見ている別の面の向き
+	int					 m_hoverFrames = 0;						// その面を見続けたフレーム数
+	static constexpr int m_faceSwitchFrames = 10;				// これ以上見続けたら向きを切り替える(60fpsで約0.17秒)
 
 	// 現在の狙い情報を元に、プレビューブロックを作り直す
 	void RebuildPreview();
 
-	// 確定操作：狙いの情報をコピーして弾に持たせ、発射する(この時点ではまだ生成しない)
-	void ConfirmStack(const Math::Vector3& muzzlePos, const Math::Matrix& parentMat);
+	// 発射：エイム中のプレビュー位置へ弾を飛ばし、着弾したらブロックを生成する
+	void FireStack(const Math::Vector3& muzzlePos);
+	// エイム中に狙っている着弾点(弾の飛び先)
+	Math::Vector3 m_aimHitPos = Math::Vector3::Zero;
 
 	// 弾が着弾した瞬間に呼ばれる：実際にせり出しアニメーション付きでブロックを生成する
 	bool GenerateStackAt(const Math::Vector3& baseCell, const Math::Vector3& dir, int stackCount);
 
 	// キャンセル操作：何も生成せず、プレビューだけ消してIdleに戻る
 	void CancelAim();
-	bool IsPreviewInView(const Math::Vector3& eyePos, const Math::Matrix& parentMat) const;
 
-	// 確定の弾が飛んでいる間true(この間は、視界から外れても自動キャンセルしない)
+	// 確定の弾が飛んでいる間true(弾が飛んでいる間は次を撃てない)
 	bool m_isFiring = false;
 
 	// ----- 生成したスタックの履歴(古いスタックから消すため) -----

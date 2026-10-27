@@ -136,6 +136,12 @@ public:
 	{
 		Math::Vector3 baseCell = SnapToGrid(hitPos + axisNormal * (GridSize * 0.5f + 0.01f));
 	
+		// 禁止エリアの中なら、外側・内側にずらさない(ずらすと、壁から1マス離れて生成できてしまう)
+		if (IsInForbiddenZone(baseCell))
+		{
+			return baseCell;	// 置けないまま返す(呼び出し側のCanPlaceBlockAtで弾かれる)
+		}
+
 		if (!IsOccupied(baseCell) && CanPlaceBlockAt(baseCell, groundObj))
 		{
 			return baseCell;

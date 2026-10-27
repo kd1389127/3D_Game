@@ -16,6 +16,6 @@ void MagicGaugeUI::DrawSprite()
 	int remaining = MagicManager::Instance().GetRemainingCasts();
 	remaining = std::clamp(remaining, 0, m_texCount - 1);
 
-	KdShaderManager::Instance().m_spriteShader.DrawTex(&m_texArray[remaining], -400, -280, 420, 70);
+	KdShaderManager::Instance().m_spriteShader.DrawTex(&m_texArray[remaining], -400, -270, 390, 85);
 
 }

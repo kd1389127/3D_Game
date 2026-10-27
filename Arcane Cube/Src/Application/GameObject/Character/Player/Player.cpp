@@ -60,8 +60,9 @@ void Player::Update()
 			m_jumpKeyFlg = true;
 
 			// 通常は地面にいる時だけ跳べる。デバッグ用：Jキーを押している間は空中でも跳べる(Mapを見る時用)
-			const bool debugAirJump = (GetAsyncKeyState('Q') & 0x8000) != 0;
-			if (m_isGrounded || debugAirJump)
+			//const bool debugAirJump = (GetAsyncKeyState('Q') & 0x8000) != 0;
+			//if (m_isGrounded || debugAirJump)
+			if (m_isGrounded)
 			{
 				m_gravity -= m_jumpPow; // 重力の値をマイナスにする＝上に跳ねる勢いを与える
 				auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Player/Jump.wav", false);
