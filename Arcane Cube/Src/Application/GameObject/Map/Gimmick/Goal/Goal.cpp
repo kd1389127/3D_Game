@@ -87,6 +87,31 @@ void Goal::Update()
 		m_wpEffect = KdEffekseerManager::GetInstance().Play(
 			"Goal.efkefc", GetPos() + Math::Vector3(0.0f, kFloorOffsetY, 0.0f), scale);
 	}
+
+	// ----- 光の柱(遠くからゴールの場所が分かる目印) -----
+	// 魔法陣が出てくるほど薄くなり、魔法陣と入れ替わるように消える(eased は魔法陣と同じ進み具合)
+	const float pillarAlpha = 1.0f - eased;		// 1=くっきり 0=消える
+	
+	std::shared_ptr<KdEffekseerObject> spPillar = m_wpPillar.lock();
+	const bool isPillarPlaying = spPillar && spPillar->IsPlaying();
+
+	if (pillarAlpha > 0.0f)
+	{
+		if (!isPillarPlaying)
+		{
+			// 遠くにいて再生されていない時(最初、または消えきった後)は、再生する
+			m_wpPillar = KdEffekseerManager::GetInstance().Play(
+				"Landmark.efkefc", GetPos() + Math::Vector3(0.0f, kFloorOffsetY, 0.0f), kPillarWidth);
+			spPillar = m_wpPillar.lock();
+			spPillar->SetScale(Math::Vector3(kPillarWidth, kPillarHeight, kPillarWidth));	// 太さと高さ
+		}
+		spPillar->SetAlpha(pillarAlpha);
+	}
+	else if (isPillarPlaying)
+	{
+		spPillar->StopEffect();
+	}
+
 }
 
 void Goal::DrawUnLit()

@@ -18,8 +18,17 @@ public:
 private:
 	std::shared_ptr<KdModelWork> m_spModel = nullptr;
 
-	std::weak_ptr<KdGameObject>			m_wpTarget;		// プレイヤー
-	std::weak_ptr<KdEffekseerObject>	m_wpEffect;		// 再生中の魔法陣
-	bool  m_isNear = false;								// プレイヤーが近くにいるか
-	float m_fadeRate = 0.0f;							// 出現の進み具合(0=消えている 1=最大)
+	std::weak_ptr<KdGameObject>			m_wpTarget;			// プレイヤー
+	std::weak_ptr<KdEffekseerObject>	m_wpEffect;			// 再生中の魔法陣
+	bool  m_isNear = false;									// プレイヤーが近くにいるか
+	float m_fadeRate = 0.0f;								// 出現の進み具合(0=消えている 1=最大)
+
+	// ----- 光の柱の設定 -----
+	static constexpr float kPillarWidth = 8.0f;				// 柱の太さの倍率(魔法陣と同じくらいにする)
+	static constexpr float kPillarHeight = 10.0f;			// 柱の高さの倍率(壁の上面64より高くする)
+	static constexpr float kPillarFadeStartDist = 120.0f;	// この距離から消え始める
+	static constexpr float kPillarFadeEndDist = 45.0f;		// この距離で完全に消える
+
+	std::weak_ptr<KdEffekseerObject> m_wpPillar;			// 再生中の光の柱
+
 };

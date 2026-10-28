@@ -1,4 +1,5 @@
-﻿
+﻿#include "KdEffekseerManager.h"
+
 void KdEffekseerManager::Create(int w, int h)
 {
 	// エフェクトのレンダラーの作成
@@ -343,6 +344,16 @@ void KdEffekseerObject::SetSpeed(const float speed)
 	m_info.Speed = speed;
 
 	KdEffekseerManager::GetInstance().SetSpeed(m_handle, speed);
+}
+
+void KdEffekseerObject::SetAlpha(const float alpha)
+{
+	if (m_parentManager == nullptr) { return; }
+
+	// 0.0〜1.0 を 0〜255 に変換する(RGBは255=元の色のまま)
+	const uint8_t alpha255 = static_cast<uint8_t>(alpha * 255.0f);
+
+	m_parentManager->SetAllColor(m_handle, Effekseer::Color(255, 255, 255, alpha255));
 }
 
 void KdEffekseerObject::SetWorldMatrix(const Math::Matrix& mWorld)

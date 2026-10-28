@@ -136,6 +136,9 @@ public:
 	// 速度設定
 	void SetSpeed(const float speed = 1.0f);
 
+	// 透明度設定(0.0=透明 1.0=元のまま) 自分で追加10/28
+	void SetAlpha(const float alpha = 1.0f);
+
 	// ワールド行列設定
 	void SetWorldMatrix(const Math::Matrix& mWorld);
 
