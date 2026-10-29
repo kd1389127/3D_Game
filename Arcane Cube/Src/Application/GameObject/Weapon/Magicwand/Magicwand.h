@@ -49,6 +49,7 @@ private:
 	int m_stackCount = 1;                               // 現在ホイールで選択している「何段せり出すか」の数
 	static constexpr int m_maxStackCount = 5;           // 一度に生成できる最大段数
 	bool m_hasValidAim = false;							// 現在何かに向かって狙えているか(何も無い方向を向いた時の保険)
+	bool m_isFixed = false;								// true = 起点マスを固定済み(視点を動かしても起点は動かない)
 
 	// ----- ズーム開始判定用(Aimingに入ってからの経過フレーム。プレビューはすぐ出すが、ズームだけ遅らせる) -----
 	int					 m_aimHoldFrames = 0;
@@ -78,7 +79,7 @@ private:
 	// ----- 面の切り替え用(別の面を見続けた時間を数える) -----
 	Math::Vector3		 m_hoverNormal = Math::Vector3::Zero;	// 今見ている別の面の向き
 	int					 m_hoverFrames = 0;						// その面を見続けたフレーム数
-	static constexpr int m_faceSwitchFrames = 10;				// これ以上見続けたら向きを切り替える(60fpsで約0.17秒)
+	static constexpr int m_faceSwitchFrames = 3;				// これ以上見続けたら向きを切り替える(60fpsで約0.17秒)
 
 	// 現在の狙い情報を元に、プレビューブロックを作り直す
 	void RebuildPreview();

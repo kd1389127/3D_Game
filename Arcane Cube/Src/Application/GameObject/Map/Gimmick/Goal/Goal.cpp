@@ -100,8 +100,9 @@ void Goal::Update()
 		if (!isPillarPlaying)
 		{
 			// 遠くにいて再生されていない時(最初、または消えきった後)は、再生する
+			const Math::Vector3 pillarOffset(kPillarOffsetX, kPillarOffsetY, kPillarOffsetZ);
 			m_wpPillar = KdEffekseerManager::GetInstance().Play(
-				"Landmark.efkefc", GetPos() + Math::Vector3(0.0f, kFloorOffsetY, 0.0f), kPillarWidth);
+				"Landmark.efkefc", GetPos() + pillarOffset, kPillarWidth);
 			spPillar = m_wpPillar.lock();
 			spPillar->SetScale(Math::Vector3(kPillarWidth, kPillarHeight, kPillarWidth));	// 太さと高さ
 		}

@@ -263,22 +263,29 @@ void Magicwand::Update()
 		// ---------------------------------------------------
 		case WandState::Aiming:
 		{
-			// 魔力が尽きたらエイムを終える
-			if (!MagicManager::Instance().CanCast())
-			{
-				CancelAim();
-				break;
-			}
-
-			// プレビューに乗っている間は狙いを固定し、外れたら今まで通り狙いを更新する
-			bool isOnPreview = UpdateHighlight(muzzlePos, parentMat);
-			if (isOnPreview)
-			{
-				ClearFaceHighlight();	// 本物のブロックの面ハイライトが残らないようにする
-			}
-			else
+			// 固定前：視点で起点を探す。プレビューが出たら、その場所で固定する
+			if (!m_isFixed)
 			{
 				UpdateAimMode(muzzlePos, parentMat);
+
+				if (!m_previewBlocks.empty())
+				{
+					m_isFixed = true;
+					ClearFaceHighlight();	// 本物のブロックの面ハイライトを消す
+				}
+			}
+			// 固定後：起点は動かさず、視点で面だけ選ぶ
+			else
+			{
+				// プレビューが空になった時は固定を解除して、狙い直せるようにする
+				if (m_previewBlocks.empty())
+				{
+					m_isFixed = false;
+				}
+				else
+				{
+					UpdateHighlight(muzzlePos, parentMat);
+				}
 			}
 			m_aimHoldFrames++;
 
@@ -453,6 +460,7 @@ void Magicwand::EnterAimMode()
 	m_aimHoldFrames = 0;
 	m_isFiring		= false;
 	m_hoverFrames	= 0;
+	m_isFixed		= false;
 }
 
 // ===================================================
@@ -750,6 +758,7 @@ void Magicwand::FireStack(const Math::Vector3& muzzlePos)
 			}
 			self->m_previewBlocks.clear();
 			self->m_hasValidAim = false;
+			self->m_isFixed = false;
 
 			// 魔力が減った分、段数の上限も下げる(プレビューの数と撃てる数をそろえる)
 			const int remain = MagicManager::Instance().GetRemainingCasts();

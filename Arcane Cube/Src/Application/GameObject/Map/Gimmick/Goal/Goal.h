@@ -24,10 +24,11 @@ private:
 	float m_fadeRate = 0.0f;								// 出現の進み具合(0=消えている 1=最大)
 
 	// ----- 光の柱の設定 -----
-	static constexpr float kPillarWidth = 8.0f;				// 柱の太さの倍率(魔法陣と同じくらいにする)
-	static constexpr float kPillarHeight = 10.0f;			// 柱の高さの倍率(壁の上面64より高くする)
-	static constexpr float kPillarFadeStartDist = 120.0f;	// この距離から消え始める
-	static constexpr float kPillarFadeEndDist = 45.0f;		// この距離で完全に消える
+	static constexpr float kPillarWidth   = 8.0f;	// 柱の太さの倍率(魔法陣と同じくらいにする)
+	static constexpr float kPillarHeight  = 10.0f;	// 柱の高さの倍率(壁の上面64より高くする)
+	static constexpr float kPillarOffsetX = 0.0f;	// 柱の位置の調整(ゴールの中心からのずれ)
+	static constexpr float kPillarOffsetY = -0.5f;	// 上げると柱が浮く、下げると床に埋まる
+	static constexpr float kPillarOffsetZ = 0.0f;
 
 	std::weak_ptr<KdEffekseerObject> m_wpPillar;			// 再生中の光の柱
 
