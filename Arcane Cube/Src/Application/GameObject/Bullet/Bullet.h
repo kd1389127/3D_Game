@@ -33,7 +33,5 @@ private:
 	int m_flightFrame = 0;							// 飛び始めてからの経過フレーム
 	int m_totalFrames = 1;							// 着弾までにかけるフレーム数(Initで距離から決める)
 
-	static constexpr float m_baseSpeed     = 2.0f;	// 近距離の基準速度(今までの弾の速さ)
-	static constexpr float m_maxSpeed      = 6.0f;	// 速度の上限(遠くてもこれ以上は速くしない)
-	static constexpr int m_maxFlightFrames = 18;	// 最長の飛行時間(60fpsで約0.3秒)
+	static constexpr float m_speed = 3.5f;	// 弾の速さ(距離に関係なく一定)
 };

@@ -32,4 +32,13 @@ private:
 
 	std::weak_ptr<KdEffekseerObject> m_wpPillar;			// 再生中の光の柱
 
+	// ----- 光の柱を出す時間の設定(フレーム数、固定フレーム前提) -----
+	static constexpr int	kPillarShowFrame = 300;		// 柱を出している長さ(約5秒)
+	static constexpr int	kPillarFadeFrame = 60;		// 出る/消えるのにかける時間(約1秒)
+	static constexpr int	kStillFrame		 = 300;		// この時間止まっていたら再表示(約5秒)
+	static constexpr float	kStillDist		 = 0.05f;	// これより小さい移動は「止まっている」とみます
+
+	int           m_pillarTimer = kPillarShowFrame;		// 柱を出す残り時間(開始時に出すので最初から満タン)
+	int           m_stillFrame = 0;						// プレイヤーが止まっているフレーム数
+	Math::Vector3 m_prevTargetPos;						// 前フレームのプレイヤー位置
 };

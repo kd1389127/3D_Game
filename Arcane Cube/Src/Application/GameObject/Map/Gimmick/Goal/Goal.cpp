@@ -89,8 +89,36 @@ void Goal::Update()
 	}
 
 	// ----- 光の柱(遠くからゴールの場所が分かる目印) -----
-	// 魔法陣が出てくるほど薄くなり、魔法陣と入れ替わるように消える(eased は魔法陣と同じ進み具合)
-	const float pillarAlpha = 1.0f - eased;		// 1=くっきり 0=消える
+	// ----- 柱を出す時間の管理 -----
+	const Math::Vector3 targetPos = spTarget->GetPos();
+	const bool isStill = Math::Vector3::Distance(targetPos, m_prevTargetPos) < kStillDist;
+	m_prevTargetPos = targetPos;
+
+	if (m_pillarTimer > 0)
+	{
+		--m_pillarTimer;	// 出している間は残り時間を減らす
+	}
+	else if (isStill)
+	{
+		// 柱が消えている間だけ「止まっている時間」を数える
+		++m_stillFrame;
+		if (m_stillFrame >= kStillFrame)
+		{
+			m_pillarTimer = kPillarShowFrame;	// 迷っていそうなので、もう一度出す
+			m_stillFrame  = 0;
+		}
+	}
+	else
+	{
+		m_stillFrame = 0;
+	}
+
+	// 出る時・消える時はゆっくり(タイマーの最初と最後のkPillarFadeFrameの間でフェード)
+	const int   fadeFrame = std::min({ m_pillarTimer, kPillarShowFrame - m_pillarTimer, kPillarFadeFrame });
+	const float timeAlpha = static_cast<float>(fadeFrame) / kPillarFadeFrame;
+
+	// 魔法陣が出てくるほど薄くなる効果はそのまま残す(eased は魔法陣と同じ進み具合)
+	const float pillarAlpha = timeAlpha * (1.0f - eased);		// 1=くっきり 0=消える
 	
 	std::shared_ptr<KdEffekseerObject> spPillar = m_wpPillar.lock();
 	const bool isPillarPlaying = spPillar && spPillar->IsPlaying();

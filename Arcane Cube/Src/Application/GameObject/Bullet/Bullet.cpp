@@ -14,13 +14,9 @@ void Bullet::Init(const Math::Vector3& startPos, const Math::Vector3& targetPos,
 
 	m_startPos = startPos;
 
-	// 距離から飛行時間を決める(近いと短く、遠くても最長で頭打ち)
+	// 一定の速さで届くまでのフレーム数(最低1フレーム)
 	const float distance = (m_targetPos - startPos).Length();
-	const float speed = std::clamp(distance / m_maxFlightFrames, m_baseSpeed, m_maxSpeed);
-	
-	// その速度で届くまでのフレーム数(最低1フレーム)
-	m_totalFrames = std::max(1, static_cast<int>(std::ceil(distance / speed)));
-	m_flightFrame = 0;
+	m_totalFrames = std::max(1, static_cast<int>(std::ceil(distance / m_speed)));
 
 	m_onImpact = onImpact; // 呼び出し元(Magicwandなど)から受け取った着弾時処理を保持しておく
 

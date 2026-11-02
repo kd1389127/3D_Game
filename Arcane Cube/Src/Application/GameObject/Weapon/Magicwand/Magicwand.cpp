@@ -237,7 +237,7 @@ void Magicwand::Update()
 					MagicManager::Instance().MarkAttemptFailed();
 				}
 			}
-			else if (leftPressed && !isCarrying)
+			else if (leftPressed && !isCarrying && !rightDownNow)
 			{
 				// 既存ブロックを狙っていれば削除を優先し、無ければ従来通り新規生成
 				bool deleted = player ? player->TryDeleteTarget() : false;
@@ -277,15 +277,21 @@ void Magicwand::Update()
 			// 固定後：起点は動かさず、視点で面だけ選ぶ
 			else
 			{
-				// プレビューが空になった時は固定を解除して、狙い直せるようにする
-				if (m_previewBlocks.empty())
+				// 固定したプレビューから離れすぎたら、固定を解いて狙い直させる
+				// (境目でちらつかないよう、余裕としてグリッド1個分を足す)
+				const float keepRange = m_aimRange + BlockGridManager::GridSize;
+				const bool isTooFar = !m_previewBlocks.empty() &&
+					(m_previewBlocks.front()->GetPos() - muzzlePos).LengthSquared() > keepRange * keepRange;
+
+				if (isTooFar)
 				{
-					m_isFixed = false;
+					for (auto& block : m_previewBlocks) { block->Expire(); }
+					m_previewBlocks.clear();
+					m_hasValidAim = false;
 				}
-				else
-				{
-					UpdateHighlight(muzzlePos, parentMat);
-				}
+
+				if (m_previewBlocks.empty()) { m_isFixed = false; }
+				else { UpdateHighlight(muzzlePos, parentMat); }
 			}
 			m_aimHoldFrames++;
 
@@ -299,7 +305,7 @@ void Magicwand::Update()
 			// 左クリックで発射(弾が飛んでいる間は次を撃てない)
 			if (leftPressed && !m_isFiring)
 			{
-				FireStack(muzzlePos);
+				FireStack(muzzlePos,parentMat);
 			}
 
 			// ----- ホイールで段数変更 -----
@@ -494,7 +500,7 @@ void Magicwand::UpdateAimMode(const Math::Vector3& muzzlePos, const Math::Matrix
 	KdCollider::RayInfo rayInfo;
 	rayInfo.m_pos = muzzlePos;
 	rayInfo.m_dir = parentMat.Backward(); // プレイヤーの前方向
-	rayInfo.m_range = 1000.0f;            // 十分に遠くまで判定する
+	rayInfo.m_range = m_aimRange;         // 生成できる距離レンジ
 	rayInfo.m_type = KdCollider::TypeGround | KdCollider::TypeBump;
 
 	// レイの道の近くのものだけ集める(射程1000でも、筒に入るブロックだけになる)
@@ -703,7 +709,7 @@ void Magicwand::RebuildPreview()
 	}
 }
 
-void Magicwand::FireStack(const Math::Vector3& muzzlePos)
+void Magicwand::FireStack(const Math::Vector3& muzzlePos, const Math::Matrix& parentMat)
 {
 	// 置ける場所が無ければ撃たず、魔力切れと同じ振動で知らせる
 	if (m_previewBlocks.empty())
@@ -711,6 +717,58 @@ void Magicwand::FireStack(const Math::Vector3& muzzlePos)
 		MagicManager::Instance().MarkAttemptFailed();
 		return;
 	}
+
+	const Math::Vector3 viewDir = parentMat.Backward();
+	const float maxDist = m_aimRange + BlockGridManager::GridSize * m_maxStackCount;
+
+	// ----- 手前に壁があれば、そこまでしかプレビューに当てない(壁越しに撃たせない) -----
+	KdCollider::RayInfo rayInfo;
+	rayInfo.m_pos	= muzzlePos;
+	rayInfo.m_dir   = viewDir;
+	rayInfo.m_range = maxDist;
+	rayInfo.m_type  = KdCollider::TypeGround | KdCollider::TypeBump;
+
+	std::vector<KdGameObject*> candidates;
+	CollisionFilter::CollectAlongRay(rayInfo.m_pos, rayInfo.m_dir, rayInfo.m_range, candidates);
+	
+	const float kWallMargin = 0.1f;
+	float checkDist = maxDist; 
+	std::list<KdCollider::CollisionResult> results;
+	for (KdGameObject* obj : candidates)
+	{
+		results.clear();
+		if (!obj->Intersects(rayInfo, &results)) { continue;}
+
+		for (auto& ret : results)
+		{
+			const float wallDist = (ret.m_hitPos - muzzlePos).Length();
+			checkDist = std::min(checkDist, wallDist + kWallMargin);
+		}
+	}
+
+	// ----- レティクルがプレビューのどれかに当たっているか(一番近い当たりを使う) -----
+	const float halfSize = BlockGridManager::GridSize * 0.5f;
+	const Math::Vector3 halfExtent(halfSize, halfSize, halfSize);
+
+	float nearestDist = FLT_MAX;
+	for (auto& block : m_previewBlocks)
+	{
+		float dist = 0.0f;
+		if (IntersectRayAABB(muzzlePos, viewDir, block->GetPos(), halfExtent, checkDist, &dist))
+		{
+			nearestDist = std::min(nearestDist, dist);
+		}
+	}
+
+	// どれにも当たっていなければ、生成せずに撃つだけ(壁などに弾かれる)
+	if (nearestDist == FLT_MAX)
+	{
+		SingleShot(muzzlePos, parentMat);
+		return;
+	}
+
+	// 弾の飛び先は、当たったプレビューの位置にする
+	m_aimHitPos = muzzlePos + viewDir * nearestDist;
 
 	// 着弾までに狙いが動くので、今の値をコピーして弾に持たせる
 	const Math::Vector3 baseCell = m_aimBaseCell;
@@ -751,18 +809,8 @@ void Magicwand::FireStack(const Math::Vector3& muzzlePos)
 				return;
 			}
 
-			// 生成できたら今のプレビューを消す(まだエイム中なら次のフレームで作り直される)
-			for (auto& block : self->m_previewBlocks)
-			{
-				block->Expire();
-			}
-			self->m_previewBlocks.clear();
-			self->m_hasValidAim = false;
-			self->m_isFixed = false;
-
-			// 魔力が減った分、段数の上限も下げる(プレビューの数と撃てる数をそろえる)
-			const int remain = MagicManager::Instance().GetRemainingCasts();
-			self->m_stackCount = std::min(self->m_stackCount, std::max(remain, 1));
+			// 生成できたらエイムを終える(プレビュー消去・ズーム解除・Idleに戻る)
+			self->CancelAim();
 
 		});
 

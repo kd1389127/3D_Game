@@ -48,8 +48,9 @@ private:
 	Math::Vector3 m_aimDir = Math::Vector3::Up;         // せり出していく方向(狙った面の法線。床なら上、壁なら横)
 	int m_stackCount = 1;                               // 現在ホイールで選択している「何段せり出すか」の数
 	static constexpr int m_maxStackCount = 5;           // 一度に生成できる最大段数
+	static constexpr float m_aimRange    = 100.0f;		// 狙える距離。BlockDestroyerの削除が届く距離より少し短くする
 	bool m_hasValidAim = false;							// 現在何かに向かって狙えているか(何も無い方向を向いた時の保険)
-	bool m_isFixed = false;								// true = 起点マスを固定済み(視点を動かしても起点は動かない)
+	bool m_isFixed     = false;							// true = 起点マスを固定済み(視点を動かしても起点は動かない)
 
 	// ----- ズーム開始判定用(Aimingに入ってからの経過フレーム。プレビューはすぐ出すが、ズームだけ遅らせる) -----
 	int					 m_aimHoldFrames = 0;
@@ -85,7 +86,7 @@ private:
 	void RebuildPreview();
 
 	// 発射：エイム中のプレビュー位置へ弾を飛ばし、着弾したらブロックを生成する
-	void FireStack(const Math::Vector3& muzzlePos);
+	void FireStack(const Math::Vector3& muzzlePos, const Math::Matrix& parentMat);
 	// エイム中に狙っている着弾点(弾の飛び先)
 	Math::Vector3 m_aimHitPos = Math::Vector3::Zero;
 
