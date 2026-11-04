@@ -35,7 +35,7 @@ private:
 	static constexpr float kStairBrightness = 1.5f;
 
 	// 面の向きによる明暗の強さ(0〜1)。0で効果なし。見ながら調整する
-	static constexpr float kShadeStrength = 1.0f;
+	static constexpr float kFaceShade = 1.0f;
 
 	std::shared_ptr<KdModelData> m_spModel = nullptr;
 	Shape m_shape = Shape::Full;

@@ -111,5 +111,9 @@ void MapBlock::DrawUnLit()
 	{
 		col = Math::Color(kStairBrightness, kStairBrightness, kStairBrightness, 1.0f);
 	}
-	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld, col);
+	auto& standardShader = KdShaderManager::Instance().m_StandardShader;
+
+	standardShader.SetFaceShade(kFaceShade);	// 面の向きで明暗を付ける
+	standardShader.DrawModel(*m_spModel, m_mWorld, col);
+	standardShader.SetFaceShade(0.0f);			// 0=効果なし。他のUnLitの物に影響しないよう戻す
 }
