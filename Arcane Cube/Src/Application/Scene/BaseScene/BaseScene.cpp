@@ -24,8 +24,8 @@ void BaseScene::PreUpdate()
 	for (auto& obj : m_objList)
 	{
 		// ポーズ中は、ポーズメニュー以外の更新を飛ばす
-		if (m_paused && obj != m_pauseObj) { continue; }
-
+		if (m_paused && !IsPauseObj(obj)) { continue; }
+		
 		obj->PreUpdate();
 	}
 }
@@ -37,8 +37,8 @@ void BaseScene::Update()
 
 	for (auto& obj : m_objList)
 	{
-		if (m_paused && obj != m_pauseObj) { continue; }
-
+		if (m_paused && !IsPauseObj(obj)) { continue; }
+		
 		obj->Update();
 	}
 }
@@ -47,7 +47,7 @@ void BaseScene::PostUpdate()
 {
 	for (auto& obj : m_objList)
 	{
-		if (m_paused && obj != m_pauseObj) { continue; }
+		if (m_paused && !IsPauseObj(obj)) { continue; }
 
 		obj->PostUpdate();
 	}
@@ -155,4 +155,9 @@ void BaseScene::Event()
 void BaseScene::Init()
 {
 	// 各シーンで必要な内容を実装(オーバーライド)する
+}
+
+bool BaseScene::IsPauseObj(const std::shared_ptr<KdGameObject>& _obj) const
+{
+	return std::find(m_pauseObjs.begin(), m_pauseObjs.end(), _obj) != m_pauseObjs.end();
 }

@@ -560,6 +560,7 @@ void KdStandardShader::WriteMaterial(const KdMaterial& material, const Math::Vec
 	m_cb2_Material.Work().Emissive = material.m_emissiveRate * emiRate;
 	m_cb2_Material.Work().Metallic = material.m_metallicRate;
 	m_cb2_Material.Work().Roughness = material.m_roughnessRate;
+	m_cb2_Material.Work().FaceShade = m_faceShade;
 	m_cb2_Material.Write();
 
 	//-----------------------

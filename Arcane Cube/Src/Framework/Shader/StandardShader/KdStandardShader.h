@@ -58,8 +58,10 @@ public:
 		Math::Vector3	Emissive = { 1.0f, 1.0f, 1.0f };
 		float			Metallic = 0.0f;
 
+		// 11月4日自分で変更
 		float			Roughness = 1.0f;
-		float			_blank[3] = { 0.0f, 0.0f ,0.0f };
+		float			FaceShade = 0.0f;	// 面の向きによる明暗の強さ。HLSL側と並びを合わせる
+		float			_blank[2] = { 0.0f, 0.0f };
 	};
 
 	// 定数バッファ(ボーン単位更新：スキンメッシュ対応)
@@ -145,6 +147,10 @@ public:
 
 		SetDissolveTexture(*m_dissolveTex);
 	}
+
+	// 11月4日自分で追加
+	// 面の向きによる明暗の強さ(0=なし)。UnLitでも立体感を出す用。使ったら0に戻すこと
+	void SetFaceShade(float strength) { m_faceShade = strength; }
 
 	//(ゲーム内では現在使ってない)
 	// リムライト(フレネル)設定
@@ -297,4 +303,7 @@ private:
 	KdRenderTargetChanger m_depthMapFromLightRTChanger;
 
 	bool		m_dirtyCBObj = false;						// 定数バッファのオブジェクトに変更があったかどうか
+
+	// 11月4日自分で追加
+	float m_faceShade = 0.0f;
 };

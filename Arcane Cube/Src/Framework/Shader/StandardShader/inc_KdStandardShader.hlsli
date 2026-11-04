@@ -35,6 +35,7 @@ cbuffer cbMaterial : register(b2)
 	float3	g_Emissive;  // 自己発光色
 	float	g_Metallic;	 // 金属度
 	float	g_Roughness; // 粗さ
+	float	g_FaceShade; // 面の向きによる明暗の強さ(11月4日自分で追加)
 };
 
 // ボーン行列配列(スキンメッシュ対応)
@@ -64,6 +65,9 @@ struct VSOutputNoLighting
 
 	float2 UV	 : TEXCOORD1;	// UV座標
 	float4 Color : TEXCOORD2;	// 色
+
+	// 11月4日自分で追加
+	float3 wN	 : TEXCOORD3;	// ワールド法線
 };
 
 struct VSOutputGenShadow

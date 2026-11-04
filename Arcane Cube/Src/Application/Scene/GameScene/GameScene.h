@@ -2,6 +2,7 @@
 
 #include"../BaseScene/BaseScene.h"
 
+class Guide;
 class PauseMenu;
 
 class GameScene : public BaseScene
@@ -18,4 +19,5 @@ private:
 	bool IsPaused() const override;
 
 	std::shared_ptr<PauseMenu> m_pauseMenu;
+	std::shared_ptr<Guide>	   m_guide;
 };

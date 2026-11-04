@@ -25,6 +25,10 @@ VSOutputNoLighting main(
 	// 色
 	Out.Color = color;
 
+	// 11月4日自分で追加
+	// ワールド法線(面の向きによる明暗に使う)
+	Out.wN = normalize(mul(normal, (float3x3) g_mWorld));
+	
 	// 出力
 	return Out;
 }

@@ -1,10 +1,13 @@
 ﻿#include "PauseMenu.h"
 #include "../Mouse/Mouse.h"
+#include "../Guide/Guide.h"
 #include "../../../Scene/SceneManager.h"
 
 void PauseMenu::Init()
 {
 	m_tex[kTexResume].Load("Asset/Textures/UI/Pause/Resume.png");
+	m_tex[kTexHowTo].Load("Asset/Textures/UI/Pause/HowTo_Controls.png");
+	m_tex[kTexBack].Load("Asset/Textures/UI/Pause/Back.png");
 	m_tex[kTexRestart].Load("Asset/Textures/UI/Pause/Restart.png");
 	m_tex[kTexStage].Load("Asset/Textures/UI/Pause/StageSelect.png");
 	m_tex[kTexTitle].Load("Asset/Textures/UI/Pause/Title.png");
@@ -40,7 +43,7 @@ void PauseMenu::SetPage(int _page)
 
 	if (_page == 0)
 	{
-		const int ids[] = { kTexResume, kTexRestart, kTexStage, kTexTitle };
+		const int ids[] = { kTexResume, kTexHowTo, kTexRestart, kTexStage, kTexTitle };
 		m_count = static_cast<int>(std::size(ids));
 		for (int i = 0; i < m_count; ++i) { m_ids[i] = ids[i]; }
 	}
@@ -73,7 +76,11 @@ void PauseMenu::Update()
 	// 暗転中(ゴール・奈落・リスタート中)は開閉もクリックも受け付けない
 	if (SceneManager::Instance().IsFading()) { return; }
 
-	if (tabPressed)
+	// スライドを見ている間はTabを受け付けない(スライドのクリックとメニューのクリックが混ざらないように)
+	const std::shared_ptr<Guide> spGuide = m_wpGuide.lock();
+	const bool isSlideOpen = spGuide && spGuide->IsSlideOpen();
+
+	if (tabPressed && !isSlideOpen)
 	{
 		SetOpen(!m_isOpen);
 		return;
@@ -109,6 +116,10 @@ void PauseMenu::Update()
 	{
 	case kTexResume:	// 再開
 		SetOpen(false);
+		break;
+	case kTexHowTo:		// 操作説明のスライドをもう一度見る
+		SetOpen(false);
+		if (spGuide) { spGuide->OpenSlides(); }
 		break;
 	case kTexRestart:	// リスタート(今のステージをもう一度)
 		SceneManager::Instance().RequestChangeScene(

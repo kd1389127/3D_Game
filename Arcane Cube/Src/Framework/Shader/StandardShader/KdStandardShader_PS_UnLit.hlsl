@@ -10,6 +10,11 @@ Texture2D g_dissolveTex : register(t11); // ディゾルブマップ
 // サンプラ
 SamplerState g_ss : register(s0);
 
+// 11月4日自分で追加
+// 面の向きによる明暗の設定(ライト計算ではなく、固定の向きとの内積だけで決める)
+static const float3 kFaceLightDir = float3(0.259f, 0.864f, 0.432f); // 見かけの光の向き(ほぼ真上)
+static const float kFaceDarkest = 0.55f; // いちばん暗い面の明るさ(1.0で効果なし)
+
 float4 main(VSOutputNoLighting In) : SV_Target0
 {
 	// ディゾルブによる描画スキップ
@@ -21,6 +26,16 @@ float4 main(VSOutputNoLighting In) : SV_Target0
 
 	float4 baseColor = g_tex.Sample(g_ss, In.UV) * In.Color * g_BaseColor;
 	float3 outColor = baseColor.rgb;
+
+	// 11月4日自分で追加
+	// 面の向きによる明暗(FaceShadeが設定された物だけ)
+	if(g_FaceShade > 0.0f)
+	{
+		float facing = saturate(dot(normalize(In.wN), kFaceLightDir) / kFaceLightDir.y); // 真上を向く面=1
+		float shade = lerp(kFaceDarkest, 1.0f, facing);
+		outColor *= lerp(1.0f, shade, g_FaceShade);
+	}
+
 	
 	// Alphaテスト
 	if (baseColor.a < 0.05f)

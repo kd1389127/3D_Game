@@ -40,9 +40,13 @@ protected :
 	// Update・PostUpdateでも同じ値を使う(途中で変わると、カメラだけ1フレーム遅れてずれるため)
 	bool m_paused = false;
 
-	// ポーズ中でも更新を止めないオブジェクト(ポーズメニュー本体)
-	std::shared_ptr<KdGameObject> m_pauseObj;
+	// ポーズ中でも更新を止めないオブジェクト(ポーズメニュー・操作説明スライド)
+	std::vector<std::shared_ptr<KdGameObject>> m_pauseObjs;
 
 	// 全オブジェクトのアドレスをリストで管理
 	std::list<std::shared_ptr<KdGameObject>> m_objList;
+
+private:
+	// 止めないオブジェクトか調べる(PreUpdate・Update・PostUpdateの3か所で使うので関数にした)
+	bool IsPauseObj(const std::shared_ptr<KdGameObject>& _obj) const;
 };

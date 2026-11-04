@@ -154,13 +154,6 @@ void GameScene::Init()
 	reticle->SetShowHint(stage == 1);	// Map2だけ(stageは0始まり)
 	m_objList.push_back(reticle);
 
-	// 操作説明(バナーはMap1だけ、Tabアイコンは全ステージ)
-	std::shared_ptr<Guide> guide;
-	guide = std::make_shared<Guide>();
-	guide->Init(stage == 0);
-	guide->SetTarget(player);
-	m_objList.push_back(guide);
-
 	// 魔力ゲージ
 	std::shared_ptr<MagicGaugeUI> magicgaugeUI;
 	magicgaugeUI = std::make_shared<MagicGaugeUI>();
@@ -260,15 +253,28 @@ void GameScene::Init()
 	mapbackground->SetTarget(player);
 	fpscamera->SetMagicwand(magicwand);
 	KdEffekseerManager::GetInstance().SetCamera(fpscamera->WorkCamera());
-	
+
+	// 操作説明：魔力ゲージなどより手前に描くため、Tabメニューの直前に作る
+	// (スライドはMap1の開始時だけ自動で出す。Tabアイコンは全ステージ)
+	m_guide = std::make_shared<Guide>();
+	m_guide->Init(stage == 0);
+	m_objList.push_back(m_guide);
+
 	// Tabメニュー：一番手前に描くため、リストの最後に追加する
 	m_pauseMenu = std::make_shared<PauseMenu>();
 	m_pauseMenu->Init();
+	m_pauseMenu->SetGuide(m_guide);	// 「HOW TO PLAY」で、スライドを出してもらう
 	m_objList.push_back(m_pauseMenu);
-	m_pauseObj = m_pauseMenu;	// ポーズ中でも、これだけは更新を止めない
+
+	// ポーズ中でも更新を止めないもの(メニューと、クリックで進むスライド)
+	m_pauseObjs.push_back(m_pauseMenu);
+	m_pauseObjs.push_back(m_guide);
+
 }
 
 bool GameScene::IsPaused() const
 {
-	return m_pauseMenu && m_pauseMenu->IsOpen();
+	const bool menuOpen = m_pauseMenu && m_pauseMenu->IsOpen();
+	const bool slideOpen = m_guide && m_guide->IsSlideOpen();	// スライド中もゲームを止める
+	return menuOpen || slideOpen;
 }

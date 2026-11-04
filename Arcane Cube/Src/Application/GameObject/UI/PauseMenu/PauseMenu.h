@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+class Guide;
+
 class PauseMenu : public KdGameObject
 {
 public:
@@ -13,6 +15,9 @@ public:
 	// メニューが開いているか(GameSceneがゲーム側を止めるのに使う)
 	bool IsOpen() const { return m_isOpen; }
 
+	// 操作説明スライドを出す相手
+	void SetGuide(const std::shared_ptr<Guide>& guide) { m_wpGuide = guide; }
+
 private:
 	// 開閉の切り替え。Tabで開く・Tabで閉じる・「再開」の3か所から呼ぶので関数にした
 	void SetOpen(bool _isOpen);
@@ -24,6 +29,7 @@ private:
 	enum TexId
 	{
 		kTexResume,
+		kTexHowTo,
 		kTexRestart,
 		kTexStage,
 		kTexTitle,
@@ -42,6 +48,8 @@ private:
 	static constexpr float kOpenStep = 1.0f / 12.0f;	// 開閉の速さ(1フレームの進み。約0.2秒)
 
 	KdTexture m_tex[kTexCount];
+
+	std::weak_ptr<Guide> m_wpGuide;
 
 	// 今のページに並べるボタン(上から順)
 	int  m_ids[kMaxBtn] = {};		// 画像の番号
