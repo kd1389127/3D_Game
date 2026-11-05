@@ -1,5 +1,16 @@
 ﻿#include "Objective.h"
 #include "../../Weapon/Magicwand/Magicwand.h"
+#include "../../Character/Player/Player.h"
+
+namespace
+{
+	// はじめは速く、終わりはゆっくり(0〜1を渡すと0〜1が返る)
+	float EaseOutCubic(float t)
+	{
+		const float inverse = 1.0f - t;
+		return 1.0f - inverse * inverse * inverse;
+	}
+}
 
 void Objective::Init()
 {
@@ -25,6 +36,13 @@ void Objective::Update()
 		if (spWand->HasGenerated()) { m_achieved[2] = true; }		// ブロックを作れた
 	}
 
+	// ゴールに触れたら、最後の項目を達成にする
+	const std::shared_ptr<Player> spPlayer = m_wpPlayer.lock();
+	if (spPlayer && spPlayer->HasReachedGoal())
+	{
+		m_achieved[kGoalIndex] = true;
+	}
+
 	switch (m_phase)
 	{
 	case Phase::FadeIn:
@@ -37,15 +55,13 @@ void Objective::Update()
 		break;
 
 	case Phase::Wait:
-	{
-		// 今の項目が記録済みなら、チェックの段階へ(4つ目は記録がないので、出たまま残る)
+		// 今の項目が記録済みなら、チェックの段階へ
 		if (m_achieved[m_index])
 		{
 			m_timer = 0;
 			m_phase = Phase::Done;
 		}
 		break;
-	}
 
 	case Phase::Done:
 		++m_timer;
@@ -60,16 +76,30 @@ void Objective::Update()
 		++m_timer;
 		if (m_timer >= kFadeFrames)
 		{
-			++m_index;	// 次の項目へ(達成のある項目だけここに来るので、範囲は超えない)
+			++m_index;
 			m_timer = 0;
-			m_phase = Phase::FadeIn;
+
+			// 最後まで終わったら止める(m_text[m_index]で配列の外を読まないため)
+			if (m_index >= kCount)
+			{
+				m_phase = Phase::Finished;
+			}
+			else
+			{
+				m_phase = Phase::FadeIn;
+			}
 		}
+		break;
+
+	case Phase::Finished:
 		break;
 	}
 }
 
 void Objective::DrawSprite()
 {
+	if (m_phase == Phase::Finished) { return; }
+
 	auto& sp = KdShaderManager::Instance().m_spriteShader;
 
 	// 現れる・消える時の透明度(イージング：はじめは速く、終わりはゆっくり)
@@ -77,8 +107,7 @@ void Objective::DrawSprite()
 	if (m_phase == Phase::FadeIn || m_phase == Phase::FadeOut)
 	{
 		const float t = static_cast<float>(m_timer) / kFadeFrames;	// 0〜1
-		const float inverse = 1.0f - t;
-		const float eased = 1.0f - inverse * inverse * inverse;		// EaseOutCubic
+		const float eased = EaseOutCubic(t);
 
 		if (m_phase == Phase::FadeIn) { alpha = eased; }
 		else { alpha = 1.0f - eased; }
@@ -96,8 +125,7 @@ void Objective::DrawSprite()
 		if (m_phase == Phase::Done && m_timer < kCheckPopFrames)
 		{
 			const float t = static_cast<float>(m_timer) / kCheckPopFrames;
-			const float inverse = 1.0f - t;
-			scale = 1.0f - inverse * inverse * inverse;	// EaseOutCubic
+			scale = EaseOutCubic(t);
 		}
 
 		const float size = kCheckSize * scale;

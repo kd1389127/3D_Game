@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 class Magicwand;
+class Player;
 
 // 画面左に「今やること」を1つずつ出すクラス(Map1用)。達成すると次の項目が出る
 class Objective : public KdGameObject
@@ -14,6 +15,7 @@ public:
 	void DrawSprite() override;
 
 	void SetTarget(const std::shared_ptr<Magicwand>& wand) { m_wpWand = wand; }
+	void SetPlayer(const std::shared_ptr<Player>& player) { m_wpPlayer = player; }
 
 private:
 	// 今の項目の段階
@@ -23,6 +25,7 @@ private:
 		Wait,		// 達成を待つ
 		Done,		// チェックを見せる
 		FadeOut,	// 消える
+		Finished,	// 全部終わった(何も出さない)
 	};
 
 	static constexpr int   kFontNo = 1;				// AddFontで登録した番号と合わせる
@@ -46,6 +49,7 @@ private:
 		"左クリックで撃ってブロックを作る",
 		"ゴールへ向かおう",
 	};
+	static constexpr int kGoalIndex = kCount - 1;	// 最後の項目(ゴールへ向かおう)
 
 	static constexpr float kCheckSize          = 32.0f;	// チェックの大きさ(枠の24より少し大きく、枠からはみ出す)
 	static constexpr int   kCheckPopFrames     = 8;		// チェックが大きくなる長さ
@@ -55,6 +59,7 @@ private:
 	// 達成の記録(項目を出す前にやっても残る)
 	bool m_achieved[kCount] = {};
 	std::weak_ptr<Magicwand> m_wpWand;
+	std::weak_ptr<Player>	 m_wpPlayer;
 
 	Phase m_phase = Phase::FadeIn;
 	int   m_index = 0;	// 今出している項目の番号

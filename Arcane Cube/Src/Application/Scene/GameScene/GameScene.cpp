@@ -262,6 +262,7 @@ void GameScene::Init()
 		objective = std::make_shared<Objective>();
 		objective->Init();
 		objective->SetTarget(magicwand);
+		objective->SetPlayer(player);
 		m_objList.push_back(objective);
 	}
 

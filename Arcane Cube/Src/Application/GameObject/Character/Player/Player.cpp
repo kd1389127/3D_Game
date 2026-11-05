@@ -563,6 +563,8 @@ void Player::CheckGoal()
 	// 何かTypeEventの物(＝ゴール)に触れていたら
 	if (!resultList.empty())
 	{
+		m_hasReachedGoal = true;	// オブジェクティブのチェック用
+
 		// ゴール音：触れた最初の1回だけ(この関数は毎フレーム呼ばれるので、フラグで止める)
 		if (!m_goalSePlayed)
 		{
