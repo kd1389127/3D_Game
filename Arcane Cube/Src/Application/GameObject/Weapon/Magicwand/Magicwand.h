@@ -20,6 +20,10 @@ public:
 	// ズームすべきかどうか(Aiming中で、かつ一定フレーム以上経過している場合のみtrue)
 	bool ShouldZoom() const { return m_state == WandState::Aiming && m_aimHoldFrames >= m_zoomHoldThreshold; }
 
+	// オブジェクティブの達成判定に使う
+	int  GetStackCount() const { return m_stackCount; }
+	bool HasGenerated() const { return !m_generatedStacks.empty(); }
+
 private:
 
 	// ----- 発射時の「振る」モーション -----

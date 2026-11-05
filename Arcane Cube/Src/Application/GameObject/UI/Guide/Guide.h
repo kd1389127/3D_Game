@@ -7,7 +7,7 @@ public:
 	Guide() {}
 	~Guide()	override {}
 
-	void Init(bool showSlides);
+	void Init();
 	void Update()		override;
 	void DrawSprite()	override;
 

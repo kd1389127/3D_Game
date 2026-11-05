@@ -4,7 +4,7 @@
 
 static const char* kTabTexPath = "Asset/Textures/UI/Guide/TabHint.png";
 
-void Guide::Init(bool showSlides)
+void Guide::Init()
 {
 	m_tabTex.Load(kTabTexPath);
 	m_drawType = eDrawTypeUI;
@@ -14,8 +14,6 @@ void Guide::Init(bool showSlides)
 	{
 		m_slideTex[i].Load("Asset/Textures/UI/Guide/Slide" + std::to_string(i + 1) + ".png");
 	}
-
-	if (showSlides) { m_openWait = kOpenDelay; }	// すぐ止めず、少し待ってから出す
 }
 
 void Guide::OpenSlides()

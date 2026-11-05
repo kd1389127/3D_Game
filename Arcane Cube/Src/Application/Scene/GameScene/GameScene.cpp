@@ -13,6 +13,7 @@
 #include "../../GameObject/UI/Mouse/Mouse.h"
 #include "../../GameObject/UI/PauseMenu/PauseMenu.h"
 #include "../../GameObject/UI/Guide/Guide.h"
+#include "../../GameObject/UI/Objective/Objective.h"
 #include "../../GameObject/Block/GimmickBlock/GimmickBlock.h"
 #include "../../GameObject/Map/Gimmick/Goal/Goal.h"
 #include "../../GameObject/Map/Gimmick/Cage/Cage.h"
@@ -254,10 +255,20 @@ void GameScene::Init()
 	fpscamera->SetMagicwand(magicwand);
 	KdEffekseerManager::GetInstance().SetCamera(fpscamera->WorkCamera());
 
+	// オブジェクティブ(Map1だけ)
+	if (stage == 0)
+	{
+		std::shared_ptr<Objective> objective;
+		objective = std::make_shared<Objective>();
+		objective->Init();
+		objective->SetTarget(magicwand);
+		m_objList.push_back(objective);
+	}
+
 	// 操作説明：魔力ゲージなどより手前に描くため、Tabメニューの直前に作る
 	// (スライドはMap1の開始時だけ自動で出す。Tabアイコンは全ステージ)
 	m_guide = std::make_shared<Guide>();
-	m_guide->Init(stage == 0);
+	m_guide->Init();
 	m_objList.push_back(m_guide);
 
 	// Tabメニュー：一番手前に描くため、リストの最後に追加する
