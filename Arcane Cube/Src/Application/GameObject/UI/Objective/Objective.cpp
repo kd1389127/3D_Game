@@ -1,9 +1,17 @@
 ﻿#include "Objective.h"
+#include "../../../Scene/StageData.h"
 #include "../../Weapon/Magicwand/Magicwand.h"
 #include "../../Character/Player/Player.h"
+#include "../../Map/Gimmick/Switch/Switch.h"
 
 namespace
 {
+	// 種類を、配列の番号に変える(m_achievedやkTextsを引く時に使う)
+	int ToIndex(ObjectiveKind kind)
+	{
+		return static_cast<int>(kind);
+	}
+
 	// はじめは速く、終わりはゆっくり(0〜1を渡すと0〜1が返る)
 	float EaseOutCubic(float t)
 	{
@@ -12,12 +20,17 @@ namespace
 	}
 }
 
-void Objective::Init()
+void Objective::Init(const std::vector<ObjectiveKind>& items)
 {
 	m_drawType = eDrawTypeUI;
 
-	// 文字のテクスチャは1回だけ作って持っておく(毎フレーム作ると重い)
-	for (int i = 0; i < kCount; ++i)
+	m_items = items;
+	if (m_items.empty())
+	{
+		m_phase = Phase::Finished;
+	}
+
+	for (int i = 0; i < kKindCount; ++i)
 	{
 		m_text[i] = KdFontManager::Instance().CreateFontTexture(kFontNo, kTexts[i], kAntiAlias);
 	}
@@ -31,16 +44,35 @@ void Objective::Update()
 	const std::shared_ptr<Magicwand> spWand = m_wpWand.lock();
 	if (spWand)
 	{
-		if (spWand->IsAiming()) { m_achieved[0] = true; }			// 狙った
-		if (spWand->GetStackCount() >= 2) { m_achieved[1] = true; }	// ホイールで長さを変えた
-		if (spWand->HasGenerated()) { m_achieved[2] = true; }		// ブロックを作れた
+		if (spWand->IsAiming())			  { m_achieved[ToIndex(ObjectiveKind::Aim)] = true; }	
+		if (spWand->GetStackCount() >= 2) { m_achieved[ToIndex(ObjectiveKind::Wheel)] = true; }
+		if (spWand->HasGenerated())		  { m_achieved[ToIndex(ObjectiveKind::Shoot)] = true; }
 	}
 
 	// ゴールに触れたら、最後の項目を達成にする
 	const std::shared_ptr<Player> spPlayer = m_wpPlayer.lock();
 	if (spPlayer && spPlayer->HasReachedGoal())
 	{
-		m_achieved[kGoalIndex] = true;
+		m_achieved[ToIndex(ObjectiveKind::Goal)] = true;
+	}
+
+	// すべてのスイッチが同時に起動したら達成(スイッチがないステージでは何もしない)
+	if (!m_wpSwitches.empty())
+	{
+		bool allActive = true;
+		for (const auto& wpSwitch : m_wpSwitches)
+		{
+			const std::shared_ptr<Switch> spSwitch = wpSwitch.lock();
+			if (!spSwitch || !spSwitch->IsActive())
+			{
+				allActive = false;
+			}
+		}
+
+		if (allActive)
+		{
+			m_achieved[ToIndex(ObjectiveKind::Switch)] = true;
+		}
 	}
 
 	switch (m_phase)
@@ -56,7 +88,7 @@ void Objective::Update()
 
 	case Phase::Wait:
 		// 今の項目が記録済みなら、チェックの段階へ
-		if (m_achieved[m_index])
+		if (m_achieved[ToIndex(m_items[m_index])])
 		{
 			m_timer = 0;
 			m_phase = Phase::Done;
@@ -80,7 +112,7 @@ void Objective::Update()
 			m_timer = 0;
 
 			// 最後まで終わったら止める(m_text[m_index]で配列の外を読まないため)
-			if (m_index >= kCount)
+			if (m_index >= static_cast<int>(m_items.size()))
 			{
 				m_phase = Phase::Finished;
 			}
@@ -136,11 +168,19 @@ void Objective::DrawSprite()
 	// 文字を1文字ずつ横に並べて描く(1文字の幅は、そのテクスチャの幅)
 	Math::Color textColor = { 1.0f, 1.0f, 1.0f, alpha };
 	float x = kTextLeft;
-	for (const auto& glyph : m_text[m_index]->GetTexList())
+	for (const auto& glyph : m_text[ToIndex(m_items[m_index])]->GetTexList())
 	{
 		const float w = static_cast<float>(glyph->FontTex->GetInfo().Width);
 		const float h = static_cast<float>(glyph->FontTex->GetInfo().Height);
 		sp.DrawTex(glyph->FontTex.get(), x + w / 2, kPosY, w, h, nullptr, &textColor);	// 座標は中心指定
 		x += w;
+	}
+}
+
+void Objective::SetSwitches(const std::vector<std::shared_ptr<Switch>>& switches)
+{
+	for (const auto& sw : switches)
+	{
+		m_wpSwitches.push_back(sw);
 	}
 }

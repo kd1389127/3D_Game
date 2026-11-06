@@ -208,11 +208,13 @@ void GameScene::Init()
 		m_objList.push_back(lift);
 	}
 
+	// オブジェクティブで使うのでif文の外に
+	std::vector<std::shared_ptr<Switch>> switches;
+
 	// スイッチ・檻・ギミックブロックは、このステージで必要な場合のみ生成する
 	if (data.hasGimmickCage)
 	{
 		// スイッチ(座標の数だけ生成)
-		std::vector<std::shared_ptr<Switch>> switches;
 		for (const auto& pos : data.switchPositions)
 		{
 			std::shared_ptr<Switch> sw;
@@ -255,14 +257,15 @@ void GameScene::Init()
 	fpscamera->SetMagicwand(magicwand);
 	KdEffekseerManager::GetInstance().SetCamera(fpscamera->WorkCamera());
 
-	// オブジェクティブ(Map1だけ)
-	if (stage == 0)
+	// オブジェクティブ(StageDataに項目があるステージだけ)
+	if (!data.objectives.empty())
 	{
 		std::shared_ptr<Objective> objective;
 		objective = std::make_shared<Objective>();
-		objective->Init();
+		objective->Init(data.objectives);
 		objective->SetTarget(magicwand);
 		objective->SetPlayer(player);
+		objective->SetSwitches(switches);
 		m_objList.push_back(objective);
 	}
 

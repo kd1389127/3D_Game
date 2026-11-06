@@ -1,5 +1,15 @@
 ﻿#pragma once
 
+// オブジェクティブ(画面左の「今やること」)の種類。
+enum class ObjectiveKind : int
+{
+	Aim,	// 右クリック長押しで狙う
+	Wheel,	// ホイールで長さを決める
+	Shoot,	// 左クリックで撃ってブロックを作る
+	Goal,	// ゴールへ向かう
+	Switch,	// すべてのスイッチを起動する
+};
+
 // 1台のリフトの配置情報
 struct LiftData
 {
@@ -66,6 +76,8 @@ struct StageData
 	std::vector<CageData> extraCages;
 	std::vector<ForbiddenZone> forbiddenZones;						// 魔法ブロックを置けない場所(なければ空)
 	std::vector<CheckpointZone> checkpoints;						// 部屋ごとの中間地点(なければ空)
+
+	std::vector<ObjectiveKind> objectives = { ObjectiveKind::Goal };// 出す項目(上から順)。空なら出さない
 };
 
 // ステージテーブル(ステージを増やす場合はここに追加していくだけでOK)
@@ -74,10 +86,16 @@ static const StageData g_stageTable[] =
 	// ステージ1
 	// プレイヤー開始位置、ゴールの位置、ステージの下限、プレイヤーの向き
 	// ギミックを使うか、ギミックの各配置、CSVデータ、CSVの列、CSVの行、置ける最大の上面
-	{ 
+	{
 		Math::Vector3(80, 0, 10), Math::Vector3(-100, 13.5, 8.0f), 0.0f,-90.0f,
 		false, {}, Math::Vector3::Zero,{},
-		"Asset/Data/MapData/Map1.csv", 14, 4 
+		"Asset/Data/MapData/Map1.csv", 14, 4,
+		0,
+		32.0f,
+		0,Math::Vector2::Zero,Math::Vector2::Zero,
+		Math::Vector3(55.0f,45.0f,45.0f),
+		{},{},{},{},
+		{ObjectiveKind::Aim,ObjectiveKind::Wheel,ObjectiveKind::Shoot,ObjectiveKind::Goal},
 	},
 
 	// ステージ2(スイッチ・檻・ギミックブロックの座標)
@@ -89,6 +107,11 @@ static const StageData g_stageTable[] =
 		{Math::Vector3(64, 52.0f, 0)},		// gimmickBlockPositions
 		"Asset/Data/MapData/Map2.csv", 14, 5, 
 		7,
+		32.0f,
+		0, Math::Vector2::Zero, Math::Vector2::Zero,
+		Math::Vector3(55.0f, 45.0f, 45.0f),
+		{}, {}, {}, {},
+		{ ObjectiveKind::Switch, ObjectiveKind::Goal },
 	},
 	
 	// ステージ3：リフトの紹介。ブロックを持ってリフトで奈落を渡り、スイッチに置いて檻を開ける
@@ -99,19 +122,21 @@ static const StageData g_stageTable[] =
 		Math::Vector3(192, 0, 0),						// cageBasePos
 		{ Math::Vector3(18, 4, 16) },					// gimmickBlockPositions
 		"Asset/Data/MapData/Map3.csv", 2, 4,			// originCol=2, originRow=4
-		2,												// buildLimitLayers
+		4,												// buildLimitLayers
 		32.0f,											// cageHeight
 		0, Math::Vector2::Zero, Math::Vector2::Zero,	// 高く積めるエリアなし
 		Math::Vector3(55.0f, 40.0f, 45.0f),				// cageScale
 		{
-		// 変更後：始点をゴール側(136)、終点をプレイヤー側(48)にする
-		{ Math::Vector3(136, 0, 0), Math::Vector3(48, 0, 0), 5.0f }
+		// 変更後：始点をゴール側(140)、終点をプレイヤー側(44)にする
+		{ Math::Vector3(140, 0, 0), Math::Vector3(44, 0, 0), 5.0f }
 		},
 		{},
 		{
 			// 奈落の上は、高さも奥行きも全部、魔法ブロックを置けない(リフトを使わせる)
 			{ Math::Vector3(36, -1000, -1000), Math::Vector3(148, 1000, 1000) }
-		}
+		},
+		{},
+		{ObjectiveKind::Switch,ObjectiveKind::Goal},
 	},
 
 	// ステージ4：A側は魔法の橋、B側は階段で高台へ。ブロック2個を両スイッチに置くと檻が開く
@@ -122,9 +147,9 @@ static const StageData g_stageTable[] =
 		Math::Vector3(216, 0, 0),
 		{ Math::Vector3(104, 4, -104), Math::Vector3(104, 52, 96) },	// Bは高台48の上
 		"Asset/Data/MapData/Map4.csv", 4, 15,
-		2,																// 通常の建築上限
+		5,																// 通常の建築上限
 		50.0f,															// cageHeight
-		5, Math::Vector2(60, 44), Math::Vector2(148, 108),				// 南の部屋だけ5層
+		0, Math::Vector2::Zero, Math::Vector2::Zero,
 		Math::Vector3(73.0f, 57.0f, 45.0f)								// cageScale
 	},
 
@@ -140,9 +165,9 @@ static const StageData g_stageTable[] =
 		  Math::Vector3(304, 4, -128),		// B
 		  Math::Vector3(0, 52, -328) },		// C：塔の上
 		"Asset/Data/MapData/Map5.csv", 39, 45,
-		2,
+		5,
 		50.0f,
-		5, Math::Vector2(-84, -348), Math::Vector2(84, -228),
+		0, Math::Vector2::Zero, Math::Vector2::Zero,
 		Math::Vector3(41.0f, 57.0f, 45.0f),
 		{
 			{ Math::Vector3(168, 0, -176), Math::Vector3(168, 0, -144), 3.5f },
@@ -168,7 +193,7 @@ static const StageData g_stageTable[] =
 			// ---- 奈落のある部屋ごとの中間地点(落ちたら、その部屋の入口に戻る) ----
 			// 箱の範囲は仮。部屋の端でPキーを押して、座標を見て広げる
 			{
-				// A部屋(西)：入口の足元の座標は、Pキーで見た値(Y=10)から頭の高さ10を引いた0
+				// A部屋(西)：入口の足元の座標
 				Math::Vector3(-330, -1000, -196), Math::Vector3(-100, 1000, -60),	// 箱(最小・最大)
 				Math::Vector3(-110, 0, -128), -90.0f								// 戻る位置、向き
 			},
@@ -178,9 +203,10 @@ static const StageData g_stageTable[] =
 				Math::Vector3(105, 0, -128), 90.0f
 			}
 		},
+		{ObjectiveKind::Switch,ObjectiveKind::Goal}
 	},
 
-		// GoalMap：階段を上ると画面が白くなって、リザルトへ(ゴールは置かない。常に最後のステージにする)
+	// GoalMap：階段を上ると画面が白くなって、リザルトへ(ゴールは置かない。常に最後のステージにする)
 	{
 		Math::Vector3(16, 0, 0), Math::Vector3::Zero, 0.0f, -90.0f,
 		false, {}, Math::Vector3::Zero, {},

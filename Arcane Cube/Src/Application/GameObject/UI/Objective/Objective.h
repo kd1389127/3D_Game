@@ -2,6 +2,8 @@
 
 class Magicwand;
 class Player;
+class Switch;
+enum class ObjectiveKind : int;
 
 // 画面左に「今やること」を1つずつ出すクラス(Map1用)。達成すると次の項目が出る
 class Objective : public KdGameObject
@@ -10,12 +12,13 @@ public:
 	Objective() {}
 	~Objective() override {}
 
-	void Init();
+	void Init(const std::vector<ObjectiveKind>& items);
 	void Update() override;
 	void DrawSprite() override;
 
 	void SetTarget(const std::shared_ptr<Magicwand>& wand) { m_wpWand = wand; }
 	void SetPlayer(const std::shared_ptr<Player>& player) { m_wpPlayer = player; }
+	void SetSwitches(const std::vector<std::shared_ptr<Switch>>& switches);
 
 private:
 	// 今の項目の段階
@@ -41,15 +44,17 @@ private:
 	static constexpr float kBoxPosX  = -640.0f + kMargin + kBoxHalf;
 	static constexpr float kTextLeft = kBoxPosX + kBoxHalf + kTextGap;	// 文字の左端
 
-	static constexpr int kCount = 4;				// 狙う / ホイール / 撃つ / 光の柱へ向かう
-	static constexpr const char* kTexts[kCount] =
+	// ObjectiveKindの種類の数。文言の並びは、StageData.hのenumと同じにする
+	static constexpr int kKindCount = 5;
+	static constexpr const char* kTexts[kKindCount] =
 	{
 		"右クリック長押しで狙う",
 		"マウスホイールで長さを決める",
 		"左クリックで撃ってブロックを作る",
 		"ゴールへ向かおう",
+		"すべてのスイッチを起動して檻を開けよう",
+
 	};
-	static constexpr int kGoalIndex = kCount - 1;	// 最後の項目(ゴールへ向かおう)
 
 	static constexpr float kCheckSize          = 32.0f;	// チェックの大きさ(枠の24より少し大きく、枠からはみ出す)
 	static constexpr int   kCheckPopFrames     = 8;		// チェックが大きくなる長さ
@@ -57,12 +62,15 @@ private:
 	KdTexture m_checkTex;
 
 	// 達成の記録(項目を出す前にやっても残る)
-	bool m_achieved[kCount] = {};
-	std::weak_ptr<Magicwand> m_wpWand;
-	std::weak_ptr<Player>	 m_wpPlayer;
+	bool m_achieved[kKindCount] = {};
+	std::vector<ObjectiveKind>		   m_items;
+	std::weak_ptr<Magicwand>		   m_wpWand;
+	std::weak_ptr<Player>			   m_wpPlayer;
+	std::vector<std::weak_ptr<Switch>> m_wpSwitches;
+	std::shared_ptr<KdFontSprite>	   m_text[kKindCount];
+
 
 	Phase m_phase = Phase::FadeIn;
 	int   m_index = 0;	// 今出している項目の番号
 	int   m_timer = 0;	// 今の段階に入ってからのフレーム数
-	std::shared_ptr<KdFontSprite> m_text[kCount];
 };

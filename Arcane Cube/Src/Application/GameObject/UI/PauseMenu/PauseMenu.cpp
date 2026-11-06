@@ -11,7 +11,6 @@ void PauseMenu::Init()
 	m_tex[kTexRestart].Load("Asset/Textures/UI/Pause/Restart.png");
 	m_tex[kTexStage].Load("Asset/Textures/UI/Pause/StageSelect.png");
 	m_tex[kTexTitle].Load("Asset/Textures/UI/Pause/Title.png");
-	m_tex[kTexBack].Load("Asset/Textures/UI/Pause/Back.png");
 
 	// Stage1.png〜Stage5.png をまとめて読む
 	for (int i = 0; i < kStageCount; ++i)
