@@ -44,7 +44,7 @@ private:
 
 	static constexpr float kBtnW = 640.0f;	// ボタンの大きさ(画像の幅960の半分)
 	static constexpr float kBtnH = 80.0f;
-	static constexpr float kStep = 100.0f;	// ボタンの間隔
+	static constexpr float kStep = 90.0f;	// ボタンの間隔
 	static constexpr float kOpenStep = 1.0f / 12.0f;	// 開閉の速さ(1フレームの進み。約0.2秒)
 
 	KdTexture m_tex[kTexCount];
