@@ -2,11 +2,8 @@
 #include "../Mouse/Mouse.h"
 #include "../../../Scene/SceneManager.h"
 
-static const char* kTabTexPath = "Asset/Textures/UI/Guide/TabHint.png";
-
 void Guide::Init()
 {
-	m_tabTex.Load(kTabTexPath);
 	m_drawType = eDrawTypeUI;
 
 	// Slide1.png〜Slide3.png をまとめて読む
@@ -47,10 +44,6 @@ void Guide::Update()
 void Guide::DrawSprite()
 {
 	auto& sp = KdShaderManager::Instance().m_spriteShader;
-
-	// Tabアイコン(常時)
-	Math::Color tabColor = { 1.0f, 1.0f, 1.0f, kTabAlpha };
-	sp.DrawTex(&m_tabTex, kTabPosX, kTabPosY, kTabW, kTabH, nullptr, &tabColor);
 
 	// 操作説明スライド(一番手前。周りは暗くしたゲーム画面のまま)
 	if (m_slideIndex < 0) { return; }

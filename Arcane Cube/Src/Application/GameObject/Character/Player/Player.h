@@ -24,6 +24,9 @@ public:
 	bool IsGrabTargetFar()  const;
 	int  GetDropBlockedId() const;
 
+	// 持っているブロックの位置を取る。持っていなければfalseを返す
+	bool TryGetCarriedBlockPos(Math::Vector3& outPos) const;
+
 	// ブロック削除関連
 	bool HasDeleteTarget() const;
 	bool TryDeleteTarget();

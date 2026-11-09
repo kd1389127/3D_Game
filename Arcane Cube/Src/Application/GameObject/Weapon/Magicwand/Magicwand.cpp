@@ -11,6 +11,7 @@
 #include "../../Map/MapBlock/MapBlock.h"
 #include "../../Magic/MagicManager.h"
 #include "../../Collision/Collision.h"
+#include "Component/GrabBeam.h"
 namespace
 {
 	constexpr float kHitEffectSize = 3.5f;
@@ -117,7 +118,16 @@ namespace
 	constexpr float kBodyRadius = 3.0f;
 	constexpr float kBodyHeight = 10.0f;	// 足元から頭(m_pos)までの高さ
 	constexpr float kBodyHalfHeight = kBodyHeight * 0.5f;
+
+	// 杖本体から見た魔法石の位置(銃口と同じ位置。弾の発射位置と、掴み中のプラズマの根元に使う)
+	const Math::Vector3 kStoneLocalOffset(0.2f, 0.7f, 0.7f);
+
+	// 杖のモデルから見た魔法石の位置(ゲーム内で動かして合わせた値)。掴み中のプラズマの根元に使う
+	const Math::Vector3 kStoneModelPos(0.13f, 0.73f, 0.70f);
 }
+
+Magicwand::Magicwand()  = default;
+Magicwand::~Magicwand() = default;
 
 // 初期化：モデルの読み込みと、親(プレイヤー)から見た相対位置を設定する
 void Magicwand::Init()
@@ -151,9 +161,18 @@ void Magicwand::Init()
 
 		// 杖本体から見た「銃口(発射位置)」の相対位置に、さらに親からの相対位置を掛け合わせる
 		// (＝結果的に「親から見た銃口の相対位置」になる)
-		m_localMuzzleMat = Math::Matrix::CreateTranslation(0.2f, 0.7f, 0.7f);
+		m_localMuzzleMat = Math::Matrix::CreateTranslation(kStoneLocalOffset);
 		m_localMuzzleMat = m_localMuzzleMat * m_localMat;
 	}
+
+	if (!m_upGrabBeam)
+	{
+		m_upGrabBeam = std::make_unique<GrabBeam>();
+		m_upGrabBeam->Init();
+	}
+
+	// 稲妻は、ブライト(にじみ)の描画で出す
+	m_drawType |= eDrawTypeBright;
 }
 
 void Magicwand::Update()
@@ -355,6 +374,18 @@ void Magicwand::Update()
 
 	// 基底クラス(WeaponBase)の更新処理を呼んで、ワールド行列などを確定させる
 	WeaponBase::Update();
+
+	// 掴み中のプラズマ(魔法石の位置は、行列が確定した後に求める)
+	Math::Vector3 blockPos = Math::Vector3::Zero;
+	const bool hasBlock = player && player->TryGetCarriedBlockPos(blockPos);
+	const Math::Vector3 stonePos = Math::Vector3::Transform(kStoneModelPos, m_mWorld);
+	m_upGrabBeam->Update(hasBlock, stonePos, blockPos, parentMat.Translation());
+}
+
+void Magicwand::DrawBright()
+{
+	m_upGrabBeam->Draw();
+	WeaponBase::DrawBright();
 }
 
 void Magicwand::StartSwingAnim()

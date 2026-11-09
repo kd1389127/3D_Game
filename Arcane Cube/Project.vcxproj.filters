@@ -181,6 +181,9 @@
     <Filter Include="Src\Application\GameObject\UI\Objective">
       <UniqueIdentifier>{399f5ff4-20ad-420d-9e7d-66a82e345df2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\GameObject\Weapon\Magicwand\Component">
+      <UniqueIdentifier>{921f5479-aaa3-4bd1-a792-c1600dab3b88}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -459,6 +462,9 @@
     <ClInclude Include="Src\Application\GameObject\UI\Objective\Objective.h">
       <Filter>Src\Application\GameObject\UI\Objective</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Weapon\Magicwand\Component\GrabBeam.h">
+      <Filter>Src\Application\GameObject\Weapon\Magicwand\Component</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -694,6 +700,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\UI\Objective\Objective.cpp">
       <Filter>Src\Application\GameObject\UI\Objective</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Weapon\Magicwand\Component\GrabBeam.cpp">
+      <Filter>Src\Application\GameObject\Weapon\Magicwand\Component</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

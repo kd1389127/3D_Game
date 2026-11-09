@@ -424,6 +424,17 @@ int Player::GetDropBlockedId() const
 	return m_upBlockGrabber ? m_upBlockGrabber->GetDropBlockedId() : 0;
 }
 
+bool Player::TryGetCarriedBlockPos(Math::Vector3& outPos) const
+{
+	if (!m_upBlockGrabber || !m_upBlockGrabber->IsCarrying())
+	{
+		return false;
+	}
+
+	outPos = m_upBlockGrabber->GetCarriedBlockPos();
+	return true;
+}
+
 bool Player::HasDeleteTarget() const
 {
 	return m_upBlockDestroyer && m_upBlockDestroyer->HasTarget();

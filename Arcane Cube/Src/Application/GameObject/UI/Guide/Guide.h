@@ -18,13 +18,6 @@ public:
 	bool IsSlideOpen() const { return m_slideIndex >= 0; }
 
 private:
-	// Tabアイコン(画面右上、常時表示)
-	static constexpr float kTabW = 84.0f;
-	static constexpr float kTabH = 56.0f;
-	static constexpr float kTabAlpha = 0.75f;	// 少し透かして、目立ちすぎないようにする
-	static constexpr float kTabPosX = 640.0f - 24.0f - kTabW / 2;
-	static constexpr float kTabPosY = 360.0f - 20.0f - kTabH / 2;
-
 	// 操作説明スライド(画面中央。画像1880x1160の縦横比のまま)
 	static constexpr int   kSlideCount = 3;
 	static constexpr float kSlideW = 800.0f;

@@ -34,6 +34,14 @@ public:
 
 private:
 
+	// 真下の地面の高さを探す(見つかればtrue)。落下と、置く位置の表示の両方で使う
+	bool FindGroundY(const Math::Vector3& pos, float range, float& outY) const;
+
+	// 持っている間、離したら止まる位置(置く位置の表示用)
+	static constexpr float kLandSearchRange = 200.0f;	// 探す深さ。これより深い穴は「落ちる」扱いで表示しない
+	bool  m_hasLanding = false;							// 止まる位置が見つかったか
+	float m_landingY = 0.0f;							// その時のブロックの中心の高さ
+
 	std::shared_ptr<KdModelWork> m_spModel = nullptr;
 
 	bool m_isCarried = false;

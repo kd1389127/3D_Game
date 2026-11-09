@@ -15,6 +15,9 @@ public:
 	void Init(const std::vector<ObjectiveKind>& items);
 	void Update() override;
 	void DrawSprite() override;
+	
+	// 文字を1文字ずつ横に並べて描く(left=左端のX、y=中心のY)
+	void DrawFontText(const std::shared_ptr<KdFontSprite>& font, float left, float y, const Math::Color& color);
 
 	void SetTarget(const std::shared_ptr<Magicwand>& wand) { m_wpWand = wand; }
 	void SetPlayer(const std::shared_ptr<Player>& player) { m_wpPlayer = player; }
@@ -40,37 +43,65 @@ private:
 	static constexpr float kBoxHalf  = 12.0f;		// チェックボックスの大きさの半分
 	static constexpr float kTextGap  = 12.0f;		// ボックスと文字の間
 	static constexpr float kMargin   = 24.0f;		// 画面の左端からの余白
-	static constexpr float kPosY     = 120.0f;		// 表示する高さ
+	static constexpr float kPosY     = 50.0f;		// 表示する高さ
 	static constexpr float kBoxPosX  = -640.0f + kMargin + kBoxHalf;
 	static constexpr float kTextLeft = kBoxPosX + kBoxHalf + kTextGap;	// 文字の左端
 
 	// ObjectiveKindの種類の数。文言の並びは、StageData.hのenumと同じにする
-	static constexpr int kKindCount = 5;
+	static constexpr int kKindCount = 8;
 	static constexpr const char* kTexts[kKindCount] =
 	{
 		"右クリック長押しで狙う",
 		"マウスホイールで長さを決める",
 		"左クリックで撃ってブロックを作る",
 		"ゴールへ向かおう",
+		"Eキーでブロックを掴もう",
+		"スイッチを起動して檻を開けよう",
+		"リフトに乗りスイッチを起動しよう",
 		"すべてのスイッチを起動して檻を開けよう",
-
 	};
 
+	// 「Tab：メニュー」(オブジェクティブの下。動いたら消え、止まったら出る)
+	static constexpr const char* kHintText	= "Tab : メニュー";
+	static constexpr float kHintGapY		= 40.0f;				// オブジェクティブからの下がり幅
+	static constexpr float kHintPosY		= kPosY - kHintGapY;
+	static constexpr float kHintLeft		= kBoxPosX - kBoxHalf;	// ボックスの左端にそろえる
+	static constexpr float kHintAlpha		= 0.75f;				// 少し透かして目立ちすぎないように
+	static constexpr float kHintStep		= 1.0f / 15.0f;			// 出る・消えるの速さ(約0.25秒)
+	static constexpr float kShadowOffset	= 2.0f;					// 影をずらす距離
+	static constexpr float kShadowAlpha		= 0.6f;					// 影の濃さ(文字の透明度に掛ける)
+	static constexpr int   kHintIdleFrames  = 120;					// 止まってから出るまで(約1秒)
+	static constexpr float kMoveEpsilon		= 0.05f;				// これ以下の動きは「止まっている」扱い
+	static constexpr int   kHoldFrames		= 120;					// 出したあと、動いても出したままにする長さ(約3秒)
+
+	// 目標を完了を表すチェック
 	static constexpr float kCheckSize          = 32.0f;	// チェックの大きさ(枠の24より少し大きく、枠からはみ出す)
 	static constexpr int   kCheckPopFrames     = 8;		// チェックが大きくなる長さ
 	static constexpr const char* kCheckTexPath = "Asset/Textures/UI/Objective/Check.png";
 	KdTexture m_checkTex;
 
 	// 達成の記録(項目を出す前にやっても残る)
+	std::shared_ptr<KdFontSprite>	   m_text[kKindCount];
 	bool m_achieved[kKindCount] = {};
 	std::vector<ObjectiveKind>		   m_items;
 	std::weak_ptr<Magicwand>		   m_wpWand;
 	std::weak_ptr<Player>			   m_wpPlayer;
 	std::vector<std::weak_ptr<Switch>> m_wpSwitches;
-	std::shared_ptr<KdFontSprite>	   m_text[kKindCount];
+
+	std::shared_ptr<KdFontSprite> m_hintText;
+	float			m_hintT			 = 1.0f;			// 表示の度合い(0=消えている 1=出ている)
+	int				m_idleFrames	 = kHintIdleFrames;	// 止まっているフレーム数(最初から出すため満タン)
+	Math::Vector3	m_prevPlayerPos;
+	bool			m_hasPrevPos	 = false;			// 1フレーム目は比べる相手がないため
+	int				m_holdFrames = 0;					// 出したままにする残りフレーム
 
 
 	Phase m_phase = Phase::FadeIn;
 	int   m_index = 0;	// 今出している項目の番号
 	int   m_timer = 0;	// 今の段階に入ってからのフレーム数
+
+	// 左からのスライドイン(オブジェクティブとTab：メニューの出入り)
+	static constexpr float kSlideDist = 200.0f;			// 左から入ってくる距離
+	static constexpr float kObjStep = 1.0f / 20.0f;	// 動きで出る・消える速さ(約0.33秒)
+	float m_objT = 1.0f;	// オブジェクティブの表示の度合い(0=消えている 1=出ている)
 };

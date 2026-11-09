@@ -3,11 +3,14 @@
 // オブジェクティブ(画面左の「今やること」)の種類。
 enum class ObjectiveKind : int
 {
-	Aim,	// 右クリック長押しで狙う
-	Wheel,	// ホイールで長さを決める
-	Shoot,	// 左クリックで撃ってブロックを作る
-	Goal,	// ゴールへ向かう
-	Switch,	// すべてのスイッチを起動する
+	Aim,		// 右クリック長押しで狙う
+	Wheel,		// ホイールで長さを決める
+	Shoot,		// 左クリックで撃ってブロックを作る
+	Goal,		// ゴールへ向かう
+	Grab,		// ブロックを掴み置く
+	OneSwitch,	// スイッチを起動する
+	LiftSwitch,	// リフトに乗ってスイッチを起動する
+	Switches,	// すべてのスイッチを起動させる
 };
 
 // 1台のリフトの配置情報
@@ -111,7 +114,7 @@ static const StageData g_stageTable[] =
 		0, Math::Vector2::Zero, Math::Vector2::Zero,
 		Math::Vector3(55.0f, 45.0f, 45.0f),
 		{}, {}, {}, {},
-		{ ObjectiveKind::Switch, ObjectiveKind::Goal },
+		{  ObjectiveKind::Grab,ObjectiveKind::OneSwitch, ObjectiveKind::Goal },
 	},
 	
 	// ステージ3：リフトの紹介。ブロックを持ってリフトで奈落を渡り、スイッチに置いて檻を開ける
@@ -136,7 +139,7 @@ static const StageData g_stageTable[] =
 			{ Math::Vector3(36, -1000, -1000), Math::Vector3(148, 1000, 1000) }
 		},
 		{},
-		{ObjectiveKind::Switch,ObjectiveKind::Goal},
+		{ObjectiveKind::LiftSwitch,ObjectiveKind::Goal},
 	},
 
 	// ステージ4：A側は魔法の橋、B側は階段で高台へ。ブロック2個を両スイッチに置くと檻が開く
@@ -150,7 +153,9 @@ static const StageData g_stageTable[] =
 		5,																// 通常の建築上限
 		50.0f,															// cageHeight
 		0, Math::Vector2::Zero, Math::Vector2::Zero,
-		Math::Vector3(73.0f, 57.0f, 45.0f)								// cageScale
+		Math::Vector3(73.0f, 57.0f, 45.0f),								// cageScale
+		{}, {}, {}, {},
+		{ObjectiveKind::Switches,ObjectiveKind::Goal}
 	},
 
 	// ステージ5：ハブ型。A・B・Cのスイッチを全部押すと、真ん中のゴールを囲う檻4つが開く
@@ -203,7 +208,7 @@ static const StageData g_stageTable[] =
 				Math::Vector3(105, 0, -128), 90.0f
 			}
 		},
-		{ObjectiveKind::Switch,ObjectiveKind::Goal}
+		{ObjectiveKind::Switches,ObjectiveKind::Goal}
 	},
 
 	// GoalMap：階段を上ると画面が白くなって、リザルトへ(ゴールは置かない。常に最後のステージにする)

@@ -42,69 +42,26 @@ void GimmickBlock::Update()
 	constexpr float kRideSpeed = 0.15f;
 	m_rideCurrent += std::clamp(m_rideTarget - m_rideCurrent, -kRideSpeed, kRideSpeed);
 
-	// 持ち運び中は、位置をBlockGrabber側が決めているので落下処理はしない
-	if (m_isCarried) return;
-
 	constexpr float gravity = 0.04f;
-	constexpr float maxSpeed  = 3.0f;
-	constexpr float halfSize  = BlockGridManager::GridSize * 0.5f;
-	constexpr float footInset = 3.0f;	// 足元の4隅のレイを、中心から少し内側にずらす量
+	constexpr float maxSpeed = 3.0f;
+	constexpr float halfSize = BlockGridManager::GridSize * 0.5f;
+
+	// 持ち運び中は、位置をBlockGrabber側が決めているので落下処理はしない
+	// 代わりに、離したら止まる位置を調べておく(置く位置の表示用)
+	if (m_isCarried)
+	{
+		float groundY = 0.0f;
+		m_hasLanding = FindGroundY(GetPos(), kLandSearchRange, groundY);
+		m_landingY = groundY + halfSize;
+		return;
+	}
 
 	m_fallSpeed = std::min(m_fallSpeed + gravity, maxSpeed);
 
 	Math::Vector3 pos = GetPos();
 
-	// 足元(中心＋4隅の計5本)から真下にレイを飛ばして、地面を探す
-	// 4隅も使うのは、ブロックが足場の端からはみ出した時に宙に浮かないようにするため
-	const float offX[5] = { 0.0f,  footInset, -footInset,  footInset, -footInset };
-	const float offZ[5] = { 0.0f,  footInset,  footInset, -footInset, -footInset };
-
-	bool landed = false;
-	float landY = -FLT_MAX; // 見つかった地面のうち、一番高い位置
-
-	std::list<KdCollider::CollisionResult> resultList;
-
-	// 近くのオブジェクトだけ先に絞る(全オブジェクト×5本のレイ=約8000回の判定を避ける)
-	// 横：足元レイのずれ3 + ブロックの半分4 より余裕を見て10
-	// 縦：レイの長さ(最大7) + ブロック1個分より余裕を見て16
-	constexpr float nearXZ = 10.0f;
-	constexpr float nearY = 16.0f;
-
-	std::vector<KdGameObject*> nearObjs;
-	nearObjs.reserve(32);
-	for (auto& obj : SceneManager::Instance().GetObjList())
-	{
-		if (obj.get() == this) continue;
-
-		const Math::Vector3 d = obj->GetPos() - pos;
-		if (fabsf(d.x) > nearXZ || fabsf(d.z) > nearXZ || fabsf(d.y) > nearY) continue;
-
-		nearObjs.push_back(obj.get());
-	}
-
-	for (int i = 0; i < 5; ++i)
-	{
-		KdCollider::RayInfo ray;
-		ray.m_pos = pos + Math::Vector3(offX[i], 0.0f, offZ[i]);
-		ray.m_dir = Math::Vector3::Down;
-		ray.m_range = halfSize + m_fallSpeed; // 中心から足元までの長さ＋今フレームに落ちる分
-		ray.m_type = KdCollider::TypeGround;
-
-		for (KdGameObject* obj : nearObjs)
-		{
-			resultList.clear();
-			if (!obj->Intersects(ray, &resultList)) continue;
-
-			for (auto& ret : resultList)
-			{
-				if (ret.m_hitPos.y > landY)
-				{
-					landY = ret.m_hitPos.y;
-					landed = true;
-				}
-			}
-		}
-	}
+	float landY = 0.0f;
+	const bool landed = FindGroundY(pos, halfSize + m_fallSpeed, landY);	// 中心から足元＋今フレームに落ちる分
 
 	if (landed)
 	{
@@ -145,6 +102,16 @@ void GimmickBlock::DrawLit()
 	// スイッチに乗っている間は、見た目だけ持ち上げて描く
 	const Math::Matrix drawMat = m_mWorld * Math::Matrix::CreateTranslation(0.0f, m_rideCurrent, 0.0f);
 
+	// 持っている間、離したら止まる位置に、透けたブロックを出す
+	if (m_isCarried && m_hasLanding)
+	{
+		Math::Matrix ghostMat = m_mWorld;
+		ghostMat.Translation(Math::Vector3(GetPos().x, m_landingY, GetPos().z));	// 高さだけ落ちた先にする
+
+		const Math::Color ghostColor(0.4f, 1.0f, 0.4f, 0.35f);	// 緑(掴みの色)で半透明
+		KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, ghostMat, ghostColor);
+	}
+
 	if (m_isGrabTargeted)
 	{
 		m_blinkTimer++;
@@ -178,4 +145,59 @@ void GimmickBlock::ResetToStartPos()
 {
 	SetPos(m_startPos);
 	m_fallSpeed = 0.0f;	// 落下の勢いを残すと、戻った瞬間に落ち始めてしまう
+}
+
+bool GimmickBlock::FindGroundY(const Math::Vector3& pos, float range, float& outY) const
+{
+	constexpr float footInset = 3.0f;	// 足元の4隅のレイを、中心から少し内側にずらす量
+	constexpr float nearXZ = 10.0f;		// 横：足元レイのずれ3 + ブロックの半分4 より余裕を見て10
+	const float nearY = range + BlockGridManager::GridSize;	// 縦：レイの長さ + ブロック1個分
+
+	// 近くのオブジェクトだけ先に絞る
+	std::vector<KdGameObject*> nearObjs;
+	nearObjs.reserve(32);
+	for (auto& obj : SceneManager::Instance().GetObjList())
+	{
+		if (obj.get() == this) continue;
+
+		const Math::Vector3 d = obj->GetPos() - pos;
+		if (fabsf(d.x) > nearXZ || fabsf(d.z) > nearXZ || fabsf(d.y) > nearY) continue;
+
+		nearObjs.push_back(obj.get());
+	}
+
+	// 足元(中心＋4隅の計5本)から真下にレイを飛ばして、一番高い地面を探す
+	const float offX[5] = { 0.0f,  footInset, -footInset,  footInset, -footInset };
+	const float offZ[5] = { 0.0f,  footInset,  footInset, -footInset, -footInset };
+
+	bool found = false;
+	float topY = -FLT_MAX;
+	std::list<KdCollider::CollisionResult> resultList;
+
+	for (int i = 0; i < 5; ++i)
+	{
+		KdCollider::RayInfo ray;
+		ray.m_pos = pos + Math::Vector3(offX[i], 0.0f, offZ[i]);
+		ray.m_dir = Math::Vector3::Down;
+		ray.m_range = range;
+		ray.m_type = KdCollider::TypeGround;
+
+		for (KdGameObject* obj : nearObjs)
+		{
+			resultList.clear();
+			if (!obj->Intersects(ray, &resultList)) continue;
+
+			for (auto& ret : resultList)
+			{
+				if (ret.m_hitPos.y > topY)
+				{
+					topY = ret.m_hitPos.y;
+					found = true;
+				}
+			}
+		}
+	}
+
+	outY = topY;
+	return found;
 }

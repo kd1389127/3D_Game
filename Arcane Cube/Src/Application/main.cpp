@@ -223,7 +223,7 @@ bool Application::Init(int w, int h)
 	// フォント初期化
 	//===================================================================
 	KdFontManager::Instance().Init(GetWindowHandle());
-	KdFontManager::Instance().AddFont(1, "メイリオ", 28);
+	KdFontManager::Instance().AddFont(1, "Yu Mincho", 30);	// 明朝は細いので、少し大きくして試す
 	
 	//===================================================================
 	// ゲーム固有の初期化

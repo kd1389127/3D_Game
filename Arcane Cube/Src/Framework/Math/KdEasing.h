@@ -11,7 +11,9 @@ struct KdEase
 	static float OutSine(float _t);
 	static float InOutSine(float _t);
 
+	// 自分で追加のイーシング
 	static float OutCubic(float _t);	// メニューの開閉に使う
+	static float OutBack(float _t);		// 行き過ぎてから戻る(スライドインの勢い付け用)
 
 	static float OutBounce(float _t);
 };

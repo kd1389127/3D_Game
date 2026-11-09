@@ -11,13 +11,6 @@ namespace
 	{
 		return static_cast<int>(kind);
 	}
-
-	// はじめは速く、終わりはゆっくり(0〜1を渡すと0〜1が返る)
-	float EaseOutCubic(float t)
-	{
-		const float inverse = 1.0f - t;
-		return 1.0f - inverse * inverse * inverse;
-	}
 }
 
 void Objective::Init(const std::vector<ObjectiveKind>& items)
@@ -35,6 +28,7 @@ void Objective::Init(const std::vector<ObjectiveKind>& items)
 		m_text[i] = KdFontManager::Instance().CreateFontTexture(kFontNo, kTexts[i], kAntiAlias);
 	}
 	m_checkTex.Load(kCheckTexPath);
+	m_hintText = KdFontManager::Instance().CreateFontTexture(kFontNo, kHintText, kAntiAlias);
 }
 
 void Objective::Update()
@@ -49,12 +43,58 @@ void Objective::Update()
 		if (spWand->HasGenerated())		  { m_achieved[ToIndex(ObjectiveKind::Shoot)] = true; }
 	}
 
-	// ゴールに触れたら、最後の項目を達成にする
 	const std::shared_ptr<Player> spPlayer = m_wpPlayer.lock();
-	if (spPlayer && spPlayer->HasReachedGoal())
+	if (spPlayer)
 	{
-		m_achieved[ToIndex(ObjectiveKind::Goal)] = true;
+		// ゴールに触れたら、最後の項目を達成にする
+		if (spPlayer->HasReachedGoal())
+		{
+			m_achieved[ToIndex(ObjectiveKind::Goal)] = true;
+		}
+
+		// ブロックを持ったら達成(Eキーで掴んだ瞬間にチェックが付く)
+		if (spPlayer->IsCarryingBlock())
+		{
+			m_achieved[ToIndex(ObjectiveKind::Grab)] = true;
+		}
 	}
+
+	// プレイヤーが動いたか(上下は無視。着地の補正で揺れても「動いた」にしないため)
+	bool isMoving = false;
+	if (spPlayer)
+	{
+		const Math::Vector3 pos = spPlayer->GetPos();
+		if (m_hasPrevPos)
+		{
+			Math::Vector3 delta = pos - m_prevPlayerPos;
+			delta.y = 0.0f;
+			isMoving = delta.Length() > kMoveEpsilon;
+		}
+
+		m_prevPlayerPos = pos;
+		m_hasPrevPos	= true;
+	}
+
+	// 動いたらカウントをリセット、止まっている間は数える
+	if (isMoving) { m_idleFrames = 0; }
+	else { ++m_idleFrames; }
+
+	// 止まって一定時間たったら出す。出したあとは、動いても数秒は出したままにする
+	// (動きながらだと出たり消えたりして落ち着かないため)
+	const bool isIdle = (m_idleFrames >= kHintIdleFrames);
+	if (isIdle) { m_holdFrames = kHoldFrames; }	// 止まっている間は満タンに保つ
+	else if (m_holdFrames > 0) { --m_holdFrames; }				// 動き出したら減らす
+	const bool isShown = isIdle || m_holdFrames > 0;
+
+	// Tab：メニュー
+	if (isShown) { m_hintT = std::min(m_hintT + kHintStep, 1.0f); }
+	else { m_hintT = std::max(m_hintT - kHintStep, 0.0f); }
+
+	// オブジェクティブは、達成のチェックを見せている間も出し続ける
+	// (歩きながら達成しても、チェックが付く所を見逃さないため)
+	const bool isShowingCheck = (m_phase == Phase::Done || m_phase == Phase::FadeOut);
+	if (isShown || isShowingCheck) { m_objT = std::min(m_objT + kObjStep, 1.0f); }
+	else { m_objT = std::max(m_objT - kObjStep, 0.0f); }
 
 	// すべてのスイッチが同時に起動したら達成(スイッチがないステージでは何もしない)
 	if (!m_wpSwitches.empty())
@@ -71,7 +111,11 @@ void Objective::Update()
 
 		if (allActive)
 		{
-			m_achieved[ToIndex(ObjectiveKind::Switch)] = true;
+			// 「スイッチを起動する」系は、どれも同じ条件(全スイッチが起動)で達成にする
+			// (ステージ2・3はスイッチが1つなので、「全部」=「1つ」)
+			m_achieved[ToIndex(ObjectiveKind::OneSwitch)]  = true;
+			m_achieved[ToIndex(ObjectiveKind::LiftSwitch)] = true;
+			m_achieved[ToIndex(ObjectiveKind::Switches)]   = true;
 		}
 	}
 
@@ -119,6 +163,7 @@ void Objective::Update()
 			else
 			{
 				m_phase = Phase::FadeIn;
+				m_holdFrames = kHoldFrames;	// 次の項目は、動いていても数秒は出したままにする
 			}
 		}
 		break;
@@ -130,24 +175,31 @@ void Objective::Update()
 
 void Objective::DrawSprite()
 {
+	// Tab：メニュー(目標が全部終わっても出す)
+	if (m_hintT > 0.0f)
+	{
+		const float alpha = KdEase::OutCubic(m_hintT);
+		const float slideX = -kSlideDist * (1.0f - KdEase::OutBack(m_hintT));	// 左から入る
+		DrawFontText(m_hintText, kHintLeft + slideX, kHintPosY, { 1.0f, 1.0f, 1.0f, kHintAlpha * alpha });
+	}
+
 	if (m_phase == Phase::Finished) { return; }
 
 	auto& sp = KdShaderManager::Instance().m_spriteShader;
 
-	// 現れる・消える時の透明度(イージング：はじめは速く、終わりはゆっくり)
-	float alpha = 1.0f;
-	if (m_phase == Phase::FadeIn || m_phase == Phase::FadeOut)
-	{
-		const float t = static_cast<float>(m_timer) / kFadeFrames;	// 0〜1
-		const float eased = EaseOutCubic(t);
+	// 項目の入れ替わりによる出入り(0=見えない 1=見える)
+	float phaseT = 1.0f;
+	if (m_phase == Phase::FadeIn) { phaseT = static_cast<float>(m_timer) / kFadeFrames; }
+	else if (m_phase == Phase::FadeOut) { phaseT = 1.0f - static_cast<float>(m_timer) / kFadeFrames; }
 
-		if (m_phase == Phase::FadeIn) { alpha = eased; }
-		else { alpha = 1.0f - eased; }
-	}
+	// 動きによる出入りと掛け合わせて、1つの進み具合にする
+	const float appear = phaseT * m_objT;
+	const float alpha = KdEase::OutCubic(appear);	// 透明→不透明
+	const float slideX = -kSlideDist * (1.0f - KdEase::OutBack(appear));	// 左から入る
 
 	// チェックボックスの枠
 	Math::Color frame = { 1.0f, 1.0f, 1.0f, 0.9f * alpha };
-	sp.DrawBox(kBoxPosX, kPosY, kBoxHalf, kBoxHalf, &frame, false);
+	sp.DrawBox(kBoxPosX + slideX, kPosY, kBoxHalf, kBoxHalf, &frame, false);
 
 	// 達成後(Done・FadeOut)は、チェックを描く
 	if (m_phase == Phase::Done || m_phase == Phase::FadeOut)
@@ -157,24 +209,38 @@ void Objective::DrawSprite()
 		if (m_phase == Phase::Done && m_timer < kCheckPopFrames)
 		{
 			const float t = static_cast<float>(m_timer) / kCheckPopFrames;
-			scale = EaseOutCubic(t);
+			scale = KdEase::OutCubic(t);
 		}
 
 		const float size = kCheckSize * scale;
 		Math::Color checkColor = { 1.0f, 1.0f, 1.0f, alpha };
-		sp.DrawTex(&m_checkTex, kBoxPosX, kPosY, size, size, nullptr, &checkColor);	// 座標は中心指定
+		sp.DrawTex(&m_checkTex, kBoxPosX + slideX, kPosY, size, size, nullptr, &checkColor);
 	}
 
-	// 文字を1文字ずつ横に並べて描く(1文字の幅は、そのテクスチャの幅)
 	Math::Color textColor = { 1.0f, 1.0f, 1.0f, alpha };
-	float x = kTextLeft;
-	for (const auto& glyph : m_text[ToIndex(m_items[m_index])]->GetTexList())
+	DrawFontText(m_text[ToIndex(m_items[m_index])], kTextLeft + slideX, kPosY, textColor);
+}
+
+void Objective::DrawFontText(const std::shared_ptr<KdFontSprite>& font, float left, float y, const Math::Color& color)
+{
+	auto& sp = KdShaderManager::Instance().m_spriteShader;
+
+	// 全文字を、ずらした位置で描く(影→文字の順に2回呼ぶ)
+	auto drawAll = [&](float offsetX, float offsetY, const Math::Color& drawColor)
 	{
-		const float w = static_cast<float>(glyph->FontTex->GetInfo().Width);
-		const float h = static_cast<float>(glyph->FontTex->GetInfo().Height);
-		sp.DrawTex(glyph->FontTex.get(), x + w / 2, kPosY, w, h, nullptr, &textColor);	// 座標は中心指定
-		x += w;
-	}
+		float x = left + offsetX;
+		for (const auto& glyph : font->GetTexList())
+		{
+			const float w = static_cast<float>(glyph->FontTex->GetInfo().Width);
+			const float h = static_cast<float>(glyph->FontTex->GetInfo().Height);
+			sp.DrawTex(glyph->FontTex.get(), x + w / 2, y + offsetY, w, h, nullptr, &drawColor);	// 座標は中心指定
+			x += w;
+		}
+	};
+
+	const Math::Color shadowColor = { 0.0f, 0.0f, 0.0f, color.A() * kShadowAlpha };
+	drawAll(kShadowOffset, -kShadowOffset, shadowColor);	// 右下にずらした影
+	drawAll(0.0f, 0.0f, color);
 }
 
 void Objective::SetSwitches(const std::vector<std::shared_ptr<Switch>>& switches)

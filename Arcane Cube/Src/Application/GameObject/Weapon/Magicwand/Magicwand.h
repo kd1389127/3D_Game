@@ -3,16 +3,18 @@
 
 class NormalBlock; 
 class Ground;
+class GrabBeam;
 
 class Magicwand : public WeaponBase
 {
 public:
 
-	Magicwand() {}
-	~Magicwand() override {}
+	Magicwand();
+	~Magicwand()		override;
 
-	void Init()		override;
-	void Update()	override;
+	void Init()			override;
+	void Update()		override;
+	void DrawBright()	override;
 
 	// 右クリック長押し中(Aiming状態)かどうかを外部(FPSCameraなど)から確認するための関数
 	bool IsAiming() const { return m_state == WandState::Aiming; }
@@ -120,4 +122,6 @@ private:
 	// 生成するたびに発行するスタックID
 	int m_nextStackId = 0;
 
+	// 掴み中のプラズマ(描画と形づくりは、この部品に任せる)
+	std::unique_ptr<GrabBeam> m_upGrabBeam;
 };

@@ -20,6 +20,15 @@ float KdEase::OutCubic(float _t)
 	return 1.0f - std::pow(1.0f - _t, 3.0f);
 }
 
+float KdEase::OutBack(float _t)
+{
+	const float c1 = 1.70158f;	// 行き過ぎの大きさ(easings.netの値)
+	const float c3 = c1 + 1.0f;
+
+	const float s = _t - 1.0f;
+	return 1.0f + c3 * s * s * s + c1 * s * s;
+}
+
 float KdEase::OutBounce(float _t)
 {
 	const float n1 = 7.5625f;

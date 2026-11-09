@@ -301,6 +301,7 @@
     <ClInclude Include="Src\Application\GameObject\UI\Objective\Objective.h" />
     <ClInclude Include="Src\Application\GameObject\UI\PauseMenu\PauseMenu.h" />
     <ClInclude Include="Src\Application\GameObject\UI\Reticle\Reticle.h" />
+    <ClInclude Include="Src\Application\GameObject\Weapon\Magicwand\Component\GrabBeam.h" />
     <ClInclude Include="Src\Application\GameObject\Weapon\Magicwand\Magicwand.h" />
     <ClInclude Include="Src\Application\GameObject\Weapon\WeaponBase.h" />
     <ClInclude Include="Src\Application\main.h" />
@@ -385,6 +386,7 @@
     <ClCompile Include="Src\Application\GameObject\UI\Objective\Objective.cpp" />
     <ClCompile Include="Src\Application\GameObject\UI\PauseMenu\PauseMenu.cpp" />
     <ClCompile Include="Src\Application\GameObject\UI\Reticle\Reticle.cpp" />
+    <ClCompile Include="Src\Application\GameObject\Weapon\Magicwand\Component\GrabBeam.cpp" />
     <ClCompile Include="Src\Application\GameObject\Weapon\Magicwand\Magicwand.cpp" />
     <ClCompile Include="Src\Application\GameObject\Weapon\WeaponBase.cpp" />
     <ClCompile Include="Src\Application\main.cpp" />

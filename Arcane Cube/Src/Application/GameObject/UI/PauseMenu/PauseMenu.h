@@ -40,11 +40,11 @@ private:
 	// ステージの数。g_stageTable の数と合わせる(チュートリアルを足したら増やす)
 	static constexpr int kStageCount = 5;
 	static constexpr int kTexCount = kTexStage1 + kStageCount;
-	static constexpr int kMaxBtn = kStageCount + 1;	// 一番多いページ(STAGE 1〜5 と BACK)
+	static constexpr int kMaxBtn = kStageCount + 1;		// 一番多いページ(STAGE 1〜5 と BACK)
 
-	static constexpr float kBtnW = 640.0f;	// ボタンの大きさ(画像の幅960の半分)
+	static constexpr float kBtnW = 640.0f;				// ボタンの大きさ(画像の幅960の半分)
 	static constexpr float kBtnH = 80.0f;
-	static constexpr float kStep = 90.0f;	// ボタンの間隔
+	static constexpr float kStep = 90.0f;				// ボタンの間隔
 	static constexpr float kOpenStep = 1.0f / 12.0f;	// 開閉の速さ(1フレームの進み。約0.2秒)
 
 	KdTexture m_tex[kTexCount];
