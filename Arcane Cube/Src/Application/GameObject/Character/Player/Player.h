@@ -47,6 +47,9 @@ public:
 	// ゴールに触れたか(オブジェクティブの達成判定に使う)
 	bool HasReachedGoal() const { return m_hasReachedGoal; }
 
+	// ジャンプしたか(オブジェクティブの達成判定に使う)
+	bool HasJumped()const { return m_hasJumped; }
+
 private:
 
 	// 当たり判定
@@ -113,7 +116,7 @@ private:
 
 	// ジャンプ力
 	const float m_jumpPow = 0.9f;
-	bool m_isGrounded = false;		// 今、地面に立っているか(PostUpdateで更新)
+	bool m_isGrounded = false;						// 今、地面に立っているか(PostUpdateで更新)
 
 	bool m_isAimBlocking = false;
 	bool m_respawnedEvent = false;
@@ -122,4 +125,5 @@ private:
 	std::shared_ptr<KdSoundInstance> m_spWalkSe;	// 歩いている間のループ音
 	bool m_goalSePlayed   = false;					// ゴール音をもう鳴らしたか
 	bool m_hasReachedGoal = false;					// ゴールに触れたか
+	bool m_hasJumped	  = false;					// 一度でもジャンプをしたか
 };

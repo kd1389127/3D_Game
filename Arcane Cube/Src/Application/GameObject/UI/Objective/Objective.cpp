@@ -3,6 +3,8 @@
 #include "../../Weapon/Magicwand/Magicwand.h"
 #include "../../Character/Player/Player.h"
 #include "../../Map/Gimmick/Switch/Switch.h"
+#include "../../Map/Gimmick/WandPickup/WandPickup.h"
+#include "../Mouse/Mouse.h"
 
 namespace
 {
@@ -43,6 +45,17 @@ void Objective::Update()
 		if (spWand->HasGenerated())		  { m_achieved[ToIndex(ObjectiveKind::Shoot)] = true; }
 	}
 
+	// マウスを横に動かした量を足していく(一定を超えたら「見回した」)
+	m_lookAmount += std::fabs(Mouse::Instance().GetDelta().x);
+	if (m_lookAmount >= kLookGoal) { m_achieved[ToIndex(ObjectiveKind::Look)] = true; }
+
+	// 台座の杖を取ったら達成
+	const std::shared_ptr<WandPickup> spPickup = m_wpPickup.lock();
+	if (spPickup && spPickup->IsPickedUp())
+	{
+		m_achieved[ToIndex(ObjectiveKind::GetWand)] = true;
+	}
+
 	const std::shared_ptr<Player> spPlayer = m_wpPlayer.lock();
 	if (spPlayer)
 	{
@@ -57,6 +70,8 @@ void Objective::Update()
 		{
 			m_achieved[ToIndex(ObjectiveKind::Grab)] = true;
 		}
+
+		if (spPlayer->HasJumped()) { m_achieved[ToIndex(ObjectiveKind::Jump)] = true; }
 	}
 
 	// プレイヤーが動いたか(上下は無視。着地の補正で揺れても「動いた」にしないため)
@@ -68,12 +83,16 @@ void Objective::Update()
 		{
 			Math::Vector3 delta = pos - m_prevPlayerPos;
 			delta.y = 0.0f;
-			isMoving = delta.Length() > kMoveEpsilon;
+			const float moved = delta.Length();	// 2回使うので変数にする
+			isMoving = moved > kMoveEpsilon;
+			m_walkDistance += moved;
 		}
 
 		m_prevPlayerPos = pos;
 		m_hasPrevPos	= true;
 	}
+
+	if (m_walkDistance >= kWalkGoal) { m_achieved[ToIndex(ObjectiveKind::Move)] = true; }
 
 	// 動いたらカウントをリセット、止まっている間は数える
 	if (isMoving) { m_idleFrames = 0; }

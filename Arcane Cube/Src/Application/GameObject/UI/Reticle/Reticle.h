@@ -19,6 +19,9 @@ public:
 	// Eキーの案内を出すステージか(GameSceneから渡す。Map2だけtrue)
 	void SetShowHint(bool show) { m_showHint = show; }
 
+	// 杖を持っているか(GameSceneから渡す。チュートリアルで杖を取るまでfalse)
+	void SetHasWand(bool hasWand) { m_hasWand = hasWand; }
+
 private:
 
 	void StartShake();
@@ -26,6 +29,7 @@ private:
 	KdTexture m_texNormal; // 通常時(青)
 	KdTexture m_texDelete; // 削除モード中(赤)
 	KdTexture m_texGrab;   // ギミックブロックを運んでいる、または狙っている時(緑)
+	KdTexture m_texNone;   // 杖を持っていない時
 
 	KdTexture m_texHintGrab;		// Eキーの案内(持ち上げる)
 	KdTexture m_texHintRelease;		// Eキーの案内(置く)
@@ -36,6 +40,7 @@ private:
 	static constexpr float kHintReleaseW = 109.0f;
 	static constexpr float kHintH = 41.0f;
 	bool m_showHint = false;
+	bool m_hasWand  = true;
 
 	std::weak_ptr<Player> m_wpPlayer;
 

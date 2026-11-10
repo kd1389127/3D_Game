@@ -7,6 +7,7 @@ void Reticle::Init()
 	m_texNormal.Load("Asset/Textures/Reticle/Reticle_Blue.png");
 	m_texDelete.Load("Asset/Textures/Reticle/Reticle_Red.png");
 	m_texGrab.Load("Asset/Textures/Reticle/Reticle_Green.png");
+	m_texNone.Load("Asset/Textures/Reticle/Reticle_None.png");
 	m_texHintGrab.Load("Asset/Textures/UI/Guide/GrabHint.png");
 	m_texHintRelease.Load("Asset/Textures/UI/Guide/ReleaseHint.png");
 }
@@ -76,6 +77,12 @@ void Reticle::DrawSprite()
 	{
 		tex = &m_texGrab;	// 狙ってはいるので緑だが、薄くして「まだ届かない」を表す
 		color.w = 0.4f;
+	}
+
+	// 杖を持っていない間は、他の状態に関係なく薄い●だけにする
+	if (!m_hasWand)
+	{
+		tex = &m_texNone;
 	}
 
 	float baseSize = 64.0f * m_shakeScale;

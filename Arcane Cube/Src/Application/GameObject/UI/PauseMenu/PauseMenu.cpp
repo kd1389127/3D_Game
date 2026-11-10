@@ -2,6 +2,7 @@
 #include "../Mouse/Mouse.h"
 #include "../Guide/Guide.h"
 #include "../../../Scene/SceneManager.h"
+#include "../../../Scene/StageData.h"
 
 void PauseMenu::Init()
 {
@@ -53,7 +54,7 @@ void PauseMenu::SetPage(int _page)
 		{
 			m_ids[i] = kTexStage1 + i;
 			// 解放済みより先のステージは選べない(メニューを開いている間は解放は変わらない)
-			m_locked[i] = (i > SceneManager::Instance().GetUnlockedStage());
+			m_locked[i] = (kStageMap1 + i > SceneManager::Instance().GetUnlockedStage());
 		}
 		m_ids[kStageCount] = kTexBack;
 		m_count = kStageCount + 1;
@@ -133,9 +134,9 @@ void PauseMenu::Update()
 	case kTexBack:		// メインのページへ戻る
 		SetPage(0);
 		break;
-	default:			// STAGE 1〜5(画像番号からステージ番号を求める)
+	default:			// STAGE 1〜5(画像番号からステージ番号を求める。チュートリアルは選べない)
 		SceneManager::Instance().RequestChangeScene(
-			SceneManager::SceneType::Game, id - kTexStage1);
+			SceneManager::SceneType::Game, kStageMap1 + (id - kTexStage1));
 		break;
 	}
 }

@@ -11,6 +11,10 @@ enum class ObjectiveKind : int
 	OneSwitch,	// スイッチを起動する
 	LiftSwitch,	// リフトに乗ってスイッチを起動する
 	Switches,	// すべてのスイッチを起動させる
+	Look,		// マウスで見回す
+	Move,		// WASDで移動する
+	Jump,		// Spaceでジャンプする
+	GetWand,	// 台座の杖を取る
 };
 
 // 1台のリフトの配置情報
@@ -64,8 +68,8 @@ struct StageData
 	// CSV方式のMap
 	//==============
 	std::string   mapCsvPath;
-	int           csvOriginCol = 0;	// CSV上でワールド原点(X=0)にあたる列
-	int           csvOriginRow = 0;	// CSV上でワールド原点(Z=0)にあたる行
+	int           csvOriginCol = 0;									// CSV上でワールド原点(X=0)にあたる列
+	int           csvOriginRow = 0;									// CSV上でワールド原点(Z=0)にあたる行
 	int			  buildLimitLayers = 0;
 
 	float         cageHeight = 32.0f;								// 檻が開く高さ
@@ -81,11 +85,36 @@ struct StageData
 	std::vector<CheckpointZone> checkpoints;						// 部屋ごとの中間地点(なければ空)
 
 	std::vector<ObjectiveKind> objectives = { ObjectiveKind::Goal };// 出す項目(上から順)。空なら出さない
+	Math::Vector3 wandPickupPos = Math::Vector3::Zero;				// 台座の杖の位置(チュートリアルだけ。浮かせる高さ)
 };
+
+// ステージ番号(g_stageTableの添字)。番号を直書きせず、これを使う
+static constexpr int kStageTutorial = 0;
+static constexpr int kStageMap1		= 1;	
+static constexpr int kStageMap2		= 2;
 
 // ステージテーブル(ステージを増やす場合はここに追加していくだけでOK)
 static const StageData g_stageTable[] =
 {
+	// チュートリアル：段差を登り、穴の飛び石を渡って、杖を取ってゴールへ
+	{
+		Math::Vector3(0, 9, 0), Math::Vector3(-235, 13.5, 0), 0.0f, -90.0f,	// 1つ目=スタート、2つ目=ゴール
+		false, {}, Math::Vector3::Zero, {},
+		"Asset/Data/MapData/Tutorial.csv", 32, 4,		// originCol=32, originRow=4
+		0,
+		32.0f,
+		0, Math::Vector2::Zero, Math::Vector2::Zero,
+		Math::Vector3(55.0f, 45.0f, 45.0f),
+		{}, {},
+		{
+			// 全体を魔法ブロック禁止
+			{ Math::Vector3(-1000, -1000, -1000), Math::Vector3(1000, 1000, 1000) }
+		},
+		{},
+		{ ObjectiveKind::Look, ObjectiveKind::Move, ObjectiveKind::Jump, ObjectiveKind::GetWand, ObjectiveKind::Goal },
+		Math::Vector3(-200.0f, 24.0f, 0.0f),						// wandPickupPos(台座の上)
+	},
+
 	// ステージ1
 	// プレイヤー開始位置、ゴールの位置、ステージの下限、プレイヤーの向き
 	// ギミックを使うか、ギミックの各配置、CSVデータ、CSVの列、CSVの行、置ける最大の上面

@@ -65,6 +65,7 @@ void Player::Update()
 			if (m_isGrounded)
 			{
 				m_gravity -= m_jumpPow; // 重力の値をマイナスにする＝上に跳ねる勢いを与える
+				m_hasJumped = true;		// オブジェクティブの達成用
 				auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Player/Jump.wav", false);
 				if (se) { se->SetVolume(0.05f); }
 			}

@@ -79,7 +79,7 @@ private :
 	SceneType m_nextSceneType = m_currentSceneType;
 
 	int m_currentStage = 0;
-	int m_unlockedStage = 0;	// 解放済みのステージ(この番号以下を選べる。0=ステージ1だけ)
+	int m_unlockedStage = 0;	// 解放済みのステージ(この番号以下を選べる。0=チュートリアルだけ)
 
 	bool m_forceReload = false;
 

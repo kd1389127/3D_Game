@@ -3,6 +3,7 @@
 class Magicwand;
 class Player;
 class Switch;
+class WandPickup;
 enum class ObjectiveKind : int;
 
 // 画面左に「今やること」を1つずつ出すクラス(Map1用)。達成すると次の項目が出る
@@ -22,6 +23,7 @@ public:
 	void SetTarget(const std::shared_ptr<Magicwand>& wand) { m_wpWand = wand; }
 	void SetPlayer(const std::shared_ptr<Player>& player) { m_wpPlayer = player; }
 	void SetSwitches(const std::vector<std::shared_ptr<Switch>>& switches);
+	void SetWandPickup(const std::shared_ptr<WandPickup>& pickup) { m_wpPickup = pickup; }
 
 private:
 	// 今の項目の段階
@@ -48,7 +50,7 @@ private:
 	static constexpr float kTextLeft = kBoxPosX + kBoxHalf + kTextGap;	// 文字の左端
 
 	// ObjectiveKindの種類の数。文言の並びは、StageData.hのenumと同じにする
-	static constexpr int kKindCount = 8;
+	static constexpr int kKindCount = 12;
 	static constexpr const char* kTexts[kKindCount] =
 	{
 		"右クリック長押しで狙う",
@@ -59,7 +61,17 @@ private:
 		"スイッチを起動して檻を開けよう",
 		"リフトに乗りスイッチを起動しよう",
 		"すべてのスイッチを起動して檻を開けよう",
+		"マウスで見回そう",
+		"WASDキーで移動しよう",
+		"スペースキーでジャンプしよう",
+		"杖を狙って、Eキーか左クリックで取ろう",
 	};
+
+	// チュートリアルの達成条件
+	static constexpr float kLookGoal = 300.0f;	// マウスを横に動かした合計(約45度ぶん)
+	static constexpr float kWalkGoal = 24.0f;	// 歩いた合計の距離(ブロック3個ぶん)
+	float m_lookAmount				 = 0.0f;
+	float m_walkDistance			 = 0.0f;
 
 	// 「Tab：メニュー」(オブジェクティブの下。動いたら消え、止まったら出る)
 	static constexpr const char* kHintText	= "Tab : メニュー";
@@ -87,6 +99,7 @@ private:
 	std::weak_ptr<Magicwand>		   m_wpWand;
 	std::weak_ptr<Player>			   m_wpPlayer;
 	std::vector<std::weak_ptr<Switch>> m_wpSwitches;
+	std::weak_ptr<WandPickup>		   m_wpPickup;
 
 	std::shared_ptr<KdFontSprite> m_hintText;
 	float			m_hintT			 = 1.0f;			// 表示の度合い(0=消えている 1=出ている)

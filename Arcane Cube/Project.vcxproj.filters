@@ -184,6 +184,9 @@
     <Filter Include="Src\Application\GameObject\Weapon\Magicwand\Component">
       <UniqueIdentifier>{921f5479-aaa3-4bd1-a792-c1600dab3b88}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\GameObject\Map\Gimmick\WandPickup">
+      <UniqueIdentifier>{07326eba-db63-48bf-9f78-f25b3d0964e9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -465,6 +468,9 @@
     <ClInclude Include="Src\Application\GameObject\Weapon\Magicwand\Component\GrabBeam.h">
       <Filter>Src\Application\GameObject\Weapon\Magicwand\Component</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\Map\Gimmick\WandPickup\WandPickup.h">
+      <Filter>Src\Application\GameObject\Map\Gimmick\WandPickup</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -703,6 +709,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\Weapon\Magicwand\Component\GrabBeam.cpp">
       <Filter>Src\Application\GameObject\Weapon\Magicwand\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\Map\Gimmick\WandPickup\WandPickup.cpp">
+      <Filter>Src\Application\GameObject\Map\Gimmick\WandPickup</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

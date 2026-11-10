@@ -22,6 +22,7 @@
 #include "../../GameObject/Map/MapBackGround/MapBackGround.h"
 #include "../../GameObject/Map/MapLoader.h"
 #include "../../GameObject/Map/ExitLight/ExitLight.h"
+#include "../../GameObject/Map/Gimmick/WandPickup/WandPickup.h"
 
 void GameScene::Event()
 {
@@ -141,25 +142,48 @@ void GameScene::Init()
 	player->Init(data.playerStartPos, data.groundHeight, data.playerStartYaw, &data.checkpoints);
 	m_objList.push_back(player);
 
+	// チュートリアルでは、台座の杖を取るまで杖と魔力ゲージを出さない
+	const bool isTutorial = (stage == kStageTutorial);
+
 	// 魔法の杖
 	std::shared_ptr<Magicwand> magicwand;
 	magicwand = std::make_shared<Magicwand>();
 	magicwand->Init();
-	m_objList.push_back(magicwand);
+	if (!isTutorial) { m_objList.push_back(magicwand); }
 
 	// レティクル
 	std::shared_ptr<Reticle> reticle;
 	reticle = std::make_shared<Reticle>();
 	reticle->Init();
-	reticle->SetTarget(player); 
-	reticle->SetShowHint(stage == 1);	// Map2だけ(stageは0始まり)
+	reticle->SetTarget(player);
+	reticle->SetShowHint(stage == kStageMap2);	// EキーのUIはMap2だけ
+	reticle->SetHasWand(!isTutorial);			// チュートリアルは、杖を取るまで●だけ
 	m_objList.push_back(reticle);
 
 	// 魔力ゲージ
 	std::shared_ptr<MagicGaugeUI> magicgaugeUI;
 	magicgaugeUI = std::make_shared<MagicGaugeUI>();
 	magicgaugeUI->Init();
-	m_objList.push_back(magicgaugeUI);
+	if (!isTutorial) { m_objList.push_back(magicgaugeUI); }
+
+	// チュートリアルだけ、台座の杖を置く。取った瞬間に、杖と魔力ゲージをシーンに加える
+	std::shared_ptr<WandPickup> wandPickup;
+	if (isTutorial)
+	{
+		wandPickup = std::make_shared<WandPickup>();
+		wandPickup->Init(data.wandPickupPos);
+		wandPickup->SetTarget(player);
+		wandPickup->SetOnPickedUp([this, magicwand, magicgaugeUI, reticle]()
+			{
+				reticle->SetHasWand(true);	// 取った瞬間に、いつもの青いレティクルへ
+
+				// Tabメニューより手前に描かれないよう、Guideの前に入れる
+				const auto guideIt = std::find(m_objList.begin(), m_objList.end(), m_guide);
+				m_objList.insert(guideIt, magicwand);
+				m_objList.insert(guideIt, magicgaugeUI);
+			});
+		m_objList.push_back(wandPickup);
+	}
 
 	// FPSカメラ
 	std::shared_ptr<FPSCamera> fpscamera;
@@ -266,6 +290,7 @@ void GameScene::Init()
 		objective->SetTarget(magicwand);
 		objective->SetPlayer(player);
 		objective->SetSwitches(switches);
+		objective->SetWandPickup(wandPickup);
 		m_objList.push_back(objective);
 	}
 
