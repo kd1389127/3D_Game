@@ -98,7 +98,7 @@ static const StageData g_stageTable[] =
 {
 	// チュートリアル：段差を登り、穴の飛び石を渡って、杖を取ってゴールへ
 	{
-		Math::Vector3(0, 9, 0), Math::Vector3(-235, 13.5, 0), 0.0f, -90.0f,	// 1つ目=スタート、2つ目=ゴール
+		Math::Vector3(0, 16, 0), Math::Vector3(-235, 13.5, 0), 0.0f, -90.0f,	// 1つ目=スタート、2つ目=ゴール
 		false, {}, Math::Vector3::Zero, {},
 		"Asset/Data/MapData/Tutorial.csv", 32, 4,		// originCol=32, originRow=4
 		0,

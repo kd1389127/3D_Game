@@ -124,6 +124,11 @@ namespace
 
 	// 杖のモデルから見た魔法石の位置(ゲーム内で動かして合わせた値)。掴み中のプラズマの根元に使う
 	const Math::Vector3 kStoneModelPos(0.13f, 0.73f, 0.70f);
+
+	const Math::Vector3 kGlowBlue (0.0f, 0.25f, 1.0f);
+	const Math::Vector3 kGlowGreen(0.1f, 1.0f, 0.2f);
+	const float kGlowColorLerp	   = 0.15f;	// 毎フレーム目標色へ近づく割合(大きいほど速く切り替わる)
+	const float kCarryMinGlowLevel = 0.4f;	// 掴み中の最低の明るさ(魔力0でも緑で光る)
 }
 
 Magicwand::Magicwand()  = default;
@@ -170,6 +175,8 @@ void Magicwand::Init()
 		m_upGrabBeam = std::make_unique<GrabBeam>();
 		m_upGrabBeam->Init();
 	}
+
+	m_glowColor = kGlowBlue;
 
 	// 稲妻は、ブライト(にじみ)の描画で出す
 	m_drawType |= eDrawTypeBright;
@@ -299,7 +306,7 @@ void Magicwand::Update()
 				// 固定したプレビューから離れすぎたら、固定を解いて狙い直させる
 				// (境目でちらつかないよう、余裕としてグリッド1個分を足す)
 				const float keepRange = m_aimRange + BlockGridManager::GridSize;
-				const bool isTooFar = !m_previewBlocks.empty() &&
+				const bool  isTooFar  = !m_previewBlocks.empty() &&
 					(m_previewBlocks.front()->GetPos() - muzzlePos).LengthSquared() > keepRange * keepRange;
 
 				if (isTooFar)
@@ -360,11 +367,16 @@ void Magicwand::Update()
 	// 魔力の残りに合わせて、魔法石の明るさを変える(0個で消灯、1個で控えめ、5個で最大)
 	const int remain = MagicManager::Instance().GetRemainingCasts();
 
-	float target = 0.0f;
+	float target = 0.0f;		// 魔力0は消灯。石はBlenderのベースカラー(暗い青)だけになる
 	if (remain > 0)
 	{
-		// 1個でもはっきり光り(0.4)、5個で最大(1.0)になる。0個だけが消灯
 		target = 0.4f + 0.6f * (std::min(remain, 5) - 1) / 4.0f;
+	}
+
+	// 掴み中は、魔力0でも緑が見える明るさまで上げる
+	if (isCarrying)
+	{
+		target = std::max(target, kCarryMinGlowLevel);
 	}
 
 	m_emissiveLevel += (target - m_emissiveLevel) * 0.1f;	// 毎フレーム、目標に1割ずつ近づく
@@ -378,6 +390,12 @@ void Magicwand::Update()
 	// 掴み中のプラズマ(魔法石の位置は、行列が確定した後に求める)
 	Math::Vector3 blockPos = Math::Vector3::Zero;
 	const bool hasBlock = player && player->TryGetCarriedBlockPos(blockPos);
+	Math::Vector3 glowTarget = kGlowBlue;
+	if (hasBlock)
+	{
+		glowTarget = kGlowGreen;
+	}
+	m_glowColor = Math::Vector3::Lerp(m_glowColor, glowTarget, kGlowColorLerp);
 	const Math::Vector3 stonePos = Math::Vector3::Transform(kStoneModelPos, m_mWorld);
 	m_upGrabBeam->Update(hasBlock, stonePos, blockPos, parentMat.Translation());
 }

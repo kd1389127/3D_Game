@@ -57,4 +57,8 @@ protected:
 
 	// 光のゆらぎの速さ(1.0で通常、大きいほど速く揺れる)。杖などの派生クラスが設定する
 	float m_flickerSpeed = 1.0f;
+
+	// 魔法石の発光色(Blender側の石は白なので、この色が石の色になる)
+	// 杖などの派生クラスが毎フレーム設定する
+	Math::Vector3 m_glowColor = Math::Vector3::One;
 };

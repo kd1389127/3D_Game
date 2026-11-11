@@ -1,6 +1,12 @@
 ﻿#include "WandPickup.h"
 #include "../../../Character/Player/Player.h"
 
+namespace
+{
+	// 手持ちの杖の魔力0と同じ暗い青
+	const Math::Vector3 kStoneDarkBlue(0.0f, 0.03f, 0.3f);
+}
+
 void WandPickup::Init(const Math::Vector3& pos)
 {
 	m_basePos = pos;
@@ -56,5 +62,5 @@ void WandPickup::DrawLit()
 {
 	if (m_isPickedUp || !m_spModel) { return; }
 
-	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld);
+	KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel, m_mWorld, kWhiteColor, kStoneDarkBlue);
 }

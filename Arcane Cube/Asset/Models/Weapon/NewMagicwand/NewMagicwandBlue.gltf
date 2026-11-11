@@ -45,16 +45,16 @@
 		{
 			"doubleSided":true,
 			"emissiveFactor":[
-				0.04518771171569824,
-				0,
-				0.7973474264144897
+				1,
+				1,
+				1
 			],
 			"name":"\u30de\u30c6\u30ea\u30a2\u30eb",
 			"pbrMetallicRoughness":{
 				"baseColorFactor":[
-					0.04605025425553322,
 					0,
-					0.7973474264144897,
+					0,
+					0,
 					1
 				],
 				"metallicFactor":0,
