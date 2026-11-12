@@ -1,5 +1,6 @@
 ﻿#include "WandPickup.h"
 #include "../../../Character/Player/Player.h"
+#include "../../../Collision/Collision.h"
 
 namespace
 {
@@ -31,13 +32,12 @@ void WandPickup::Update()
 		* Math::Matrix::CreateRotationY(yaw)
 		* Math::Matrix::CreateTranslation(m_basePos + Math::Vector3(0.0f, bobY, 0.0f));
 
-	// Eキーか左クリックを「押した瞬間」だけ反応させる(押しっぱなしで毎フレーム反応しないため)
-	const bool isKeyE = (GetAsyncKeyState('E') & 0x8000) != 0;
+	// 左クリックを「押した瞬間」だけ反応させる(押しっぱなしで毎フレーム反応しないため)
 	const bool isClick = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
-	const bool isPressed = isKeyE || isClick;
-	const bool isTriggered = isPressed && !m_prevPressed;
-	m_prevPressed = isPressed;
-	if (!isTriggered) { return; }
+	const bool isTriggered = isClick && !m_prevPressed;
+	m_prevPressed = isClick;
+
+	m_isAimed = false;	// 毎フレーム調べ直す
 
 	const std::shared_ptr<Player> spPlayer = m_wpPlayer.lock();
 	if (!spPlayer) { return; }
@@ -46,15 +46,17 @@ void WandPickup::Update()
 	Math::Vector3 lookDir = Math::Vector3::TransformNormal(Math::Vector3(0.0f, 0.0f, 1.0f), spPlayer->GetMatrix());
 	lookDir.Normalize();
 
-	// 目から杖までのベクトルを、「視線に沿った成分」と「視線からのずれ」に分けて考える
-	const Math::Vector3 toWand = m_mWorld.Translation() - spPlayer->GetPos();
-	const float along = toWand.Dot(lookDir);
-	if (along < 0.0f || along > kPickupRange) { return; }	// 後ろ・遠すぎは取れない
+	// 杖を囲む箱(根元から先端まで)に視線が当たったら「狙っている」
+	const Math::Vector3 boxCenter = m_mWorld.Translation() + Math::Vector3(0.0f, kWandLength * 0.5f, 0.0f);
+	const Math::Vector3 boxHalf(kAimRadius, kWandLength * 0.5f, kAimRadius);
+	if (!IntersectRayAABB(spPlayer->GetPos(), lookDir, boxCenter, boxHalf, kPickupRange)) { return; }
 
-	const Math::Vector3 offset = toWand - lookDir * along;
-	if (offset.Length() > kAimRadius) { return; }			// レティクルが杖から外れている
+	m_isAimed = true;	// ここまで来たら「狙えている」(ヒントを出す)
+
+	if (!isTriggered) { return; }
 
 	m_isPickedUp = true;
+	m_isAimed = false;
 	if (m_onPickedUp) { m_onPickedUp(); }
 }
 

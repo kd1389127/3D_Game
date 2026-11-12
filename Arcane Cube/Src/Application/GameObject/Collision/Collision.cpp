@@ -50,3 +50,57 @@ void CollisionFilter::CollectAround(const Math::Vector3& center, float radius,
 		out.push_back(obj.get());
 	}
 }
+
+bool IntersectRayAABB(const Math::Vector3& origin, const Math::Vector3& dir,
+	const Math::Vector3& center, const Math::Vector3& halfExtents, float maxDist,
+	float* tOut, Math::Vector3* normalOut) 
+{
+	Math::Vector3 boxMin = center - halfExtents;
+	Math::Vector3 boxMax = center + halfExtents;
+
+	float tMin = 0.0f;
+	float tMax = maxDist;
+	int   hitAxis = -1;
+	float hitSign = 1.0f;
+
+	const float* originArr = &origin.x;
+	const float* dirArr = &dir.x;
+	const float* boxMinArr = &boxMin.x;
+	const float* boxMaxArr = &boxMax.x;
+
+	for (int axis = 0; axis < 3; ++axis)
+	{
+		float o = originArr[axis];
+		float d = dirArr[axis];
+		float mn = boxMinArr[axis];
+		float mx = boxMaxArr[axis];
+
+		if (fabsf(d) < 1e-6f)
+		{
+			if (o < mn || o > mx) return false;
+			continue;
+		}
+
+		float t1 = (mn - o) / d;
+		float t2 = (mx - o) / d;
+		if (t1 > t2) std::swap(t1, t2);
+
+		if (t1 > tMin)
+		{
+			tMin = t1;
+			hitAxis = axis;
+			hitSign = (d > 0.0f) ? -1.0f : 1.0f; // 入った面の外向き法線の符号
+		}
+		tMax = std::min(tMax, t2);
+
+		if (tMin > tMax) return false;
+	}
+
+	if (tOut) *tOut = tMin;
+	if (normalOut)
+	{
+		*normalOut = Math::Vector3::Zero;
+		if (hitAxis >= 0) (&normalOut->x)[hitAxis] = hitSign;
+	}
+	return true;
+}

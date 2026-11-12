@@ -1,6 +1,7 @@
 ﻿#include "Reticle.h"
 #include "../../Character/Player/Player.h"
 #include "../../Magic/MagicManager.h"
+#include "../../Map/Gimmick/WandPickup/WandPickup.h"
 
 void Reticle::Init()
 {
@@ -10,6 +11,7 @@ void Reticle::Init()
 	m_texNone.Load("Asset/Textures/Reticle/Reticle_None.png");
 	m_texHintGrab.Load("Asset/Textures/UI/Guide/GrabHint.png");
 	m_texHintRelease.Load("Asset/Textures/UI/Guide/ReleaseHint.png");
+	m_texHintPickup.Load("Asset/Textures/UI/Guide/PickupHint.png");
 }
 
 void Reticle::Update()
@@ -102,6 +104,13 @@ void Reticle::DrawSprite()
 		const float w = isCarrying ? kHintReleaseW : kHintGrabW;
 		sp.DrawTex(isCarrying ? &m_texHintRelease : &m_texHintGrab,
 			0.0f, kHintY, w, kHintH, nullptr, &color);
+	}
+
+	// 左クリックの案内：チュートリアルで、台座の杖にレティクルが合っている間だけ出す
+	const std::shared_ptr<WandPickup> spPickup = m_wpPickup.lock();
+	if (spPickup && spPickup->IsAimed())
+	{
+		sp.DrawTex(&m_texHintPickup, 0.0f, kHintPickupY, kHintPickupW, kHintPickupH, nullptr, &color);
 	}
 }
 void Reticle::StartShake()

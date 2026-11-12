@@ -173,6 +173,7 @@ void GameScene::Init()
 		wandPickup = std::make_shared<WandPickup>();
 		wandPickup->Init(data.wandPickupPos);
 		wandPickup->SetTarget(player);
+		reticle->SetWandPickup(wandPickup);
 		wandPickup->SetOnPickedUp([this, magicwand, magicgaugeUI, reticle]()
 			{
 				reticle->SetHasWand(true);	// 取った瞬間に、いつもの青いレティクルへ
@@ -221,7 +222,6 @@ void GameScene::Init()
 		goal->SetTarget(player);
 		m_objList.push_back(goal);
 	}
-
 
 	// リフト(このステージに設定があれば生成する。なければ何もしない)
 	for (const LiftData& liftData : data.lifts)

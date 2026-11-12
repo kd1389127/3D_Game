@@ -16,64 +16,6 @@ namespace
 {
 	constexpr float kHitEffectSize = 3.5f;
 
-	// ===================================================
-	// レイ(origin, dir)が、center±halfExtentsのAABBに当たるか判定する(スラブ法)
-	// 当たった場合、出会うまでの距離(tOut)を返す
-	// ===================================================
-	bool IntersectRayAABB(const Math::Vector3& origin, const Math::Vector3& dir,
-		const Math::Vector3& center, const Math::Vector3& halfExtents, float maxDist,
-		float* tOut = nullptr, Math::Vector3* normalOut = nullptr)
-	{
-		Math::Vector3 boxMin = center - halfExtents;
-		Math::Vector3 boxMax = center + halfExtents;
-
-		float tMin = 0.0f;
-		float tMax = maxDist;
-		int   hitAxis = -1;
-		float hitSign = 1.0f;
-
-		const float* originArr = &origin.x;
-		const float* dirArr = &dir.x;
-		const float* boxMinArr = &boxMin.x;
-		const float* boxMaxArr = &boxMax.x;
-
-		for (int axis = 0; axis < 3; ++axis)
-		{
-			float o = originArr[axis];
-			float d = dirArr[axis];
-			float mn = boxMinArr[axis];
-			float mx = boxMaxArr[axis];
-
-			if (fabsf(d) < 1e-6f)
-			{
-				if (o < mn || o > mx) return false;
-				continue;
-			}
-
-			float t1 = (mn - o) / d;
-			float t2 = (mx - o) / d;
-			if (t1 > t2) std::swap(t1, t2);
-
-			if (t1 > tMin)
-			{
-				tMin = t1;
-				hitAxis = axis;
-				hitSign = (d > 0.0f) ? -1.0f : 1.0f; // ★入った面の外向き法線の符号
-			}
-			tMax = std::min(tMax, t2);
-
-			if (tMin > tMax) return false;
-		}
-
-		if (tOut) *tOut = tMin;
-		if (normalOut)
-		{
-			*normalOut = Math::Vector3::Zero;
-			if (hitAxis >= 0) (&normalOut->x)[hitAxis] = hitSign;
-		}
-		return true;
-	}
-
 	// BOX判定は、ヒット法線に「レイの逆向き」を返すため、面の法線として使えない。
 	// 法線がレイの逆向きと一致していたら、当たったブロックの中心からの位置で、面を求め直す。
 	Math::Vector3 CorrectBoxNormal(const Math::Vector3& hitNormal, const Math::Vector3& rayDir,
@@ -239,9 +181,19 @@ void Magicwand::Update()
 	bool rightDownNow = (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0;
 	bool leftDownNow = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
 
+	// 更新が空いていた(ポーズ明け・杖を取った直後)なら、押しっぱなしのボタンは
+	// 「前から押していた」ことにして、押した瞬間の判定にならないようにする
+	const ULONGLONG nowTick = GetTickCount64();
+	if (nowTick - m_lastUpdateTick > kResumeGapMs)
+	{
+		m_leftDownPrev  = m_leftDownPrev  || leftDownNow;
+		m_rightDownPrev = m_rightDownPrev || rightDownNow;
+	}
+	m_lastUpdateTick = nowTick;
+
 	bool rightPressed = rightDownNow && !m_rightDownPrev;	// 右クリックを押した瞬間
 	bool rightReleased = !rightDownNow && m_rightDownPrev;	// 右クリックを離した瞬間
-	bool leftPressed = leftDownNow && !m_leftDownPrev;	//左クリックを押した瞬間
+	bool leftPressed = leftDownNow && !m_leftDownPrev;		//左クリックを押した瞬間
 
 	switch (m_state)
 	{

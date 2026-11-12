@@ -124,4 +124,8 @@ private:
 
 	// 掴み中のプラズマ(描画と形づくりは、この部品に任せる)
 	std::unique_ptr<GrabBeam> m_upGrabBeam;
+
+	// 更新が止まっていた後(ポーズ明け・杖を取った直後)の判定用
+	ULONGLONG				   m_lastUpdateTick = 0;
+	static constexpr ULONGLONG kResumeGapMs		= 100;	// これ以上更新が空いたら「再開した」とみなす(約6フレーム)
 };

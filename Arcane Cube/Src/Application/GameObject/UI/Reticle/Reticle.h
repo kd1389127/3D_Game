@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 class Player;
+class WandPickup;
 
 class Reticle : public KdGameObject
 {
@@ -22,6 +23,9 @@ public:
 	// 杖を持っているか(GameSceneから渡す。チュートリアルで杖を取るまでfalse)
 	void SetHasWand(bool hasWand) { m_hasWand = hasWand; }
 
+	// 台座の杖(チュートリアルだけ。レティクルを合わせた時に、左クリックの案内を出す)
+	void SetWandPickup(const std::shared_ptr<WandPickup>& pickup) { m_wpPickup = pickup; }
+
 private:
 
 	void StartShake();
@@ -33,6 +37,7 @@ private:
 
 	KdTexture m_texHintGrab;		// Eキーの案内(持ち上げる)
 	KdTexture m_texHintRelease;		// Eキーの案内(置く)
+	KdTexture m_texHintPickup;		// 左クリックの案内(取る)
 
 	// Eキーの案内の位置と大きさ(Yは数字を大きくマイナスにするほど下がる)
 	static constexpr float kHintY = -100.0f;
@@ -42,7 +47,13 @@ private:
 	bool m_showHint = false;
 	bool m_hasWand  = true;
 
-	std::weak_ptr<Player> m_wpPlayer;
+	// 杖の案内(左クリックで取る)。最初に見る所なので、他の案内より大きくする
+	static constexpr float kHintPickupY = -80.0f;	// 数字を大きくマイナスにするほど下がる
+	static constexpr float kHintPickupW = 176.0f;
+	static constexpr float kHintPickupH = 67.0f;
+
+	std::weak_ptr<Player>	  m_wpPlayer;
+	std::weak_ptr<WandPickup> m_wpPickup;
 
 	// 魔力切れ演出用
 	int m_lastSeenFailId = 0;
