@@ -2,7 +2,7 @@
 
 class Player;
 
-// チュートリアルの台座の杖。レティクルを合わせてEキーか左クリックで取る(Portalの銃のイメージ)
+// チュートリアルの台座の杖。レティクルを合わせて左クリックで取る
 class WandPickup : public KdGameObject
 {
 public:
@@ -33,15 +33,24 @@ private:
 	static constexpr float kAimRadius		= 1.5f;		// 視線からこの距離以内なら「狙っている」(広めで親切に)
 	static constexpr float kWandLength		= 10.0f;	// 杖の長さ(根元から先端まで)
 
+	// 杖取得時の演出
+	static constexpr const char* kPickupSePath = "Asset/Sounds/SE/Block/Generate.wav";	
+	static constexpr float kPickupSeVolume	   = 0.1f;
+	static constexpr int   kFlyFrames		   = 30;	// 手元まで飛ぶ長さ(60fpsで約0.4秒)
+	static constexpr float kHandScale		   = 1.3f;	// 手持ちの杖と同じ大きさ(Magicwand::Initのスケール)
 
 	std::shared_ptr<KdModelWork> m_spModel = nullptr;
 	std::weak_ptr<Player> m_wpPlayer;
 	std::function<void()> m_onPickedUp;
 
-	Math::Vector3 m_basePos = Math::Vector3::Zero;	// 揺れの中心
+	Math::Vector3 m_basePos = Math::Vector3::Zero;		// 揺れの中心
 	int  m_frame = 0;
-	bool m_prevPressed = false;						// 前フレームに左クリックが押されていたか
+	bool m_prevPressed = false;							// 前フレームに左クリックが押されていたか
 	bool m_isPickedUp  = false;
-	bool m_isAimed	   = false;						// 今、レティクルが杖に合っているか
+	bool m_isAimed	   = false;							// 今、レティクルが杖に合っているか
+
+	Math::Vector3 m_flyStartPos = Math::Vector3::Zero;	// 飛び始めの位置
+	int  m_flyFrame = 0;
+	bool m_isFlying = false;							// 取ってから手元に着くまでtrue
 
 };

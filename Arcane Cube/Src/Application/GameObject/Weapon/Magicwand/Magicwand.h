@@ -48,6 +48,7 @@ private:
 	// ----- ボタンの「押した/離した瞬間」を検知するための前フレーム状態 -----
 	bool m_rightDownPrev = false;
 	bool m_leftDownPrev  = false;
+	bool m_clearKeyPrev = false;	// 前フレームのQキー状態(押した瞬間の判定用)
 
 	// ----- エイム中(狙っている最中)の情報 -----
 	Math::Vector3 m_aimBaseCell = Math::Vector3::Zero;  // せり出しの起点になるマス(着弾点に一番近いグリッド座標)

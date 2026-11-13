@@ -191,9 +191,19 @@ void Magicwand::Update()
 	}
 	m_lastUpdateTick = nowTick;
 
-	bool rightPressed = rightDownNow && !m_rightDownPrev;	// 右クリックを押した瞬間
+	bool rightPressed  = rightDownNow && !m_rightDownPrev;	// 右クリックを押した瞬間
 	bool rightReleased = !rightDownNow && m_rightDownPrev;	// 右クリックを離した瞬間
-	bool leftPressed = leftDownNow && !m_leftDownPrev;		//左クリックを押した瞬間
+	bool leftPressed   = leftDownNow && !m_leftDownPrev;	// 左クリックを押した瞬間
+
+	// Qキーを押した瞬間：生成したブロックを全部消して、魔力を回収する
+	const bool clearDownNow = (GetAsyncKeyState('Q') & 0x8000) != 0;
+	const bool clearPressed = clearDownNow && !m_clearKeyPrev;
+	m_clearKeyPrev = clearDownNow;
+
+	if (clearPressed && !m_generatedStacks.empty())
+	{
+		ClearAllStacks();
+	}
 
 	switch (m_state)
 	{
