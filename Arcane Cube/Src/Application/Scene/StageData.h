@@ -146,6 +146,58 @@ static const StageData g_stageTable[] =
 		{  ObjectiveKind::Grab,ObjectiveKind::OneSwitch, ObjectiveKind::Goal },
 	},
 	
+	// 魔力と削除。積んで登る→橋で奈落を渡る→削除で魔力を回収して高台へ
+	{
+		Math::Vector3(0, 0, 0), Math::Vector3(153, 69.5f, 0), 0.0f, 90.0f,
+		false, {}, Math::Vector3::Zero, {},
+		"Asset/Data/MapData/Stage4.csv", 2, 3,	// originCol=2, originRow=3
+		9,										// buildLimitLayers
+		32.0f,
+		0, Math::Vector2::Zero, Math::Vector2::Zero,
+		Math::Vector3(55.0f, 45.0f, 45.0f),
+		{}, {}, {},
+		{
+			// 奈落から落ちたら高台1の上に戻る
+			{
+				Math::Vector3(28, -1000, -28), Math::Vector3(108, 1000, 28),	// 高台1〜高台2の範囲
+				Math::Vector3(40, 24, 0), 90.0f									// 戻る位置、向き
+			},
+		},
+		{ ObjectiveKind::Goal },
+	},
+
+	// 魔力を吸う壁。置ける場所が決まっている。削除で魔力を戻しながら、仕切りを越える
+	{
+		Math::Vector3(0, 0, 0), Math::Vector3(208, -2.5f, 0), 0.0f, 90.0f,
+		false, {}, Math::Vector3::Zero, {},
+		"Asset/Data/MapData/Stage5.csv", 2, 4,	// originCol=2, originRow=4
+		6,										// buildLimitLayers
+		32.0f,
+		0, Math::Vector2::Zero, Math::Vector2::Zero,
+		Math::Vector3(55.0f, 45.0f, 45.0f),
+		{}, {},
+		{
+			// 置ける場所は4か所(列)だけ。それ以外は魔法ブロック禁止
+			{ Math::Vector3(-1000, -1000, -1000), Math::Vector3(20, 1000, 1000) },	// スタート側
+			{ Math::Vector3(44, -1000, -1000),    Math::Vector3(60, 1000, 1000) },	// 仕切り1
+			{ Math::Vector3(84, -1000, -1000),    Math::Vector3(100, 1000, 1000) },	// 低い壁
+			{ Math::Vector3(124, -1000, -1000),   Math::Vector3(140, 1000, 1000) },	// 仕切り2
+			{ Math::Vector3(188, -1000, -1000),   Math::Vector3(1000, 1000, 1000) },// ゴール側
+
+			// 置けるのは帯の行(行3〜5)だけ。壁の暗い所の前や、地面の端には積めない
+			{ Math::Vector3(-1000, -1000, -1000), Math::Vector3(1000, 1000, -12) },
+			{ Math::Vector3(-1000, -1000, 12),    Math::Vector3(1000, 1000, 1000) },
+		},
+		{
+			// 奈落から落ちたら、部屋3の入口に戻る
+			{
+				Math::Vector3(140, -1000, -36), Math::Vector3(188, 1000, 36),	// 箱(最小・最大)
+				Math::Vector3(144, 0, 0), 90.0f									// 戻る位置、向き
+			},
+		},
+		{ ObjectiveKind::Goal },
+	},
+
 	// ステージ3：リフトの紹介。ブロックを持ってリフトで奈落を渡り、スイッチに置いて檻を開ける
 	{
 		Math::Vector3(0, 0, 0), Math::Vector3(208, -2.5f, 0), 0.0f, 90.0f,
