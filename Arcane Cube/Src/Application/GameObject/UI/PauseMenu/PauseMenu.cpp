@@ -4,10 +4,21 @@
 #include "../../../Scene/SceneManager.h"
 #include "../../../Scene/StageData.h"
 
+namespace
+{
+	// ステージ選択で選べるステージの数(最後のGoalMapは選ばせない)
+	// g_stageTable から自動で求めるので、ステージを足してもここは直さなくてよい
+	constexpr int kSelectableStageCount = g_stageCount - 1;
+}
+
 void PauseMenu::Init()
 {
 	// 項目の数が Guide と食い違っていたらビルドで止める
 	static_assert(kTopicCount == Guide::kTopicCount, "項目の数が PauseMenu と Guide で違います");
+
+	// ステージが10を超えたらビルドで止める(配列からはみ出して、バグになるのを防ぐ)
+	static_assert(kSelectableStageCount <= kMaxStageCount,
+		"ステージが多すぎます。ステージ選択のページ送りが必要です");
 
 	m_tex[kTexResume].Load("Asset/Textures/UI/Pause/Resume.png");
 	m_tex[kTexHowTo].Load("Asset/Textures/UI/Pause/HowTo_Controls.png");
@@ -22,8 +33,8 @@ void PauseMenu::Init()
 		m_tex[kTexTopic1 + i].Load("Asset/Textures/UI/Pause/HowTo_Topic" + std::to_string(i + 1) + ".png");
 	}
 
-	// Stage1.png〜Stage5.png をまとめて読む
-	for (int i = 0; i < kStageCount; ++i)
+	// Stage1.png〜StageN.png(N = 選べるステージの数)をまとめて読む
+	for (int i = 0; i < kSelectableStageCount; ++i)
 	{
 		m_tex[kTexStage1 + i].Load("Asset/Textures/UI/Pause/Stage" + std::to_string(i + 1) + ".png");
 	}
@@ -43,44 +54,79 @@ void PauseMenu::SetOpen(bool _isOpen)
 	Mouse::Instance().ShowMouse(_isOpen);
 }
 
+PauseMenu::Button& PauseMenu::AddButton(int _texId, float _x, float _y, float _hitWidth)
+{
+	assert(m_count < kMaxBtn);	// 配列からはみ出す数を足したら、ここで気づけるようにする
+
+	Button& button = m_buttons[m_count];
+	button.texId = _texId;
+	button.pos = Math::Vector2(_x, _y);
+	button.hitWidth = _hitWidth;
+	button.locked = false;
+	++m_count;
+	return button;
+}
+
+float PauseMenu::GetRowY(int _row, int _rowCount)
+{
+	const float topY = (_rowCount - 1) * kStep * 0.5f;
+	return topY - _row * kStep;
+}
+
 void PauseMenu::SetPage(Page _page)
 {
 	m_page = _page;
 	m_hover = -1;
-
-	for (bool& locked : m_locked) { locked = false; }
+	m_count = 0;
 
 	switch (_page)
 	{
 	case kPageMain:
 	{
 		const int ids[] = { kTexResume, kTexHowTo, kTexRestart, kTexStage, kTexTitle };
-		m_count = static_cast<int>(std::size(ids));
-		for (int i = 0; i < m_count; ++i) { m_ids[i] = ids[i]; }
+		const int rowCount = static_cast<int>(std::size(ids));
+		for (int row = 0; row < rowCount; ++row)
+		{
+			AddButton(ids[row], 0.0f, GetRowY(row, rowCount));
+		}
 		break;
 	}
 	case kPageStage:
 	{
-		// STAGE 1〜5 と、いちばん下に BACK
-		for (int i = 0; i < kStageCount; ++i)
+		// 行数は、ステージが少ない時でも「ステージの行 + 戻る」で固定する(「戻る」の位置を動かさないため)
+		const int rowCount = kStageRows + 1;
+
+		// 列の数(端数が出たら切り上げる)。8ステージなら、(8 + 4) / 5 = 2列
+		const int stageColumns = (kSelectableStageCount + kStageRows - 1) / kStageRows;
+
+		for (int stage = 0; stage < kSelectableStageCount; ++stage)
 		{
-			m_ids[i] = kTexStage1 + i;
+			const int column = stage / kStageRows;	// 0=左の列 1=右の列
+			const int row = stage % kStageRows;
+
+			// 列の並びが画面の中央に来るようにずらす(1列ならX=0、2列なら左右に半分ずつ)
+			const float columnOffset = column - (stageColumns - 1) * 0.5f;
+			const float x = columnOffset * kStageColumnStep;
+
+			Button& button = AddButton(kTexStage1 + stage, x, GetRowY(row, rowCount), kStageColumnStep);
+
 			// 解放済みより先のステージは選べない(メニューを開いている間は解放は変わらない)
-			m_locked[i] = (kStageMap1 + i > SceneManager::Instance().GetUnlockedStage());
+			button.locked = (stage > SceneManager::Instance().GetUnlockedStage());
 		}
-		m_ids[kStageCount] = kTexBack;
-		m_count = kStageCount + 1;
+
+		// いちばん下の真ん中に「戻る」
+		AddButton(kTexBack, 0.0f, GetRowY(kStageRows, rowCount));
 		break;
 	}
 	case kPageHowTo:
 	{
 		// 操作説明の項目(生成・削除 / 運ぶ・置く / ギミック)と、いちばん下に BACK
+		const int rowCount = kTopicCount + 1;
 		for (int i = 0; i < kTopicCount; ++i)
 		{
-			m_ids[i] = kTexTopic1 + i;
+			AddButton(kTexTopic1 + i, 0.0f, GetRowY(i, rowCount));
 		}
-		m_ids[kTopicCount] = kTexBack;
-		m_count = kTopicCount + 1;
+		AddButton(kTexBack, 0.0f, GetRowY(kTopicCount, rowCount));
 		break;
 	}
 	}
@@ -124,16 +170,16 @@ void PauseMenu::Update()
 	if (m_openT < 1.0f) { return; }	// 開ききるまでは、動いているボタンを押させない
 
 	// マウスがどのボタンの上にあるか(GetScreenPosは中央が原点・上がプラスで、描画と同じ座標)
-	// ボタンはページごとに数が違うので、全体が画面の中央に来るように一番上のYを決める
 	const Math::Vector2 mouse = Mouse::Instance().GetScreenPos();
-	const float topY = (m_count - 1) * kStep * 0.5f;
 	m_hover = -1;
 	for (int i = 0; i < m_count; ++i)
 	{
-		if (m_locked[i]) { continue; }	// 未解放のボタンには反応しない
+		const Button& button = m_buttons[i];
+		if (button.locked) { continue; }	// 未解放のボタンには反応しない
 
-		const float y = topY - i * kStep;
-		if (std::fabs(mouse.x) <= kBtnW / 2 && std::fabs(mouse.y - y) <= kBtnH / 2)
+		const bool isInsideX = std::fabs(mouse.x - button.pos.x) <= button.hitWidth / 2;
+		const bool isInsideY = std::fabs(mouse.y - button.pos.y) <= kBtnH / 2;
+		if (isInsideX && isInsideY)
 		{
 			m_hover = i;
 		}
@@ -145,7 +191,7 @@ void PauseMenu::Update()
 	if (se) { se->SetVolume(0.15f); }
 
 	// 押したボタンに応じた処理(ボタンの画像番号で判断する)
-	const int id = m_ids[m_hover];
+	const int id = m_buttons[m_hover].texId;
 
 	// 操作説明の項目を押した：メニューを閉じて、その項目のスライドを出す
 	const bool isTopicButton = (id >= kTexTopic1 && id < kTexTopic1 + kTopicCount);
@@ -191,9 +237,9 @@ void PauseMenu::Update()
 	case kTexBack:		// メインのページへ戻る
 		SetPage(kPageMain);
 		break;
-	default:			// STAGE 1〜5(画像番号からステージ番号を求める。チュートリアルは選べない)
+	default:			// ステージのボタン(画像番号がそのままステージ番号。0=チュートリアル)
 		SceneManager::Instance().RequestChangeScene(
-			SceneManager::SceneType::Game, kStageMap1 + (id - kTexStage1));
+			SceneManager::SceneType::Game, id - kTexStage1);
 		break;
 	}
 }
@@ -212,16 +258,18 @@ void PauseMenu::DrawSprite()
 	Math::Color dim = { 0.0f, 0.0f, 0.0f, 0.6f * e };
 	sp.DrawBox(0, 0, 800, 450, &dim, true);
 
-	const float topY = (m_count - 1) * kStep * 0.5f;	// Updateと同じ式
 	for (int i = 0; i < m_count; ++i)
 	{
-		// 未解放はかなり暗く、マウスが乗っているボタンは明るく、他は少し暗くする
-		float c = (i == m_hover) ? 1.0f : 0.6f;
-		if (m_locked[i]) { c = 0.25f; }
-		Math::Color color = { c, c, c, e };	// 透明→不透明
+		const Button& button = m_buttons[i];
 
-		// 下から40だけ上がってくる(eが0の時は40下、1の時は元の位置)
-		const float y = topY - i * kStep - (1.0f - e) * 40.0f;
-		sp.DrawTex(&m_tex[m_ids[i]], 0, y, kBtnW, kBtnH, nullptr, &color);
+		// 未解放はかなり暗く、マウスが乗っているボタンは明るく、他は少し暗くする
+		float brightness = kBrightnessNormal;
+		if (i == m_hover) { brightness = kBrightnessHover; }
+		if (button.locked) { brightness = kBrightnessLocked; }
+		Math::Color color = { brightness, brightness, brightness, e };	// 透明→不透明
+
+		// 下から kSlideUpDistance だけ上がってくる(eが0の時は下、1の時は元の位置)
+		const float y = button.pos.y - (1.0f - e) * kSlideUpDistance;
+		sp.DrawTex(&m_tex[button.texId], button.pos.x, y, kBtnW, kBtnH, nullptr, &color);
 	}
 }
