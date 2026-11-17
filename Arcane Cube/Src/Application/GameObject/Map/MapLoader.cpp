@@ -104,8 +104,13 @@ bool MapLoader::Load(const std::string& csvPath, float groundHeight, int originC
 					(z - originRow) * G
 				);
 
-				// 全セルを登録する(見えない埋まりセルも。魔法ブロックの重複防止に必要)
-				BlockGridManager::Instance().Register(cellCenter, BlockGridManager::BlockKind::Map);
+				// 全セルを登録する(見えない埋まりセルも)。生成不可の壁(6)は、種類を分けて登録する
+				BlockGridManager::BlockKind kind = BlockGridManager::BlockKind::Map;
+				if (shape == MapBlock::Shape::MagicCancel)
+				{
+					kind = BlockGridManager::BlockKind::MagicCancel;
+				}
+				BlockGridManager::Instance().Register(cellCenter, kind);
 
 				// 階段の通り道には、魔法ブロックを置かせない
 				if (shape == MapBlock::Shape::Stair)
@@ -121,36 +126,6 @@ bool MapLoader::Load(const std::string& csvPath, float groundHeight, int originC
 					BlockGridManager::Instance().AddForbiddenZone(
 						Math::Vector3(cellCenter.x - extX - eps, cellCenter.y - eps, cellCenter.z - extZ - eps),
 						Math::Vector3(cellCenter.x + extX + eps, cellCenter.y + G * 2 + eps, cellCenter.z + extZ + eps));
-				}
-
-				// 生成不可の壁の前(まわり1マス)にも、魔法ブロックを置かせない
-				// 同じ列で縦に並ぶ壁は1つのゾーンにまとめる(ゾーンが増えると毎フレームの判定が重くなるため)
-				if (shape == MapBlock::Shape::MagicCancel && GetCell(x, y - 1, z) != MagicCancel)
-				{
-					// この列の壁の一番上の層を探す
-					int topLayer = y;
-					while (GetCell(x, topLayer + 1, z) == MagicCancel)
-					{
-						++topLayer;
-					}
-					const float topCenterY = cellCenter.y + (topLayer - y) * G;
-					constexpr float eps = 0.1f;
-
-					// 壁が延びる方向には広げない(広げると、壁の端の外側まで生成禁止になる)
-					float extX = G;
-					float extZ = G;
-					if (GetCell(x - 1, y, z) == MagicCancel || GetCell(x + 1, y, z) == MagicCancel)
-					{
-						extX = 0.0f;	// 壁がX方向に延びている → Z方向(正面)だけ広げる
-					}
-					if (GetCell(x, y, z - 1) == MagicCancel || GetCell(x, y, z + 1) == MagicCancel)
-					{
-						extZ = 0.0f;	// 壁がZ方向に延びている → X方向(正面)だけ広げる
-					}
-
-					BlockGridManager::Instance().AddForbiddenZone(
-						Math::Vector3(cellCenter.x - extX - eps, cellCenter.y - eps, cellCenter.z - extZ - eps),
-						Math::Vector3(cellCenter.x + extX + eps, topCenterY + eps, cellCenter.z + extZ + eps));
 				}
 
 				// 6方向をフルブロックで囲まれていたら生成しない(描画・当たり判定の節約)
@@ -201,7 +176,7 @@ int MapLoader::GetCell(int x, int y, int z) const
 	return m_grid[y][z][x];
 }
 
-// ハーフは面を完全には塞がないので、埋まり判定にはフルブロックだけを使う
+// 階段は面を完全には塞がないので、埋まり判定にはフルブロックだけを使う
 bool MapLoader::IsBuried(int x, int y, int z) const
 {
 	return IsFull(x + 1, y, z) && IsFull(x - 1, y, z)

@@ -14,6 +14,7 @@ public:
 		Normal,		// 弾で生成する通常ブロック
 		GimmickKey,	// スイッチ用のギミック専用ブロック
 		Map,		// CSVでのMapブロック用
+		MagicCancel,// CSVの生成不可の壁(6)
 	};
 
 	// 1マスのサイズ(ブロック1個分の大きさに合わせてある)
@@ -52,6 +53,24 @@ public:
 	bool IsOccupied(const Math::Vector3& snappedPos) const
 	{
 		return m_occupied.count(ToKey(snappedPos)) > 0;
+	}
+
+	// 上下左右前後の隣のマスに、指定した種類のブロックが1つでもあるか
+	bool HasNeighborKind(const Math::Vector3& cellPos, BlockKind kind) const
+	{
+		const Math::Vector3 directions[6] =
+		{
+			{ 1, 0, 0 }, { -1, 0, 0 },
+			{ 0, 1, 0 }, { 0, -1, 0 },
+			{ 0, 0, 1 }, { 0, 0, -1 },
+		};
+
+		for (const Math::Vector3& direction : directions)
+		{
+			auto it = m_occupied.find(ToKey(cellPos + direction * GridSize));
+			if (it != m_occupied.end() && it->second == kind) return true;
+		}
+		return false;
 	}
 
 	// ===================================================
@@ -95,7 +114,9 @@ public:
 	{
 		// 一番軽い判定を先に。ここで落とせば、下の当たり判定まで進まなくて済む
 		if (!IsInsideBuildBounds(snappedPos)) return false;	// Map外には置けない
-		if (IsInForbiddenZone(snappedPos)) return false;	// 禁止エリアには置けない
+		if (IsInForbiddenZone(snappedPos))	  return false;	// 禁止エリアには置けない
+		if (HasNeighborKind(snappedPos, BlockKind::MagicCancel)) return false;					// 生成不可の壁に面したマスには置けない
+		if (m_buildOnlyNextToMap && !HasNeighborKind(snappedPos, BlockKind::Map)) return false;	// Mapの面に接していないマスには置けない
 
 		if (IsOverlappingFreeBlock(snappedPos)) return false;	// ギミックブロックと重なる所には置けない
 
@@ -136,8 +157,8 @@ public:
 	{
 		Math::Vector3 baseCell = SnapToGrid(hitPos + axisNormal * (GridSize * 0.5f + 0.01f));
 	
-		// 禁止エリアの中なら、外側・内側にずらさない(ずらすと、壁から1マス離れて生成できてしまう)
-		if (IsInForbiddenZone(baseCell))
+		// 禁止エリア・生成不可の壁に面したマスなら、外側・内側にずらさない(ずらすと壁から1マス離れて生成できてしまう)
+		if (IsInForbiddenZone(baseCell) || HasNeighborKind(baseCell, BlockKind::MagicCancel))
 		{
 			return baseCell;	// 置けないまま返す(呼び出し側のCanPlaceBlockAtで弾かれる)
 		}
@@ -219,12 +240,13 @@ public:
 		if (!m_showDebugGrid) { return; }
 
 		constexpr float half = GridSize * 0.5f;
-		constexpr Math::Color gridColor = { 0.2f, 0.8f, 1.0f, 1.0f };
-		constexpr Math::Color axisXColor = { 1.0f, 0.2f, 0.2f, 1.0f };
-		constexpr Math::Color axisZColor = { 0.2f, 0.4f, 1.0f, 1.0f };
-		constexpr Math::Color normalColor = { 1.0f, 1.0f, 0.2f, 1.0f };
-		constexpr Math::Color gimmickColor = { 1.0f, 0.3f, 1.0f, 1.0f };
-		constexpr Math::Color mapColor = { 0.45f, 0.45f, 0.45f, 1.0f };
+		constexpr Math::Color gridColor		= { 0.2f, 0.8f, 1.0f, 1.0f };
+		constexpr Math::Color axisXColor	= { 1.0f, 0.2f, 0.2f, 1.0f };
+		constexpr Math::Color axisZColor    = { 0.2f, 0.4f, 1.0f, 1.0f };
+		constexpr Math::Color normalColor   = { 1.0f, 1.0f, 0.2f, 1.0f };
+		constexpr Math::Color gimmickColor  = { 1.0f, 0.3f, 1.0f, 1.0f };
+		constexpr Math::Color mapColor		= { 0.45f, 0.45f, 0.45f, 1.0f };
+		constexpr Math::Color cancelColor	= { 0.6f, 0.2f, 0.8f, 1.0f };
 
 		// マスの「境界線」の高さ(=ブロックの底面の高さ)
 		const float y = m_groundHeight + m_debugLayer * GridSize;
@@ -288,8 +310,9 @@ public:
 			Math::Vector3 cellPos(kx * GridSize, ky * GridSize + half + m_groundHeight, kz * GridSize);
 
 			Math::Color c = normalColor;
-			if (kind == BlockKind::GimmickKey)  c = gimmickColor;
-			else if (kind == BlockKind::Map)	c = mapColor;
+			if (kind == BlockKind::GimmickKey)		 c = gimmickColor;
+			else if (kind == BlockKind::Map)		 c = mapColor;
+			else if (kind == BlockKind::MagicCancel) c = cancelColor;
 
 			Math::Matrix mat = Math::Matrix::CreateTranslation(cellPos);
 			wire.AddDebugBox(mat, Math::Vector3(half, half, half), Math::Vector3::Zero, false, c);
@@ -362,6 +385,9 @@ public:
 	
 	// 魔法ブロックを積める最大の層数(0=上限なし)。StageDataのbuildLimitLayersを渡す
 	void SetBuildLimitLayers(int layers) { m_buildLimitLayers = layers; }
+
+	// このステージは、Mapの面(1)に接したマスにしか魔法ブロックを置けないか
+	void SetBuildOnlyNextToMap(bool enable) { m_buildOnlyNextToMap = enable; }
 
 	// このXZの範囲(minXZ〜maxXZ、yにはZが入る)の中だけ、積める層数をlayersにする
 	void SetTallBuildZone(int layers, const Math::Vector2& minXZ, const Math::Vector2& maxXZ)
@@ -437,19 +463,21 @@ private:
 
 	// 「使用中のマス」を全部記録しておくコンテナ
 	std::unordered_map<std::tuple<int, int, int>, BlockKind, KeyHash> m_occupied;
+	
 	std::vector<std::weak_ptr<KdGameObject>> m_freeBlocks;
-	float m_groundHeight = 0.0f;
-	bool  m_showDebugGrid = false;
-	int   m_debugLayer = 0;
-	int	  m_buildLimitLayers = 0;
+	float m_groundHeight	   = 0.0f;
+	bool  m_showDebugGrid      = false;
+	int   m_debugLayer		   = 0;
+	int	  m_buildLimitLayers   = 0;
+	bool  m_buildOnlyNextToMap = false;
 
 	Math::Vector3 m_playerBodyCenter = Math::Vector3::Zero;
-	Math::Vector3 m_playerBodyHalf = Math::Vector3::Zero;
-	bool          m_hasPlayerBody = false;
+	Math::Vector3 m_playerBodyHalf   = Math::Vector3::Zero;
+	bool          m_hasPlayerBody	 = false;
 
 	int           m_tallLimitLayers = 0;
-	Math::Vector2 m_tallZoneMin = Math::Vector2::Zero;
-	Math::Vector2 m_tallZoneMax = Math::Vector2::Zero;
+	Math::Vector2 m_tallZoneMin		= Math::Vector2::Zero;
+	Math::Vector2 m_tallZoneMax		= Math::Vector2::Zero;
 
 	// 置ける範囲(XZ)。yにはZが入る(m_tallZoneMinと同じ使い方)
 	Math::Vector2 m_boundsMin = Math::Vector2::Zero;

@@ -100,6 +100,7 @@ void GameScene::Init()
 	BlockGridManager::Instance().Clear();
 	BlockGridManager::Instance().SetGroundHeight(data.groundHeight);
 	BlockGridManager::Instance().SetBuildLimitLayers(data.buildLimitLayers);
+	BlockGridManager::Instance().SetBuildOnlyNextToMap(data.buildOnlyNextToMap);
 	BlockGridManager::Instance().SetTallBuildZone(
 		data.tallBuildLimitLayers, data.tallZoneMin, data.tallZoneMax);
 	for (const auto& zone : data.forbiddenZones)
@@ -295,7 +296,6 @@ void GameScene::Init()
 	}
 
 	// 操作説明：魔力ゲージなどより手前に描くため、Tabメニューの直前に作る
-	// (スライドはMap1の開始時だけ自動で出す。Tabアイコンは全ステージ)
 	m_guide = std::make_shared<Guide>();
 	m_guide->Init();
 	m_objList.push_back(m_guide);

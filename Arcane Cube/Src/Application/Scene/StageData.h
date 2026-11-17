@@ -86,6 +86,7 @@ struct StageData
 
 	std::vector<ObjectiveKind> objectives = { ObjectiveKind::Goal };// 出す項目(上から順)。空なら出さない
 	Math::Vector3 wandPickupPos = Math::Vector3::Zero;				// 台座の杖の位置(チュートリアルだけ。浮かせる高さ)
+	bool          buildOnlyNextToMap = false;						// trueなら、魔法ブロックはMapの面(1)に接したマスにしか置けない
 };
 
 // ステージ番号(g_stageTableの添字)。番号を直書きせず、これを使う
@@ -100,7 +101,7 @@ static const StageData g_stageTable[] =
 	{
 		Math::Vector3(0, 16, 0), Math::Vector3(-235, 13.5, 0), 0.0f, -90.0f,	// 1つ目=スタート、2つ目=ゴール
 		false, {}, Math::Vector3::Zero, {},
-		"Asset/Data/MapData/Tutorial.csv", 32, 4,		// originCol=32, originRow=4
+		"Asset/Data/MapData/Stage1.csv", 32, 4,		// originCol=32, originRow=4
 		0,
 		32.0f,
 		0, Math::Vector2::Zero, Math::Vector2::Zero,
@@ -121,7 +122,7 @@ static const StageData g_stageTable[] =
 	{
 		Math::Vector3(80, 0, 10), Math::Vector3(-100, 13.5, 8.0f), 0.0f,-90.0f,
 		false, {}, Math::Vector3::Zero,{},
-		"Asset/Data/MapData/Map1.csv", 14, 4,
+		"Asset/Data/MapData/Stage2.csv", 14, 4,
 		0,
 		32.0f,
 		0,Math::Vector2::Zero,Math::Vector2::Zero,
@@ -137,7 +138,7 @@ static const StageData g_stageTable[] =
 		{Math::Vector3(0, 0, -16)},			// switchPositions
 		Math::Vector3(-48, 24.0f, 0),		// cageBasePos
 		{Math::Vector3(64, 52.0f, 0)},		// gimmickBlockPositions
-		"Asset/Data/MapData/Map2.csv", 14, 5, 
+		"Asset/Data/MapData/Stage3.csv", 14, 5, 
 		7,
 		32.0f,
 		0, Math::Vector2::Zero, Math::Vector2::Zero,
@@ -166,36 +167,21 @@ static const StageData g_stageTable[] =
 		{ ObjectiveKind::Goal },
 	},
 
-	// 魔力を吸う壁。置ける場所が決まっている。削除で魔力を戻しながら、仕切りを越える
+	// 魔力を吸う壁。暗い壁の中の、生成できる場所を渡って登る
 	{
-		Math::Vector3(0, 0, 0), Math::Vector3(208, -2.5f, 0), 0.0f, 90.0f,
+		Math::Vector3(0, 0, 0), Math::Vector3(240, 53.5f, 0), 0.0f, 90.0f,
 		false, {}, Math::Vector3::Zero, {},
-		"Asset/Data/MapData/Stage5.csv", 2, 4,	// originCol=2, originRow=4
-		6,										// buildLimitLayers
+		"Asset/Data/MapData/Stage5.csv", 2, 5,	// originCol=2, originRow=5(端に余白の行を足したため)
+		7,										// buildLimitLayers
 		32.0f,
 		0, Math::Vector2::Zero, Math::Vector2::Zero,
 		Math::Vector3(55.0f, 45.0f, 45.0f),
 		{}, {},
-		{
-			// 置ける場所は4か所(列)だけ。それ以外は魔法ブロック禁止
-			{ Math::Vector3(-1000, -1000, -1000), Math::Vector3(20, 1000, 1000) },	// スタート側
-			{ Math::Vector3(44, -1000, -1000),    Math::Vector3(60, 1000, 1000) },	// 仕切り1
-			{ Math::Vector3(84, -1000, -1000),    Math::Vector3(100, 1000, 1000) },	// 低い壁
-			{ Math::Vector3(124, -1000, -1000),   Math::Vector3(140, 1000, 1000) },	// 仕切り2
-			{ Math::Vector3(188, -1000, -1000),   Math::Vector3(1000, 1000, 1000) },// ゴール側
-
-			// 置けるのは帯の行(行3〜5)だけ。壁の暗い所の前や、地面の端には積めない
-			{ Math::Vector3(-1000, -1000, -1000), Math::Vector3(1000, 1000, -12) },
-			{ Math::Vector3(-1000, -1000, 12),    Math::Vector3(1000, 1000, 1000) },
-		},
-		{
-			// 奈落から落ちたら、部屋3の入口に戻る
-			{
-				Math::Vector3(140, -1000, -36), Math::Vector3(188, 1000, 36),	// 箱(最小・最大)
-				Math::Vector3(144, 0, 0), 90.0f									// 戻る位置、向き
-			},
-		},
+		{},										// forbiddenZones：なし(CSVの6と1で決める)
+		{},
 		{ ObjectiveKind::Goal },
+		Math::Vector3::Zero,					// wandPickupPos(使わない)
+		true,									// buildOnlyNextToMap
 	},
 
 	// ステージ3：リフトの紹介。ブロックを持ってリフトで奈落を渡り、スイッチに置いて檻を開ける
@@ -205,7 +191,7 @@ static const StageData g_stageTable[] =
 		{ Math::Vector3(176, 0, 0) },					// switchPositions
 		Math::Vector3(192, 0, 0),						// cageBasePos
 		{ Math::Vector3(18, 4, 16) },					// gimmickBlockPositions
-		"Asset/Data/MapData/Map3.csv", 2, 4,			// originCol=2, originRow=4
+		"Asset/Data/MapData/Stage6.csv", 2, 4,			// originCol=2, originRow=4
 		4,												// buildLimitLayers
 		32.0f,											// cageHeight
 		0, Math::Vector2::Zero, Math::Vector2::Zero,	// 高く積めるエリアなし
@@ -230,7 +216,7 @@ static const StageData g_stageTable[] =
 		{ Math::Vector3(200, 0, -24), Math::Vector3(200, 0, 24) },
 		Math::Vector3(216, 0, 0),
 		{ Math::Vector3(104, 4, -104), Math::Vector3(104, 52, 96) },	// Bは高台48の上
-		"Asset/Data/MapData/Map4.csv", 4, 15,
+		"Asset/Data/MapData/Stage9.csv", 4, 15,
 		5,																// 通常の建築上限
 		50.0f,															// cageHeight
 		0, Math::Vector2::Zero, Math::Vector2::Zero,
@@ -250,7 +236,7 @@ static const StageData g_stageTable[] =
 		{ Math::Vector3(-288, 28, -128),	// A：棚の上
 		  Math::Vector3(304, 4, -128),		// B
 		  Math::Vector3(0, 52, -328) },		// C：塔の上
-		"Asset/Data/MapData/Map5.csv", 39, 45,
+		"Asset/Data/MapData/Stage10.csv", 39, 45,
 		5,
 		50.0f,
 		0, Math::Vector2::Zero, Math::Vector2::Zero,
