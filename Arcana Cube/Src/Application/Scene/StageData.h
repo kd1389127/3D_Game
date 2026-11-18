@@ -97,7 +97,7 @@ static constexpr int kStageMap2		= 2;
 // ステージテーブル(ステージを増やす場合はここに追加していくだけでOK)
 static const StageData g_stageTable[] =
 {
-	// チュートリアル：段差を登り、穴の飛び石を渡って、杖を取ってゴールへ
+	// ステージ1：段差を登り、穴の飛び石を渡って、杖を取ってゴールへ
 	{
 		Math::Vector3(0, 16, 0), Math::Vector3(-235, 13.5, 0), 0.0f, -90.0f,	// 1つ目=スタート、2つ目=ゴール
 		false, {}, Math::Vector3::Zero, {},
@@ -116,7 +116,7 @@ static const StageData g_stageTable[] =
 		Math::Vector3(-200.0f, 24.0f, 0.0f),						// wandPickupPos(台座の上)
 	},
 
-	// ステージ1
+	// ステージ2
 	// プレイヤー開始位置、ゴールの位置、ステージの下限、プレイヤーの向き
 	// ギミックを使うか、ギミックの各配置、CSVデータ、CSVの列、CSVの行、置ける最大の上面
 	{
@@ -131,7 +131,7 @@ static const StageData g_stageTable[] =
 		{ObjectiveKind::Aim,ObjectiveKind::Wheel,ObjectiveKind::Shoot,ObjectiveKind::Goal},
 	},
 
-	// ステージ2(スイッチ・檻・ギミックブロックの座標)
+	// ステージ3(スイッチ・檻・ギミックブロックの座標)
 	{
 		Math::Vector3(48, 0, 0), Math::Vector3(-60, 21.5, 0), 0.0f,-90.0f,
 		true,
@@ -147,7 +147,7 @@ static const StageData g_stageTable[] =
 		{  ObjectiveKind::Grab,ObjectiveKind::OneSwitch, ObjectiveKind::Goal },
 	},
 	
-	// 魔力と削除。積んで登る→橋で奈落を渡る→削除で魔力を回収して高台へ
+	// ステージ4：魔力と削除。積んで登る→橋で奈落を渡る→削除で魔力を回収して高台へ
 	{
 		Math::Vector3(0, 0, 0), Math::Vector3(153, 69.5f, 0), 0.0f, 90.0f,
 		false, {}, Math::Vector3::Zero, {},
@@ -167,7 +167,7 @@ static const StageData g_stageTable[] =
 		{ ObjectiveKind::Goal },
 	},
 
-	// 魔力を吸う壁。暗い壁の中の、生成できる場所を渡って登る
+	// ステージ5：魔力を吸う壁。暗い壁の中の、生成できる場所を渡って登る
 	{
 		Math::Vector3(0, 0, 0), Math::Vector3(240, 53.5f, 0), 0.0f, 90.0f,
 		false, {}, Math::Vector3::Zero, {},
@@ -184,7 +184,7 @@ static const StageData g_stageTable[] =
 		true,									// buildOnlyNextToMap
 	},
 
-	// ステージ3：リフトの紹介。ブロックを持ってリフトで奈落を渡り、スイッチに置いて檻を開ける
+	// ステージ6：リフトの紹介。ブロックを持ってリフトで奈落を渡り、スイッチに置いて檻を開ける
 	{
 		Math::Vector3(0, 0, 0), Math::Vector3(208, -2.5f, 0), 0.0f, 90.0f,
 		true,
@@ -209,7 +209,55 @@ static const StageData g_stageTable[] =
 		{ObjectiveKind::LiftSwitch,ObjectiveKind::Goal},
 	},
 
-	// ステージ4：A側は魔法の橋、B側は階段で高台へ。ブロック2個を両スイッチに置くと檻が開く
+	// ステージ7：魔力のやりくり。高台の上の2つのスイッチを押して、檻を開ける
+	{
+		Math::Vector3(0, 24, 0), Math::Vector3(192, -2.5f, 0), 0.0f, 90.0f,	// スタートは高台の上
+		true,
+		{ Math::Vector3(96, 24, -48), Math::Vector3(96, 24, 48) },			// 北と南の高台の上
+		Math::Vector3(160, 0, 0),											// 檻(仕切りの出入口)
+		{ Math::Vector3(48, 4, -32), Math::Vector3(48, 4, 32) },			// ブロック2つ(スタートから見える床)
+		"Asset/Data/MapData/Stage7.csv", 2, 8,
+		3,																	// buildLimitLayers(高台と同じ高さまで)
+		24.0f,																// cageHeight
+		0, Math::Vector2::Zero, Math::Vector2::Zero,
+		Math::Vector3(40.0f, 40.0f, 36.0f),									// cageScale(壁にめり込まないよう細く)
+		{}, {}, {}, {},
+		{ ObjectiveKind::Switches, ObjectiveKind::Goal },
+	},
+
+	// ステージ8：橋とリフトで、ブロックを落とさずに運ぶ
+	{
+		Math::Vector3(0, 0, 0), Math::Vector3(264, -2.5f, 0), 0.0f, 90.0f,
+		true,
+		{ Math::Vector3(224, 0, -24) },									// 着地場所のスイッチ
+		Math::Vector3(240, 0, 0),										// 檻(仕切りの出入口)
+		{ Math::Vector3(24, 4, 0) },									// ブロック(スタートの目の前)
+		"Asset/Data/MapData/Stage8.csv", 2, 5,
+		3,																// buildLimitLayers
+		24.0f,															// cageHeight
+		0, Math::Vector2::Zero, Math::Vector2::Zero,
+		Math::Vector3(40.0f, 40.0f, 36.0f),								// cageScale(新Cと同じ)
+		{
+			// 始点を着地場所側、終点を島側にする(Map3と同じ向き)。奈落2の両端から8だけ内側
+			{ Math::Vector3(196, 0, 0), Math::Vector3(124, 0, 0), 5.0f }
+		},
+		{},
+		{
+			// 奈落2の上は、高さも奥行きも全部、魔法ブロックを置けない(リフトを使わせる)
+			// 奈落2のマス中心はx=120〜200なので、その外側のマス(112と208)を含まない範囲にする
+			{ Math::Vector3(116, -1000, -1000), Math::Vector3(204, 1000, 1000) }
+		},
+		{
+			// 奈落2で落ちたら、島に戻る
+			{
+				Math::Vector3(84, -1000, -48), Math::Vector3(204, 1000, 48),	// 島〜奈落2の範囲
+				Math::Vector3(96, 0, 0), 90.0f									// 戻る位置、向き
+			}
+		},
+		{ ObjectiveKind::LiftSwitch, ObjectiveKind::Goal },
+	},
+
+	// ステージ9：A側は魔法の橋、B側は階段で高台へ。ブロック2個を両スイッチに置くと檻が開く
 	{
 		Math::Vector3(0, 0, 0), Math::Vector3(248, -2.5f, 0), 0.0f, 90.0f,
 		true,
@@ -225,7 +273,7 @@ static const StageData g_stageTable[] =
 		{ObjectiveKind::Switches,ObjectiveKind::Goal}
 	},
 
-	// ステージ5：ハブ型。A・B・Cのスイッチを全部押すと、真ん中のゴールを囲う檻4つが開く
+	// ステージ10：ハブ型。A・B・Cのスイッチを全部押すと、真ん中のゴールを囲う檻4つが開く
 	{
 		Math::Vector3(0, 0, 0), Math::Vector3(0, -2.5f, -128), 0.0f, 180.0f,
 		true,
