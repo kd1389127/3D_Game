@@ -89,7 +89,7 @@ private:
 	// 目標を完了を表すチェック
 	static constexpr float kCheckSize          = 32.0f;	// チェックの大きさ(枠の24より少し大きく、枠からはみ出す)
 	static constexpr int   kCheckPopFrames     = 8;		// チェックが大きくなる長さ
-	static constexpr const char* kCheckTexPath = "Asset/Textures/UI/Objective/Check.png";
+	static constexpr const char* kCheckTexPath = "Asset/Textures/UI/Icon/Check.png";
 	KdTexture m_checkTex;
 
 	// 達成の記録(項目を出す前にやっても残る)

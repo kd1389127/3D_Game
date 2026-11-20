@@ -149,9 +149,9 @@ static const StageData g_stageTable[] =
 	
 	// ステージ4：魔力と削除。積んで登る→橋で奈落を渡る→削除で魔力を回収して高台へ
 	{
-		Math::Vector3(0, 0, 0), Math::Vector3(153, 69.5f, 0), 0.0f, 90.0f,
+		Math::Vector3(-48, 0, 0), Math::Vector3(153, 69.5f, 0), 0.0f, 90.0f,	// スタートを西へ48ずらす
 		false, {}, Math::Vector3::Zero, {},
-		"Asset/Data/MapData/Stage4.csv", 2, 3,	// originCol=2, originRow=3
+		"Asset/Data/MapData/Stage4.csv", 8, 3,	// originCol=8(2+6列)、originRow=3
 		9,										// buildLimitLayers
 		32.0f,
 		0, Math::Vector2::Zero, Math::Vector2::Zero,
@@ -215,7 +215,7 @@ static const StageData g_stageTable[] =
 		true,
 		{ Math::Vector3(96, 24, -48), Math::Vector3(96, 24, 48) },			// 北と南の高台の上
 		Math::Vector3(160, 0, 0),											// 檻(仕切りの出入口)
-		{ Math::Vector3(48, 4, -32), Math::Vector3(48, 4, 32) },			// ブロック2つ(スタートから見える床)
+		{ Math::Vector3(40, 4, -32), Math::Vector3(40, 4, 32) },			// ブロック2つ(スタートから見える床)
 		"Asset/Data/MapData/Stage7.csv", 2, 8,
 		3,																	// buildLimitLayers(高台と同じ高さまで)
 		24.0f,																// cageHeight

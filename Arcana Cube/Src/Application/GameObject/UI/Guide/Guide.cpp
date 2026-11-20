@@ -52,7 +52,7 @@ void Guide::Init()
 	}
 }
 
-void Guide::OpenSlides(int _topic)
+void Guide::OpenSlides(int _topic, bool _keepMouse)
 {
 	// 範囲外の項目や、画像が1枚もない項目は開かない
 	const bool isValidTopic = (_topic >= 0 && _topic < kTopicCount);
@@ -61,6 +61,7 @@ void Guide::OpenSlides(int _topic)
 
 	m_topic = _topic;
 	m_slideIndex = 0;
+	m_keepMouseOnClose = _keepMouse;
 	Mouse::Instance().ShowMouse(true);	// クリックで進めるのでポインタを出す
 }
 
@@ -82,7 +83,12 @@ void Guide::Update()
 	if (m_slideIndex >= GetSlideCount())					// その項目の最後の1枚で押したら閉じる
 	{
 		m_slideIndex = -1;
-		Mouse::Instance().ShowMouse(false);
+
+		// メニューから開いた時は、このあとメニューがマウスを使うので固定しない
+		if (!m_keepMouseOnClose)
+		{
+			Mouse::Instance().ShowMouse(false);
+		}
 	}
 }
 

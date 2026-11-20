@@ -68,6 +68,22 @@ void GameScene::Event()
 		SceneManager::Instance().ReloadScene();
 	}
 	prev6 = now6;
+
+	// F2キーで撮影モード(ステージ選択の写真を撮る用)。もう一度押すと、ステージを読み込み直して戻る
+	static bool prevF2 = false;
+	const bool nowF2 = (GetAsyncKeyState(VK_F2) & 0x8000) != 0;
+	if (nowF2 && !prevF2)
+	{
+		if (m_isPhotoMode)
+		{
+			SceneManager::Instance().ReloadScene();
+		}
+		else
+		{
+			EnterPhotoMode();
+		}
+	}
+	prevF2 = nowF2;
 }
 
 void GameScene::Init()
@@ -239,6 +255,10 @@ void GameScene::Init()
 	// スイッチ・檻・ギミックブロックは、このステージで必要な場合のみ生成する
 	if (data.hasGimmickCage)
 	{
+		// スイッチの上のマス(ギミックブロックが乗るマス)の範囲
+		constexpr float kSwitchZoneHalf   = BlockGridManager::GridSize * 0.5f;	// 横は1マス分(隣のマスは含めない)
+		constexpr float kSwitchZoneHeight = BlockGridManager::GridSize;			// 縦も1マス分(床の上から1マス)
+
 		// スイッチ(座標の数だけ生成)
 		for (const auto& pos : data.switchPositions)
 		{
@@ -247,6 +267,11 @@ void GameScene::Init()
 			sw->Init(pos);
 			m_objList.push_back(sw);
 			switches.push_back(sw);
+
+			// スイッチの上には魔法ブロックを置けない(ギミックブロックを置く場所を自分で塞ぐのを防ぐ)
+			BlockGridManager::Instance().AddForbiddenZone(
+				Math::Vector3(pos.x - kSwitchZoneHalf, pos.y, pos.z - kSwitchZoneHalf),
+				Math::Vector3(pos.x + kSwitchZoneHalf, pos.y + kSwitchZoneHeight, pos.z + kSwitchZoneHalf));
 		}
 
 		// 檻(鉄格子)：スイッチと紐付けて生成
@@ -293,6 +318,7 @@ void GameScene::Init()
 		objective->SetSwitches(switches);
 		objective->SetWandPickup(wandPickup);
 		m_objList.push_back(objective);
+		m_photoHideObjs.push_back(objective);
 	}
 
 	// 操作説明：魔力ゲージなどより手前に描くため、Tabメニューの直前に作る
@@ -310,6 +336,13 @@ void GameScene::Init()
 	m_pauseObjs.push_back(m_pauseMenu);
 	m_pauseObjs.push_back(m_guide);
 
+	// 撮影モード用：プレイヤーを覚えておき、撮影中に隠すもの(UIと杖)を集める
+	m_wpPlayer = player;
+	m_photoHideObjs.push_back(reticle);
+	m_photoHideObjs.push_back(magicwand);
+	m_photoHideObjs.push_back(magicgaugeUI);
+	m_photoHideObjs.push_back(m_guide);
+	m_photoHideObjs.push_back(m_pauseMenu);
 }
 
 bool GameScene::IsPaused() const
@@ -317,4 +350,20 @@ bool GameScene::IsPaused() const
 	const bool menuOpen = m_pauseMenu && m_pauseMenu->IsOpen();
 	const bool slideOpen = m_guide && m_guide->IsSlideOpen();	// スライド中もゲームを止める
 	return menuOpen || slideOpen;
+}
+
+void GameScene::EnterPhotoMode()
+{
+	m_isPhotoMode = true;
+
+	if (const auto player = m_wpPlayer.lock())
+	{
+		player->SetPhotoMode(true);
+	}
+
+	// UIと杖をシーンから外す(描かれなくなる)
+	for (const auto& hideObj : m_photoHideObjs)
+	{
+		m_objList.erase(std::remove(m_objList.begin(), m_objList.end(), hideObj), m_objList.end());
+	}
 }

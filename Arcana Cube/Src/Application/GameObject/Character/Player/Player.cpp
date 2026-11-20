@@ -62,7 +62,7 @@ void Player::Update()
 			// 通常は地面にいる時だけ跳べる。デバッグ用：Jキーを押している間は空中でも跳べる(Mapを見る時用)
 			//const bool debugAirJump = (GetAsyncKeyState('Q') & 0x8000) != 0;
 			//if (m_isGrounded || debugAirJump)
-			if (m_isGrounded)
+			if (m_isGrounded && !m_isPhotoMode)
 			{
 				m_gravity -= m_jumpPow; // 重力の値をマイナスにする＝上に跳ねる勢いを与える
 				m_hasJumped = true;		// オブジェクティブの達成用
@@ -78,7 +78,7 @@ void Player::Update()
 	
 	// Shiftキーを押している間は視点回転を止め、マウスの固定も解いて自由に動かせるようにする
 	// (スクショ撮影などで使う)
-	bool isFreeMouse = (GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0;
+	bool isFreeMouse = (GetAsyncKeyState(VK_LMENU) & 0x8000) != 0;
 	Mouse::Instance().SetFreeMove(isFreeMouse);
 
 	if (!isFreeMouse)
@@ -98,6 +98,13 @@ void Player::Update()
 
 	// 長さを1に正規化(斜め移動が速くなりすぎないようにする)
 	m_moveDir.Normalize();
+
+	// 撮影モード中は、重力も壁も無視して飛ぶ
+	if (m_isPhotoMode)
+	{
+		MovePhotoMode();
+		return;
+	}
 
 	// 横方向の移動を確定(壁への当たり判定はまだしていない。PostUpdateで後から押し戻す方式)
 	m_pos += m_moveDir * m_moveSpeed;
@@ -218,6 +225,9 @@ void Player::Update()
 // 毎フレームの後処理：壁の押し出しと、地面へのスナップ(足元合わせ)を行う
 void Player::PostUpdate()
 {
+	// 撮影モード中は、壁の押し出し・奈落・Map外の判定を全部止める
+	if (m_isPhotoMode) { return; }
+
 	// 奈落の暗転で真っ暗になった瞬間なら、スタート位置に戻る
 	if (SceneManager::Instance().ConsumeBlackoutEvent())
 	{
@@ -461,6 +471,27 @@ void Player::Respawn()
 
 	// 魔法で作ったブロックの片付けは、Magicwandの担当。ここでは知らせるだけにする
 	m_respawnedEvent = true;
+}
+
+// 撮影モード中の動き：WASDで横、Spaceで上、Ctrlで下に飛ぶ
+void Player::MovePhotoMode()
+{
+	m_pos += m_moveDir * kPhotoMoveSpeed;
+
+	if (GetAsyncKeyState(VK_SPACE) & 0x8000) { m_pos.y += kPhotoVerticalSpeed; }
+	if (GetAsyncKeyState(VK_LCONTROL) & 0x8000) { m_pos.y -= kPhotoVerticalSpeed; }
+
+	m_gravity = 0.0f;
+	m_isGrounded = false;
+
+	// 歩く音は止める(飛んでいる間は鳴らさない)
+	if (m_spWalkSe)
+	{
+		m_spWalkSe->Stop();
+		m_spWalkSe.reset();
+	}
+
+	m_mWorld = GetRotationMatrix() * Math::Matrix::CreateTranslation(m_pos);
 }
 
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====

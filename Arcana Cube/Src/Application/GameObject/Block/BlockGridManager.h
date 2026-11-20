@@ -34,7 +34,6 @@ public:
 	}
 	
 	// 自由な座標(小数)を、一番近いマスの中心座標に丸める(スナップ)
-	// 例：(9.8, 4.3, -3.1) → 一番近いマスの中心座標に変換
 	Math::Vector3 SnapToGrid(const Math::Vector3& pos) const
 	{
 		constexpr float halfGrid = GridSize * 0.5f;
@@ -73,11 +72,8 @@ public:
 		return false;
 	}
 
-	// ===================================================
 	// baseCellを起点に、stepDir方向へrequestCount段分の「置ける座標」を返す
-	// 重複・壁や天井のCOL・(checkPlayer=trueなら)プレイヤーの体のどれかに
-	// 引っかかった段で打ち切る
-	// ===================================================
+	// 重複・壁や天井のCOL・(checkPlayer=trueなら)プレイヤーの体のどれかに引っかかった段で打ち切る
 	std::vector<Math::Vector3> TryStack(const Math::Vector3& baseCell, const Math::Vector3& stepDir,
 		int requestCount, KdGameObject& groundObj, bool checkPlayer = false) const
 	{
@@ -101,7 +97,6 @@ public:
 	}
 
 	// そのマスを「使用中」として記録する(ブロックを置いた時に呼ぶ)
-	// kindを省略した場合は従来通りNormalとして扱われる
 	void Register(const Math::Vector3& snappedPos, BlockKind kind = BlockKind::Normal)
 	{
 		m_occupied[ToKey(snappedPos)] = kind;
@@ -115,7 +110,7 @@ public:
 		// 一番軽い判定を先に。ここで落とせば、下の当たり判定まで進まなくて済む
 		if (!IsInsideBuildBounds(snappedPos)) return false;	// Map外には置けない
 		if (IsInForbiddenZone(snappedPos))	  return false;	// 禁止エリアには置けない
-		if (HasNeighborKind(snappedPos, BlockKind::MagicCancel)) return false;					// 生成不可の壁に面したマスには置けない
+		if (HasNeighborKind(snappedPos, BlockKind::MagicCancel))				  return false;	// 生成不可の壁に面したマスには置けない
 		if (m_buildOnlyNextToMap && !HasNeighborKind(snappedPos, BlockKind::Map)) return false;	// Mapの面に接していないマスには置けない
 
 		if (IsOverlappingFreeBlock(snappedPos)) return false;	// ギミックブロックと重なる所には置けない
@@ -223,7 +218,7 @@ public:
 	}
 
 	// 法線ベクトル(斜めを含む)を、一番近いXYZ軸方向(±1方向のどれか)に丸める
-	// 例：弾が斜めの角に当たっても、「一番近い面」の向きとして扱いたい時に使う
+	// 弾が斜めの角に当たっても、「一番近い面」の向きとして扱いたい時に使う
 	static Math::Vector3 SnapNormalToAxis(const Math::Vector3& normal)
 	{
 		float ax = fabsf(normal.x), ay = fabsf(normal.y), az = fabsf(normal.z);
@@ -475,14 +470,14 @@ private:
 	Math::Vector3 m_playerBodyHalf   = Math::Vector3::Zero;
 	bool          m_hasPlayerBody	 = false;
 
-	int           m_tallLimitLayers = 0;
-	Math::Vector2 m_tallZoneMin		= Math::Vector2::Zero;
-	Math::Vector2 m_tallZoneMax		= Math::Vector2::Zero;
+	int           m_tallLimitLayers  = 0;
+	Math::Vector2 m_tallZoneMin		 = Math::Vector2::Zero;
+	Math::Vector2 m_tallZoneMax		 = Math::Vector2::Zero;
 
 	// 置ける範囲(XZ)。yにはZが入る(m_tallZoneMinと同じ使い方)
-	Math::Vector2 m_boundsMin = Math::Vector2::Zero;
-	Math::Vector2 m_boundsMax = Math::Vector2::Zero;
-	bool          m_hasBounds = false;
+	Math::Vector2 m_boundsMin		 = Math::Vector2::Zero;
+	Math::Vector2 m_boundsMax		 = Math::Vector2::Zero;
+	bool          m_hasBounds		 = false;
 
 	// 置けない箱
 	struct ForbiddenZoneBox { Math::Vector3 min; Math::Vector3 max; };

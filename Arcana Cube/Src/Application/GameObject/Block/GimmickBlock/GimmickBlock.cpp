@@ -50,6 +50,8 @@ void GimmickBlock::Update()
 	// 代わりに、離したら止まる位置を調べておく(置く位置の表示用)
 	if (m_isCarried)
 	{
+		++m_bobTimer;
+
 		float groundY = 0.0f;
 		m_hasLanding = FindGroundY(GetPos(), kLandSearchRange, groundY);
 		m_landingY = groundY + halfSize;
@@ -99,9 +101,17 @@ void GimmickBlock::DrawLit()
 {
 	if (!m_spModel) return;
 
-	// スイッチに乗っている間は、見た目だけ持ち上げて描く
-	const Math::Matrix drawMat = m_mWorld * Math::Matrix::CreateTranslation(0.0f, m_rideCurrent, 0.0f);
+	// 持っている間だけ、ふわふわ浮かせて描く(見た目だけで、判定の位置は動かさない)
+	float bobOffset = 0.0f;
+	if (m_isCarried)
+	{
+		// (1 - cos) / 2 は 0→1→0 と動く。掴んだ瞬間は0なので、ぴょんと跳ねない
+		bobOffset = (1.0f - cosf(m_bobTimer * kBobSpeed)) * 0.5f * kBobHeight;
+	}
 
+	// スイッチの持ち上げ量(m_rideCurrent)と、浮く動きを足して描く
+	const Math::Matrix drawMat = m_mWorld * Math::Matrix::CreateTranslation(0.0f, m_rideCurrent + bobOffset, 0.0f);
+	
 	// 持っている間、離したら止まる位置に、透けたブロックを出す
 	if (m_isCarried && m_hasLanding)
 	{
@@ -131,8 +141,9 @@ void GimmickBlock::SetCarried(bool isCarried)
 
 	if (isCarried)
 	{
-		m_rideTarget = 0.0f;
+		m_rideTarget  = 0.0f;
 		m_rideCurrent = 0.0f;
+		m_bobTimer	  = 0;
 	}
 
 	if (m_pCollider)

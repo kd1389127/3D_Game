@@ -47,10 +47,16 @@ private:
 	bool m_isCarried = false;
 	bool m_isGrabTargeted = false;
 	int  m_blinkTimer = 0;
+	int  m_bobTimer = 0;						// 持ってから何フレーム経ったか(浮く動きに使う)
 
 	float m_fallSpeed = 0.0f;
 	Math::Vector3 m_startPos = Math::Vector3::Zero;
 
 	float m_rideTarget = 0.0f;   // スイッチが決める「持ち上げたい量」
 	float m_rideCurrent = 0.0f;  // 今、描画に使っている量(目標へ少しずつ近づく)
+
+	// 持っている間の、ふわふわ浮く動き(見た目だけ)
+	static constexpr float kBobHeight  = 1.5f;	// 浮き上がる高さ(0.8 → 1.5)
+	static constexpr float kBobSpeed   = 0.06f;	// 浮く速さ
+
 };

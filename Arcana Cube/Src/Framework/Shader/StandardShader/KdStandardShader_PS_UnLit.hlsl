@@ -13,7 +13,11 @@ SamplerState g_ss : register(s0);
 // 11月4日自分で追加
 // 面の向きによる明暗の設定(ライト計算ではなく、固定の向きとの内積だけで決める)
 static const float3 kFaceLightDir = float3(0.259f, 0.864f, 0.432f); // 見かけの光の向き(ほぼ真上)
-static const float kFaceDarkest = 0.55f; // いちばん暗い面の明るさ(1.0で効果なし)
+static const float  kFaceDarkest  = 0.55f;							// いちばん暗い面の明るさ(1.0で効果なし)
+
+// 11月20日自分で追加
+// 全体の明るさ(1.0で変化なし。暗い画面でも見えるよう上げる)
+static const float  kBrightness   = 1.5f;
 
 float4 main(VSOutputNoLighting In) : SV_Target0
 {
@@ -36,6 +40,9 @@ float4 main(VSOutputNoLighting In) : SV_Target0
 		outColor *= lerp(1.0f, shade, g_FaceShade);
 	}
 
+	// 11月20日自分で追加
+	// UnLitは環境光が効かないので、ここで全体を明るくする
+	outColor *= kBrightness;
 	
 	// Alphaテスト
 	if (baseColor.a < 0.05f)

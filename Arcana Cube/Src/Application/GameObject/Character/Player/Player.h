@@ -36,6 +36,9 @@ public:
 
 	void Respawn();	// スタート位置・向きに戻る
 
+	// 撮影モード(デバッグ用)：重力も壁も無視して、空中を自由に飛べる
+	void SetPhotoMode(bool _isOn) { m_isPhotoMode = _isOn; }
+
 	// リスポーンが起きたことを、他のクラス(Magicwand)に1回だけ伝える
 	bool ConsumeRespawnedEvent()
 	{
@@ -126,4 +129,11 @@ private:
 	bool m_goalSePlayed   = false;					// ゴール音をもう鳴らしたか
 	bool m_hasReachedGoal = false;					// ゴールに触れたか
 	bool m_hasJumped	  = false;					// 一度でもジャンプをしたか
+
+	// 撮影モード
+	void MovePhotoMode();
+	bool m_isPhotoMode = false;
+	static constexpr float kPhotoMoveSpeed = 1.5f;	// 横に飛ぶ速さ(通常の歩きは0.5)
+	static constexpr float kPhotoVerticalSpeed = 1.0f;	// 上下に動く速さ
+
 };

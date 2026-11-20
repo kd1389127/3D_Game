@@ -28,7 +28,7 @@ private:
 	};
 
 	// 開閉の切り替え。Tabで開く・Tabで閉じる・「再開」の3か所から呼ぶので関数にした
-	void SetOpen(bool _isOpen);
+	void SetOpen(bool _isOpen, bool _keepMouse = false);
 
 	// ページを切り替えて、並べるボタンを決める
 	void SetPage(Page _page);

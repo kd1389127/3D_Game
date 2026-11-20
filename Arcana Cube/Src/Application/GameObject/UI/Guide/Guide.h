@@ -17,7 +17,8 @@ public:
 
 	// 指定した項目のスライドを出す
 	// _topic: 0=生成・削除 1=運ぶ・置く 2=ギミック(Map1の開始時は指定なしで0が出る)
-	void OpenSlides(int _topic = 0);
+	// _keepMouse: trueなら、閉じる時にマウスを固定しない(メニューが続けて使うため)
+	void OpenSlides(int _topic = 0, bool _keepMouse = false);
 
 	// スライドを見せている間はtrue(ゲーム側を止めるのに使う)
 	bool IsSlideOpen() const { return m_slideIndex >= 0; }
@@ -42,4 +43,6 @@ private:
 	int m_slideCount[kTopicCount] = {};				// 項目ごとの実際の枚数
 	int m_topic = 0;								// 今出している項目
 	int m_slideIndex = -1;							// -1=出していない / 0〜=その項目の何枚目を出しているか
+
+	bool m_keepMouseOnClose = false;				// 閉じる時にマウスを固定しないか
 };

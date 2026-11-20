@@ -42,16 +42,15 @@ void PauseMenu::Init()
 	SetPage(kPageMain);
 }
 
-void PauseMenu::SetOpen(bool _isOpen)
+void PauseMenu::SetOpen(bool _isOpen, bool _keepMouse)
 {
 	m_isOpen = _isOpen;
 	m_hover = -1;
 
-	// 開くときだけメインに戻す(閉じる動きの最中に、ボタンの並びが変わらないように)
 	if (_isOpen) { SetPage(kPageMain); }
 
-	// 開いている間は杖のポインタを出して固定を解き、閉じたら中央固定に戻す
-	Mouse::Instance().ShowMouse(_isOpen);
+	// スライドへ移る時は、固定を切り替えない(中央に飛ばされるのを防ぐ)
+	if (!_keepMouse) { Mouse::Instance().ShowMouse(_isOpen); }
 }
 
 PauseMenu::Button& PauseMenu::AddButton(int _texId, float _x, float _y, float _hitWidth)
@@ -198,9 +197,9 @@ void PauseMenu::Update()
 	if (isTopicButton)
 	{
 		const int topic = id - kTexTopic1;
-		SetOpen(false);
+		SetOpen(false,true);
 
-		if (spGuide) { spGuide->OpenSlides(topic); }
+		if (spGuide) { spGuide->OpenSlides(topic,true); }
 
 		// スライドが実際に開いた時だけ、見終わったらここに戻る
 		// (画像のない項目などで開かなかった時は、そのまま項目選びを開き直す)
