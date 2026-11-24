@@ -29,9 +29,15 @@ private:
 	Math::Vector3 m_basePos = {};
 	float m_maxHeight		= 0.0f;
 	float m_currentHeight	= 0.0f;
-	float m_speed			= 0.2f;	// 1フレームあたりの移動量(Playerのm_moveSpeed等に合わせた感覚の値)
-	bool  m_wasActive		= false;// 前のフレームでスイッチが全部オンだったか(開閉の始まりを見つけるため)
+	float m_speed			= 0.5f;					// 1フレームあたりの移動量(Playerのm_moveSpeed等に合わせた感覚の値)
+	bool  m_wasActive		= false;				// 前のフレームでスイッチが全部オンだったか(開閉の始まりを見つけるため)
 
-	Math::Vector3 m_zoneMin = {};	// 檻が立っている範囲(閉じた時の位置)
+	Math::Vector3 m_zoneMin = {};					// 檻が立っている範囲(閉じた時の位置)
 	Math::Vector3 m_zoneMax = {};
+
+	static constexpr float kCloseSpeed = 1.0f;		// 閉じる時の1フレームの移動量(開く時は0.2でゆったり)
+
+	// 離れてから閉まり始めるまでの待ち時間
+	static constexpr int kCloseDelayFrames = 20;
+	int m_closeDelay = 0;
 };

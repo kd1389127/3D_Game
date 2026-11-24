@@ -265,6 +265,7 @@ void GameScene::Init()
 			std::shared_ptr<Switch> sw;
 			sw = std::make_shared<Switch>();
 			sw->Init(pos);
+			sw->SetPlayer(player);
 			m_objList.push_back(sw);
 			switches.push_back(sw);
 

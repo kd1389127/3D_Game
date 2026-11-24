@@ -79,10 +79,21 @@ void Cage::Update()
 		}
 	}
 
-	// 開閉が始まった瞬間だけ鳴らす
-	if (active != m_wasActive)
+	// 踏まれている間は待ち時間を満タンにし、離れたら減らす。０で閉まる
+	if (active)
 	{
-		m_wasActive = active;
+		m_closeDelay = kCloseDelayFrames;
+	}
+	else if (m_closeDelay > 0)
+	{
+		--m_closeDelay;
+	}
+	const bool isOpening = (m_closeDelay > 0); // 待ち時間も「開いたまま」として扱う
+
+	// 開閉が始まった瞬間だけ鳴らす
+	if (isOpening != m_wasActive)
+	{
+		m_wasActive = isOpening;
 
 		// 檻は複数(extraCages)が同時に動くので、すでに鳴っていたら重ねて鳴らさない
 		if (!s_cageSe || !s_cageSe->IsPlaying())
@@ -91,12 +102,13 @@ void Cage::Update()
 			if (s_cageSe)
 			{
 				s_cageSe->SetVolume(0.35f);
-				s_cageSe->SetPitch(active ? 0.0f : -0.3f);	// 閉じる時は低くして、開く音と区別する
+				s_cageSe->SetPitch(isOpening ? 0.0f : -0.3f);	// 閉じる時は低くして、開く音と区別する
 			}
 		}
 	}
 
-	float target = active ? m_maxHeight : 0.0f;
+	float target = m_maxHeight;
+	if (!isOpening) { target = 0.0f; }
 
 	// 1フレームごとにm_speed分だけ近づける(DeltaTimeは使わない、他クラスと同じ固定フレーム前提の書き方)
 	if (m_currentHeight < target)
@@ -105,7 +117,7 @@ void Cage::Update()
 	}
 	else if (m_currentHeight > target)
 	{
-		m_currentHeight = std::max(m_currentHeight - m_speed, target);
+		m_currentHeight = std::max(m_currentHeight - kCloseSpeed, target);	
 	}
 
 	Math::Vector3 pos = m_basePos;

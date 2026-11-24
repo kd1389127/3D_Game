@@ -1,7 +1,7 @@
 ﻿#include "Switch.h"
 
 #include "../../../Block/Grabbable.h"
-#include "../../../Block/GimmickBlock/GimmickBlock.h"
+#include "../../../Character/Player/Player.h"
 
 namespace
 {
@@ -15,6 +15,9 @@ namespace
 	constexpr float kPressSpeed = 0.1f;
 	// ブロックが乗る高さ(床から台座の縁の上面まで)。見ながら調整する
 	constexpr float kRideHeight = 1.0f;
+
+	// スイッチのモデルの拡大率
+	constexpr float kModelScale = 15.0f;
 }
 
 void Switch::Init(const Math::Vector3& pos)
@@ -28,7 +31,21 @@ void Switch::Init(const Math::Vector3& pos)
 		m_spPadModel->Load("Asset/Models/Map/Switch/Switch.gltf");
 	}
 
-	SetScale(15.0f);
+	// 台座の上面の判定
+	if (!m_pCollider)
+	{
+		m_pCollider = std::make_unique<KdCollider>();
+
+		const float halfHeight = kRideHeight * 0.5f / kModelScale;
+		const float halfWidth  = kPadHalfSize / kModelScale;
+
+		DirectX::BoundingBox stepBox;
+		stepBox.Center  = DirectX::XMFLOAT3(0.0f, halfHeight, 0.0f);	// 床から台座の上面まで
+		stepBox.Extents = DirectX::XMFLOAT3(halfWidth, halfHeight, halfWidth);
+		m_pCollider->RegisterCollisionShape("SwitchSetp", stepBox, KdCollider::TypeGround);
+	}
+
+	SetScale(kModelScale);
 	SetPos(pos);
 }
 
@@ -63,13 +80,22 @@ void Switch::Update()
 		if (overlapXZ && onPad)
 		{
 			m_isActive = true;
-
-			// 作動しているブロックは、見た目を板の上に乗せる(位置は動かさない)
-			if (auto block = std::dynamic_pointer_cast<GimmickBlock>(obj))
-			{
-				block->SetRideOffset(kRideHeight);
-			}
 			break;
+		}
+	}
+
+	// プレイヤーが足元で踏んでいてもオン(ブロックで押していない時だけ調べる)
+	if (!m_isActive)
+	{
+		const auto player = m_wpPlayer.lock();
+		if (player && player->IsGrounded())
+		{
+			const Math::Vector3 d = player->GetFootPos() - padPos;
+			
+			// 足元の1点だけで見る(体の幅まで足すと、端に触れただけでオンになる)
+			const bool overlapXZ = fabsf(d.x) < kPadHalfSize && fabsf(d.z) < kPadHalfSize;
+			const bool onPad	 = fabsf(d.y) < kPressHeight;
+			m_isActive = overlapXZ && onPad;
 		}
 	}
 

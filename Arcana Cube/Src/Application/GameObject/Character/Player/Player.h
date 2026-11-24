@@ -53,6 +53,10 @@ public:
 	// ジャンプしたか(オブジェクティブの達成判定に使う)
 	bool HasJumped()const { return m_hasJumped; }
 
+	// スイッチなど、外から足元を調べる用
+	bool IsGrounded() const { return m_isGrounded; }
+	Math::Vector3 GetFootPos() const { return m_pos - Math::Vector3(0.0f, m_adjustHeight, 0.0f); }
+
 private:
 
 	// 当たり判定

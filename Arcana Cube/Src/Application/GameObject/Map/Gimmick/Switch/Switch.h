@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+class Player;
+
 // GimmickBlockが真上のマスに乗っている間だけオンになるスイッチ
 class Switch : public KdGameObject
 {
@@ -13,11 +15,15 @@ public:
 	void DrawLit() override;
 
 	bool IsActive() const { return m_isActive; }
+	
+	void SetPlayer(const std::shared_ptr<Player>& player) { m_wpPlayer = player; }
 
 private:
 
 	std::shared_ptr<KdModelData> m_spModel = nullptr;     // 台座(Pedestal)
 	std::shared_ptr<KdModelData> m_spPadModel = nullptr;  // 踏み板(Switch)
+
+	std::weak_ptr<Player> m_wpPlayer;					  // 踏んでいるか調べる
 
 	bool m_isActive = false;
 	float m_pressDepth = 0.0f;  // 今の沈み量(0 = 元の高さ)

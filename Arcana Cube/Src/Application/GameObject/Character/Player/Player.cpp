@@ -5,6 +5,7 @@
 #include "Component/BlockGrabber.h"
 #include "Component/BlockDestroyer.h"
 #include "../../Block/BlockGridManager.h"
+#include "../../Map/Gimmick/Switch/Switch.h"
 #include "../../UI/Mouse/Mouse.h"
 #include "../../Collision/Collision.h"
 #include "../../Map/Gimmick/Lift/Lift.h"
@@ -320,8 +321,14 @@ void Player::PostUpdate()
 		// Liftなら、専用のレイを使う
 		const Lift* pLiftObj = dynamic_cast<const Lift*>(obj);
 
+		// スイッチの段差は、通常の足元レイでは登れないので、同じ専用レイで乗せる
+		const Switch* pSwitchObj = dynamic_cast<const Switch*>(obj);
+
+		KdCollider::RayInfo useRay = ray;
+		if (pLiftObj || pSwitchObj) { useRay = liftRay; }
+
 		std::list<KdCollider::CollisionResult> objResults;
-		obj->Intersects(pLiftObj ? liftRay : ray, &objResults);
+		obj->Intersects(useRay, &objResults);
 
 		for (auto& ret : objResults)
 		{
