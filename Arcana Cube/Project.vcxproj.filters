@@ -187,6 +187,9 @@
     <Filter Include="Src\Application\GameObject\Map\Gimmick\WandPickup">
       <UniqueIdentifier>{07326eba-db63-48bf-9f78-f25b3d0964e9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\GameObject\UI\Hint">
+      <UniqueIdentifier>{725d52e7-e2fa-4c56-8160-3d212d16ef36}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -471,6 +474,9 @@
     <ClInclude Include="Src\Application\GameObject\Map\Gimmick\WandPickup\WandPickup.h">
       <Filter>Src\Application\GameObject\Map\Gimmick\WandPickup</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\GameObject\UI\Hint\Hint.h">
+      <Filter>Src\Application\GameObject\UI\Hint</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -712,6 +718,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\GameObject\Map\Gimmick\WandPickup\WandPickup.cpp">
       <Filter>Src\Application\GameObject\Map\Gimmick\WandPickup</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\GameObject\UI\Hint\Hint.cpp">
+      <Filter>Src\Application\GameObject\UI\Hint</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

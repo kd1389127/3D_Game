@@ -1,40 +1,67 @@
 ﻿#include "Guide.h"
 #include "../Mouse/Mouse.h"
 #include "../../../Scene/SceneManager.h"
+#include "../../../Scene/StageData.h"
 
 void Guide::Init()
 {
+	// ヒントの数が StageDataのHintKindと食い違っていたらビルドで止める
+	static_assert(kHintCount == static_cast<int>(HintKind::Count),
+		"ヒントの数が Guide と HintKind で違います");
+
 	m_drawType = eDrawTypeUI;
 
-	const std::string dir = "Asset/Textures/UI/Guide/";
+	const std::string dir = "Asset/Textures/UI/";
 
 	// 項目ごとのスライドのファイル名。並べた順に表示される
 	// 枚数を増やす時は、ここに足すだけでよい
-	const std::vector<std::string> fileNames[kTopicCount] =
+	const std::vector<std::string> fileNames[kAllTopicCount] =
 	{
-		// 0 生成・削除(5枚)
-		{
-			"Slide1.png",
-			"Slide2.png",
-			"Slide3.png",
-			"Mana.png",
-			"Erase.png",
+		// 操作説明
+		// 0 生成・削除(Tabメニュー)
+		{ 
+			"Guide/Slide1.png", 
+			"Guide/Slide2.png", 
+			"Guide/Slide3.png",
+			"Guide/Slide4.png",
+			"Guide/Slide5.png" 
 		},
-		// 1 運ぶ・置く(2枚)
-		{
-			"Grab.png",
-			"Place.png",
+		// 1 運ぶ・置く(Tabメニュー)
+		{ 
+			"Guide/Grab.png",
+			"Guide/Place.png" 
 		},
-		// 2 ギミック(4枚)
-		{
-			"Switch.png",
-			"Cage.png",
-			"Lift.png",
-			"Wall.png",
+		// 2 ギミック(Tabメニュー)
+		{ 
+			"Guide/Switch.png",
+			"Guide/Cage.png", 
+			"Guide/Lift.png", 
+			"Guide/Wall.png" 
 		},
+		
+		// ヒント
+		// 3 生成・魔力・削除(ステージ2)
+		{ 
+			"Hint/Slide1.png",
+			"Hint/Slide2.png",
+			"Hint/Slide3.png",
+			"Hint/Slide4.png",
+			"Hint/Slide5.png" 
+		},
+		// 4 運ぶ・置く・スイッチ・檻(ステージ3)
+		{ 
+			"Hint/Grab.png",
+			"Hint/Place.png",
+			"Hint/Switch.png",
+			"Hint/Cage.png" 
+		},
+		// 5 生成できない壁(ステージ5)
+		{ "Hint/Wall.png" },
+		// 6 リフト(ステージ6)
+		{ "Hint/Lift.png" },
 	};
 
-	for (int topic = 0; topic < kTopicCount; ++topic)
+	for (int topic = 0; topic < kAllTopicCount; ++topic)
 	{
 		const auto& names = fileNames[topic];
 
@@ -55,7 +82,7 @@ void Guide::Init()
 void Guide::OpenSlides(int _topic, bool _keepMouse)
 {
 	// 範囲外の項目や、画像が1枚もない項目は開かない
-	const bool isValidTopic = (_topic >= 0 && _topic < kTopicCount);
+	const bool isValidTopic = (_topic >= 0 && _topic < kAllTopicCount);
 	if (!isValidTopic) { return; }
 	if (m_slideCount[_topic] == 0) { return; }
 

@@ -34,7 +34,7 @@ private:
 	static constexpr float kWandLength		= 10.0f;	// 杖の長さ(根元から先端まで)
 
 	// 杖取得時の演出
-	static constexpr const char* kPickupSePath = "Asset/Sounds/SE/Block/Generate.wav";	
+	static constexpr const char* kPickupSePath = "Asset/Sounds/SE/Player/Get.wav";	
 	static constexpr float kPickupSeVolume	   = 0.1f;
 	static constexpr int   kFlyFrames		   = 30;	// 手元まで飛ぶ長さ(60fpsで約0.4秒)
 	static constexpr float kHandScale		   = 1.3f;	// 手持ちの杖と同じ大きさ

@@ -94,9 +94,10 @@ private:
 	static constexpr float kDotSelectedSize = 28.0f;	// 今のステージの点
 	static constexpr float kLockSize	    = 140.0f;
 
-	// メインのページの「ポーズ」と飾り線
-	static constexpr float kPauseTitleY     = 230.0f;	// 「ポーズ」の中心Y
-	static constexpr float kPauseTitleLineY = 192.0f;	// 「ポーズ」の下の線の中心Y
+	// メインのページの「メニュー」と飾り線
+	static constexpr float kPauseTitleX     = 10.0f;	// 「メニュー」の中心X
+	static constexpr float kPauseTitleY     = 240.0f;	// 「メニュー」の中心Y
+	static constexpr float kPauseTitleLineY = 192.0f;	// 「メニュー」の下の線の中心Y
 	static constexpr float kPauseTitleLineW = 320.0f;
 	static constexpr float kPauseTitleLineH = 24.0f;
 

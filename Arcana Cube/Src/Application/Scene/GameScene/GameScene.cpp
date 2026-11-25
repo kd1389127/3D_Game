@@ -13,6 +13,7 @@
 #include "../../GameObject/UI/Mouse/Mouse.h"
 #include "../../GameObject/UI/PauseMenu/PauseMenu.h"
 #include "../../GameObject/UI/Guide/Guide.h"
+#include "../../GameObject/UI/Hint/Hint.h"
 #include "../../GameObject/UI/Objective/Objective.h"
 #include "../../GameObject/Block/GimmickBlock/GimmickBlock.h"
 #include "../../GameObject/Map/Gimmick/Goal/Goal.h"
@@ -322,9 +323,17 @@ void GameScene::Init()
 		m_photoHideObjs.push_back(objective);
 	}
 
-	// 操作説明：魔力ゲージなどより手前に描くため、Tabメニューの直前に作る
+	// 操作説明(Guide)を先に作る。リストに入れるのは、Hintより後
 	m_guide = std::make_shared<Guide>();
 	m_guide->Init();
+
+	// ヒント(Hキー)：Guideのスライドより後ろに描くため、Guideより先にリストへ入れる
+	std::shared_ptr<Hint> hint = std::make_shared<Hint>();
+	hint->Init(data.hint, m_guide);
+	m_objList.push_back(hint);
+	m_photoHideObjs.push_back(hint);
+
+	// 操作説明：魔力ゲージなどより手前に描くため、Tabメニューの直前に入れる
 	m_objList.push_back(m_guide);
 
 	// Tabメニュー：一番手前に描くため、リストの最後に追加する

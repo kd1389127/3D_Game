@@ -17,6 +17,18 @@ enum class ObjectiveKind : int
 	GetWand,	// 台座の杖を取る
 };
 
+// Hキーで出すヒントの種類
+enum class HintKind : int
+{
+	None = -1, // ヒントなし
+	Generate,  // 生成・魔力・削除
+	Carry,	   // 運ぶ・置く・スイッチ・檻
+	Wall,	   // 生成できない壁
+	Lift,	   // リフト
+	Count,	   // 種類の数
+};
+
+
 // 1台のリフトの配置情報
 struct LiftData
 {
@@ -87,6 +99,8 @@ struct StageData
 	std::vector<ObjectiveKind> objectives = { ObjectiveKind::Goal };// 出す項目(上から順)。空なら出さない
 	Math::Vector3 wandPickupPos = Math::Vector3::Zero;				// 台座の杖の位置(チュートリアルだけ。浮かせる高さ)
 	bool          buildOnlyNextToMap = false;						// trueなら、魔法ブロックはMapの面(1)に接したマスにしか置けない
+
+	HintKind	hint = HintKind::None;								// Hキーで出すヒント
 };
 
 // ステージ番号(g_stageTableの添字)。番号を直書きせず、これを使う
@@ -129,6 +143,9 @@ static const StageData g_stageTable[] =
 		Math::Vector3(55.0f,45.0f,45.0f),
 		{},{},{},{},
 		{ObjectiveKind::Aim,ObjectiveKind::Wheel,ObjectiveKind::Shoot,ObjectiveKind::Goal},
+		Math::Vector3::Zero,
+		false,
+		HintKind::Generate,
 	},
 
 	// ステージ3(スイッチ・檻・ギミックブロックの座標)
@@ -138,13 +155,16 @@ static const StageData g_stageTable[] =
 		{Math::Vector3(0, 0, -16)},			// switchPositions
 		Math::Vector3(-48, 24.0f, 0),		// cageBasePos
 		{Math::Vector3(64, 52.0f, 0)},		// gimmickBlockPositions
-		"Asset/Data/MapData/Stage3.csv", 14, 5, 
+		"Asset/Data/MapData/Stage3.csv", 14, 5,
 		7,
 		32.0f,
 		0, Math::Vector2::Zero, Math::Vector2::Zero,
 		Math::Vector3(55.0f, 45.0f, 45.0f),
 		{}, {}, {}, {},
 		{  ObjectiveKind::Grab,ObjectiveKind::OneSwitch, ObjectiveKind::Goal },
+		Math::Vector3::Zero,
+		false,
+		HintKind::Carry,
 	},
 	
 	// ステージ4：魔力と削除。積んで登る→橋で奈落を渡る→削除で魔力を回収して高台へ
@@ -182,6 +202,7 @@ static const StageData g_stageTable[] =
 		{ ObjectiveKind::Goal },
 		Math::Vector3::Zero,					// wandPickupPos(使わない)
 		true,									// buildOnlyNextToMap
+		HintKind::Wall,
 	},
 
 	// ステージ6：リフトの紹介。ブロックを持ってリフトで奈落を渡り、スイッチに置いて檻を開ける
@@ -207,6 +228,9 @@ static const StageData g_stageTable[] =
 		},
 		{},
 		{ObjectiveKind::LiftSwitch,ObjectiveKind::Goal},
+		Math::Vector3::Zero,
+		false,
+		HintKind::Lift,
 	},
 
 	// ステージ7：魔力のやりくり。高台の上の2つのスイッチを押して、檻を開ける

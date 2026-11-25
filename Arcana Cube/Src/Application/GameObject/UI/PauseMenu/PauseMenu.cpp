@@ -365,7 +365,7 @@ void PauseMenu::DrawSprite()
 	// メインのページだけ、上に「ポーズ」と飾り線
 	if (m_page == kPageMain)
 	{
-		sp.DrawTex(&m_tex[kTexPauseTitle], 0.0f, kPauseTitleY - slideUp, kBtnW, kBtnH, nullptr, &plain);
+		sp.DrawTex(&m_tex[kTexPauseTitle], kPauseTitleX, kPauseTitleY - slideUp, kBtnW, kBtnH, nullptr, &plain);
 		sp.DrawTex(&m_tex[kTexTitleLine], 0.0f, kPauseTitleLineY - slideUp,
 			kPauseTitleLineW, kPauseTitleLineH, nullptr, &plain);
 	}
