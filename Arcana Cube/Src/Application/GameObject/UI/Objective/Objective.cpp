@@ -218,7 +218,7 @@ void Objective::DrawSprite()
 
 	// チェックボックスの枠
 	Math::Color frame = { 1.0f, 1.0f, 1.0f, 0.9f * alpha };
-	sp.DrawBox(kBoxPosX + slideX, kPosY, kBoxHalf, kBoxHalf, &frame, false);
+	sp.DrawBox(kBoxPosX		+ slideX, kPosY, kBoxHalf, kBoxHalf, &frame, false);
 
 	// 達成後(Done・FadeOut)は、チェックを描く
 	if (m_phase == Phase::Done || m_phase == Phase::FadeOut)

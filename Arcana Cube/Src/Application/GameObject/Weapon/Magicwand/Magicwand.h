@@ -28,16 +28,15 @@ public:
 
 private:
 
-	// ----- 発射時の「振る」モーション -----
+	// 発射時の「振る」モーション
 	bool m_isSwinging = false;
 	int m_SwingFram = 0;
 	static constexpr int m_swingDuration = 16;
 	void StartSwingAnim();	// 発射時に呼ぶ：振りモーション開始
 	void UpdateSwingAnim(); // 毎フレーム呼ぶ：m_animMatを更新する
 
-	// ===================================================
+	
 	// 長押しエイム(狙い)モード関連
-	// ===================================================
 	enum class WandState
 	{
 		Idle,		// 通常状態：右クリックでエイムモードに入る
@@ -45,12 +44,12 @@ private:
 	};
 	WandState m_state = WandState::Idle;
 
-	// ----- ボタンの「押した/離した瞬間」を検知するための前フレーム状態 -----
+	// ボタンの「押した/離した瞬間」を検知するための前フレーム状態
 	bool m_rightDownPrev = false;
 	bool m_leftDownPrev  = false;
 	bool m_clearKeyPrev = false;	// 前フレームのQキー状態(押した瞬間の判定用)
 
-	// ----- エイム中(狙っている最中)の情報 -----
+	// エイム中(狙っている最中)の情報 
 	Math::Vector3 m_aimBaseCell = Math::Vector3::Zero;  // せり出しの起点になるマス(着弾点に一番近いグリッド座標)
 	Math::Vector3 m_aimDir = Math::Vector3::Up;         // せり出していく方向(狙った面の法線。床なら上、壁なら横)
 	int m_stackCount = 1;                               // 現在ホイールで選択している「何段せり出すか」の数
@@ -59,9 +58,9 @@ private:
 	bool m_hasValidAim = false;							// 現在何かに向かって狙えているか(何も無い方向を向いた時の保険)
 	bool m_isFixed     = false;							// true = 起点マスを固定済み(視点を動かしても起点は動かない)
 
-	// ----- ズーム開始判定用(Aimingに入ってからの経過フレーム。プレビューはすぐ出すが、ズームだけ遅らせる) -----
+	// ズーム開始判定用(Aimingに入ってからの経過フレーム。プレビューはすぐ出すが、ズームだけ遅らせる)
 	int					 m_aimHoldFrames = 0;
-	static constexpr int m_zoomHoldThreshold = 8;	 // これを超えたらズーム開始(60fps基準で約0.13秒)
+	static constexpr int m_zoomHoldThreshold = 8;	 // これを超えたらズーム開始
 
 	// 調整中に表示している半透明プレビュー用ブロックのリスト
 	// (実体はまだ確定していない「見本」なので、確定/キャンセル時にはExpireで消す)
@@ -84,7 +83,7 @@ private:
 	// 戻り値：レティクルがプレビューに乗っているか(trueの間は狙いを固定する)
 	bool UpdateHighlight(const Math::Vector3& muzzlePos, const Math::Matrix& parentMat);
 
-	// ----- 面の切り替え用(別の面を見続けた時間を数える) -----
+	// 面の切り替え用(別の面を見続けた時間を数える)
 	Math::Vector3		 m_hoverNormal = Math::Vector3::Zero;	// 今見ている別の面の向き
 	int					 m_hoverFrames = 0;						// その面を見続けたフレーム数
 	static constexpr int m_faceSwitchFrames = 3;				// これ以上見続けたら向きを切り替える(60fpsで約0.17秒)
@@ -106,7 +105,11 @@ private:
 	// 確定の弾が飛んでいる間true(弾が飛んでいる間は次を撃てない)
 	bool m_isFiring = false;
 
-	// ----- 生成したスタックの履歴(古いスタックから消すため) -----
+	// 発射の間隔(連打の抑え)
+	static constexpr int FireIntervalFrames = 30;	// 次に撃てるまでの長さ
+	int m_fireCooldown = 0;							// 次に撃てるまでの残りフレーム
+
+	// 生成したスタックの履歴(古いスタックから消すため)
 	std::deque<std::vector<std::weak_ptr<NormalBlock>>> m_generatedStacks;
 
 	// 指定したスタックを、先端(伸ばした側)から根元へ向かって消していく

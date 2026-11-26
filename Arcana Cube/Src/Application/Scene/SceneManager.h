@@ -78,6 +78,7 @@ private :
 	// 次のシーンの種類を保持している変数
 	SceneType m_nextSceneType = m_currentSceneType;
 
+	// 開始ステージ
 	int m_currentStage = 0;
 	int m_unlockedStage = 0;	// 解放済みのステージ(この番号以下を選べる。0=チュートリアルだけ)
 

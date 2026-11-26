@@ -203,7 +203,13 @@ void Magicwand::Update()
 	if (clearPressed && !m_generatedStacks.empty())
 	{
 		ClearAllStacks();
+
+		// 全削除音：ブロック1個ごとではなく、全削除1回につき1回だけ鳴らす
+		auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Block/Recovery.wav", false);
+		if (se) { se->SetVolume(0.1f); }
 	}
+	
+	if (m_fireCooldown > 0) { --m_fireCooldown; }
 
 	switch (m_state)
 	{
@@ -230,7 +236,7 @@ void Magicwand::Update()
 				// 既存ブロックを狙っていれば削除を優先し、無ければ従来通り新規生成
 				bool deleted = player ? player->TryDeleteTarget() : false;
 
-				if (!deleted)
+				if (!deleted && m_fireCooldown <= 0)
 				{
 					if (MagicManager::Instance().CanCast())
 					{
@@ -290,8 +296,8 @@ void Magicwand::Update()
 				break;
 			}
 
-			// 左クリックで発射(弾が飛んでいる間は次を撃てない)
-			if (leftPressed && !m_isFiring)
+			// 左クリックで発射(弾が飛んでいる間と間隔が空くまでは次を撃てない)
+			if (leftPressed && !m_isFiring && m_fireCooldown <= 0)
 			{
 				FireStack(muzzlePos,parentMat);
 			}
@@ -370,8 +376,10 @@ void Magicwand::DrawBright()
 
 void Magicwand::StartSwingAnim()
 {
+	m_fireCooldown = FireIntervalFrames;
 	m_isSwinging = true;
 	m_SwingFram = 0;
+
 	// 発射音：杖を振るのは弾を撃つ時だけで、SingleShotとConfirmStackの両方がここを通る。1か所で済む
 	auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/Magic/MagicShot.wav", false);
 	if (se) { se->SetVolume(0.05f); }

@@ -186,6 +186,10 @@ void PauseMenu::Update()
 
 	if (tabPressed && !isSlideOpen)
 	{
+		// Tabで開く・閉じる時の音
+		auto se = KdAudioManager::Instance().Play("Asset/Sounds/SE/UI/Click.wav", false);
+		if (se) { se->SetVolume(0.15f); }
+
 		SetOpen(!m_isOpen);
 		return;
 	}

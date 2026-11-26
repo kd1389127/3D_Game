@@ -53,6 +53,11 @@ void WandPickup::Update()
 		if (m_flyFrame >= kFlyFrames)
 		{
 			m_isFlying = false;
+
+			// 取得音:手元についた時に鳴らす
+			auto se = KdAudioManager::Instance().Play(kPickupSePath, false);
+			if (se) { se->SetVolume(kPickupSeVolume); }
+
 			if (m_onPickedUp) { m_onPickedUp(); }
 		}
 		return;
@@ -97,9 +102,6 @@ void WandPickup::Update()
 	m_isAimed	  = false;
 	m_isFlying	  = true;
 	m_flyStartPos = m_mWorld.Translation();	// 今の浮いている位置から飛び始める
-
-	auto se = KdAudioManager::Instance().Play(kPickupSePath, false);
-	if (se) { se->SetVolume(kPickupSeVolume); }
 }
 
 void WandPickup::DrawLit()
